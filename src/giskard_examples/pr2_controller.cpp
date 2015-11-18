@@ -64,11 +64,15 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 
 int main(int argc, char **argv)
 {
+  if (argc != 2)
+  {
+    std::cout << "Usage: rosrun giskard_examples pr2_controller <controller_specification>" << std::endl;
+    return 0;
+  }
+  YAML::Node node = YAML::LoadFile(argv[1]);
+
   ros::init(argc, argv, "pr2_controller");
   ros::NodeHandle n;
-
-  std::string pkg_path = ros::package::getPath("giskard_examples");
-  YAML::Node node = YAML::LoadFile(pkg_path + "/controller_specs/pr2_qp_position_control_without_torso.yaml");
 
   ros::param::param<int>("giskard_examples/nWSR", nWSR_, 10);
 
