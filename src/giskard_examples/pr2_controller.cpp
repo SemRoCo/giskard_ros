@@ -57,7 +57,8 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   }
   else
   {
-    std::cout << "Update failed." << std::endl;
+    ROS_WARN("Update failed.");
+    std::cout << "State " << state << std::endl;
   }
 }
 
@@ -69,19 +70,27 @@ int main(int argc, char **argv)
   std::string pkg_path = ros::package::getPath("giskard_examples");
   YAML::Node node = YAML::LoadFile(pkg_path + "/controller_specs/pr2_qp_position_control_without_torso.yaml");
 
-  joint_names_ = {//"torso_lift_joint",
-    "l_shoulder_pan_joint",
-    "l_shoulder_lift_joint", "l_upper_arm_roll_joint", "l_elbow_flex_joint",
-    "l_forearm_roll_joint", "l_wrist_flex_joint", "l_wrist_roll_joint"};
-  std::vector<std::string> vel_controller_names = {
-    //"/torso_lift_velocity_controller/command",
-    "/l_shpoulder_pan_velocity_controller/command",
-    "/l_shoulder_lift_velocity_controller/command",
-    "/l_upper_arm_roll_velocity_controller/command",
-    "/l_elbow_flex_velocity_controller/command",
-    "/l_forearm_roll_velocity_controller/command",
-    "/l_wrist_flex_velocity_controller/command",
-    "/l_wrist_roll_velocity_controller/command"};
+  ros::param::param<int>("giskard_examples/nWSR", nWSR_, 10);
+
+  if (!ros::param::get("giskard_examples/joint_names", joint_names_))
+  {
+    ROS_ERROR("Parameter 'giskard_examples/joint_names' not found.");
+    return 0;
+  }
+
+  std::vector<std::string> vel_controller_names;
+  if (!ros::param::get("giskard_examples/velocity_controller_names", vel_controller_names))
+  {
+    ROS_ERROR("Parameter 'giskard_examples/velocity_controller_names' not found.");
+    return 0;
+  }
+
+  if (joint_names_.size() != vel_controller_names.size())
+  {
+    ROS_ERROR("Different number of joint names and controller names.");
+    return 0;
+  }
+
   for (std::vector<std::string>::iterator it = vel_controller_names.begin(); it != vel_controller_names.end(); ++it)
   {
     vel_controllers_.push_back(n.advertise<std_msgs::Float64>(*it, 10));
@@ -89,20 +98,17 @@ int main(int argc, char **argv)
 
   giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
   controller_ = giskard::generate(spec);
-  nWSR_ = 10; // Make this a ros parameter
   Eigen::VectorXd state(joint_names_.size());
-  using Eigen::operator<<;
-  state << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
   if (controller_.start(state, nWSR_))
   {
-    std::cout << "Controller started." << std::endl;
+    ROS_INFO("Controller started.");
     ros::Subscriber sub = n.subscribe("joint_states", 0, js_callback);
     ros::spin();
   }
   else
   {
-    std::cout << "Couldn't start controller." << std::endl;
+    ROS_ERROR("Couldn't start controller.");
   }
 
   return 0;

@@ -1,0 +1,20 @@
+giskard_examples:
+  joint_names:
+    - torso_lift_joint
+    - l_shoulder_pan_joint
+    - l_shoulder_lift_joint
+    - l_upper_arm_roll_joint
+    - l_elbow_flex_joint
+    - l_forearm_roll_joint
+    - l_wrist_flex_joint
+    - l_wrist_roll_joint
+  velocity_controller_names:
+    - torso_lift_velocity_controller/command
+    - l_shoulder_pan_velocity_controller/command
+    - l_shoulder_lift_velocity_controller/command
+    - l_upper_arm_roll_velocity_controller/command
+    - l_elbow_flex_velocity_controller/command
+    - l_forearm_roll_velocity_controller/command
+    - l_wrist_flex_velocity_controller/command
+    - l_wrist_roll_velocity_controller/command
+  nWSR: 10
