@@ -22,6 +22,7 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
+#include <geometry_msgs/Point.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
 
@@ -29,10 +30,16 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
+geometry_msgs::Point goal_point_;
+ros::Subscriber js_sub_;
+Eigen::VectorXd state_;
+bool controller_started_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
-  Eigen::VectorXd state(joint_names_.size());
+  if (!controller_started_)
+    return;
+
   // is there a more efficient way?
   for (unsigned int i=0; i < joint_names_.size(); i++)
   {
@@ -40,12 +47,12 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
     {
       if (msg->name[j].compare(joint_names_[i]) == 0)
       {
-        state[i] = msg->position[j];
+        state_[i] = msg->position[j];
       }
     }
   }
 
-  if (controller_.update(state, nWSR_))
+  if (controller_.update(state_, nWSR_))
   {
     Eigen::VectorXd commands = controller_.get_command();
     for (unsigned int i=0; i < vel_controllers_.size(); i++)
@@ -58,7 +65,31 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   else
   {
     ROS_WARN("Update failed.");
-    std::cout << "State " << state << std::endl;
+    // TODO: remove or change to ros_debug
+    std::cout << "State " << state_ << std::endl;
+  }
+}
+
+void goal_callback(const geometry_msgs::Point::ConstPtr& msg)
+{
+  ROS_INFO("New goal: %f, %f, %f", msg->x, msg->y, msg->z);
+
+  state_[joint_names_.size()] = msg->x;
+  state_[joint_names_.size() + 1] = msg->y;
+  state_[joint_names_.size() + 2] = msg->z;
+
+  if (!controller_started_)
+  {
+    if (controller_.start(state_, nWSR_))
+    {
+      ROS_INFO("Controller started.");
+      goal_point_ = *msg;
+      controller_started_ = true;
+    }
+    else
+    {
+      ROS_ERROR("Couldn't start controller.");
+    }
   }
 }
 
@@ -102,18 +133,13 @@ int main(int argc, char **argv)
 
   giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
   controller_ = giskard::generate(spec);
-  Eigen::VectorXd state(joint_names_.size());
+  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 3);
+  controller_started_ = false;
 
-  if (controller_.start(state, nWSR_))
-  {
-    ROS_INFO("Controller started.");
-    ros::Subscriber sub = n.subscribe("joint_states", 0, js_callback);
-    ros::spin();
-  }
-  else
-  {
-    ROS_ERROR("Couldn't start controller.");
-  }
+  ROS_INFO("Waiting for goal.");
+  ros::Subscriber goal_sub = n.subscribe("/pr2_controller/goal", 0, goal_callback);
+  js_sub_ = n.subscribe("joint_states", 0, js_callback);
+  ros::spin();
 
   return 0;
 }
