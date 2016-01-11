@@ -10,7 +10,7 @@
   <license>GPLv2</license>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <depend>yaml_cpp</depend>
+  <depend>yaml-cpp</depend>
   <depend>giskard</depend>
   <depend>roscpp</depend>
   <depend>roslib</depend>
