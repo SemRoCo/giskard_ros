@@ -1,4 +1,0 @@
-<launch>
-  <include file="$(find giskard_examples)/launch/pr2_loopback_vel_controllers.launch" />
-  <rosparam command="load" file="$(find giskard_examples)/config/pr2_left_arm.yaml"/>
-</launch>

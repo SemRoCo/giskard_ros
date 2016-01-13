@@ -1,0 +1,11 @@
+<launch>
+
+  <node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
+    <rosparam param="joint_names"
+      file="$(find giskard_examples)/config/pr2_left_upper_body.yaml" />
+    <param name="controller_description" 
+      textfile="$(find giskard_examples)/controller_specs/pr2_left_upper_body_qp_position_control.yaml" />
+    <remap from="~joint_states" to="/joint_states" />
+  </node>
+ 
+</launch>

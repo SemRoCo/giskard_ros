@@ -2,18 +2,22 @@
 
 ## pr2_controller
 
-Start the loopback controller:
+Start the naive kinematics simulator for the PR2:
 ```
-roslaunch giskard_examples pr2_left_arm_loopback_controller.launch
-```
-
-Start the pr2 controller:
-```
-roscd giskard_examples
-rosrun giskard_examples pr2_controller controller_specs/pr2_qp_position_control.yaml
+roslaunch iai_naive_kinematics_sim pr2.launch
 ```
 
-Send your goal to `/pr2_controller/goal`, e.g.:
+Open RVIZ to visualize the PR2:
+```
+rviz
+```
+
+Start the constraint-based pr2 controller:
+```
+roslaunch giskard_examples pr2_left_upper_body_qp_cartesian_position_control.launch
+```
+
+Send your goal to the PR2 controller, e.g.:
 ```
 rostopic pub /pr2_controller/goal geometry_msgs/Point "x: 0.5                     
 y: 0.0            

@@ -11,8 +11,6 @@ find_path(YAML_CPP_INCLUDE_DIRS yaml-cpp/yaml.h PATH_SUFFIXES include)
 find_library(YAML_CPP_LIBRARIES NAMES yaml-cpp)
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp roslib giskard
   DEPENDS yaml_cpp
 )

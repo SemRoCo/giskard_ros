@@ -1,5 +1,7 @@
 /*
-* Copyright (C) 2015 Jannik Buckelo <jannikbu@cs.uni-bremen.de>
+* Copyright (C) 2015, 2016 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
+* Georg Bartels <georg.bartels@cs.uni-bremen.de>
+*
 *
 * This file is part of giskard_examples.
 *
@@ -40,6 +42,7 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   if (!controller_started_)
     return;
 
+  // TODO: turn this into a map!
   // is there a more efficient way?
   for (unsigned int i=0; i < joint_names_.size(); i++)
   {
@@ -95,50 +98,36 @@ void goal_callback(const geometry_msgs::Point::ConstPtr& msg)
 
 int main(int argc, char **argv)
 {
-  if (argc != 2)
-  {
-    std::cout << "Usage: rosrun giskard_examples pr2_controller <controller_specification>" << std::endl;
-    return 0;
-  }
-  YAML::Node node = YAML::LoadFile(argv[1]);
-
   ros::init(argc, argv, "pr2_controller");
-  ros::NodeHandle n;
+  ros::NodeHandle nh("~");
 
-  ros::param::param<int>("giskard_examples/nWSR", nWSR_, 10);
+  nh.param("nWSR", nWSR_, 10);
 
-  if (!ros::param::get("giskard_examples/joint_names", joint_names_))
+  std::string controller_description;
+  if (!nh.getParam("controller_description", controller_description))
   {
-    ROS_ERROR("Parameter 'giskard_examples/joint_names' not found.");
+    ROS_ERROR("Parameter 'controller_description' not found in namespace '%s'.", nh.getNamespace().c_str());
     return 0;
   }
 
-  std::vector<std::string> vel_controller_names;
-  if (!ros::param::get("giskard_examples/velocity_controller_names", vel_controller_names))
+  if (!nh.getParam("joint_names", joint_names_))
   {
-    ROS_ERROR("Parameter 'giskard_examples/velocity_controller_names' not found.");
+    ROS_ERROR("Parameter 'joint_names' not found in namespace '%s'.", nh.getNamespace().c_str());
     return 0;
   }
 
-  if (joint_names_.size() != vel_controller_names.size())
-  {
-    ROS_ERROR("Different number of joint names and controller names.");
-    return 0;
-  }
-
-  for (std::vector<std::string>::iterator it = vel_controller_names.begin(); it != vel_controller_names.end(); ++it)
-  {
-    vel_controllers_.push_back(n.advertise<std_msgs::Float64>(*it, 10));
-  }
-
+  YAML::Node node = YAML::Load(controller_description);
   giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
   controller_ = giskard::generate(spec);
-  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 3);
+  state_ = Eigen::VectorXd::Zero(controller_.get_command().size());
   controller_started_ = false;
 
+  for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
+    vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + *it + "/vel_cmd", 1));
+
   ROS_INFO("Waiting for goal.");
-  ros::Subscriber goal_sub = n.subscribe("/pr2_controller/goal", 0, goal_callback);
-  js_sub_ = n.subscribe("joint_states", 0, js_callback);
+  ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
+  js_sub_ = nh.subscribe("joint_states", 0, js_callback);
   ros::spin();
 
   return 0;

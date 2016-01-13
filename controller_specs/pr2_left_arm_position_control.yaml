@@ -73,7 +73,7 @@ scope:
   - pr2_fk_goal: {vector3: [goal_x, goal_y, goal_z]}
   - pr2_fk_error_vector: {vector-sub: [pr2_fk_goal, pr2_fk_pos]}
   - pr2_fk_error: {vector-norm: pr2_fk_error_vector}
-  - pr2_fk_control_law: {double-mul: [-10.0, pr2_fk_error]}
+  - pr2_fk_control_law: {double-mul: [-1.0, pr2_fk_error]}
 
 
 controllable-constraints:
