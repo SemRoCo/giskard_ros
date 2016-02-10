@@ -56,6 +56,8 @@ scope:
       frame: [{axis-angle: [unit_y, l_wrist_flex_joint]}, {vector3: [0.321, 0, 0]}]
   - l_wrist_roll:
       frame: [{axis-angle: [unit_x, l_wrist_roll_joint]}, {vector3: [0, 0, 0]}]
+  - l_gripper_offset:
+      frame: [{axis-angle: [unit_x, 0]}, {vector3: [0.18, 0, 0]}]
 
 
   # defintion of entire FK, goal, and control law
@@ -69,6 +71,7 @@ scope:
       - l_forearm_roll
       - l_wrist_flex
       - l_wrist_roll
+      - l_gripper_offset
   - pr2_fk_pos: {origin-of: pr2_fk}
   - pr2_fk_goal: {vector3: [goal_x, goal_y, goal_z]}
   - pr2_fk_error_vector: {vector-sub: [pr2_fk_goal, pr2_fk_pos]}
