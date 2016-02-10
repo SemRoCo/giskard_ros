@@ -7,5 +7,9 @@
       textfile="$(find giskard_examples)/controller_specs/pr2_left_upper_body_qp_position_control.yaml" />
     <remap from="~joint_states" to="/joint_states" />
   </node>
+
+  <node pkg="giskard_examples" type="interactive_marker" name="interactive_marker" output="screen">
+    <param name="frame_id" value="l_gripper_tool_frame" />
+  </node>
  
 </launch>

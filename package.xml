@@ -15,4 +15,6 @@
   <depend>giskard</depend>
   <depend>roscpp</depend>
   <depend>roslib</depend>
+  <depend>interactive_markers</depend>
+  <depend>geometry_msgs</depend>
 </package>
