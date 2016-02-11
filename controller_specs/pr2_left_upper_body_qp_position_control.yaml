@@ -60,14 +60,20 @@ scope:
       frame: [{axis-angle: [unit_x, 0]}, {vector3: [0.18, 0, 0]}]
 
 
-  # defintion of entire FK, goal, and control law
-  - pr2_fk:
+  # definition of elbow FK, goal, and control law
+  - pr2_elbow:
       frame-mul:
       - torso_lift
       - l_shoulder_pan
       - l_shoulder_lift
       - l_upper_arm_roll
       - l_elbow_flex
+  - pr2_elbow_y: {y-coord: {origin-of: pr2_elbow}}
+
+  # defintion of EE FK, goal, and control law
+  - pr2_fk:
+      frame-mul:
+      - pr2_elbow
       - l_forearm_roll
       - l_wrist_flex
       - l_wrist_roll
@@ -92,6 +98,7 @@ controllable-constraints:
 
 soft-constraints:
   - soft-constraint: [pr2_fk_control_law, pr2_fk_control_law, 10.0, pr2_fk_error]
+  - soft-constraint: [0.1, 0.1, 1.0, pr2_elbow_y]
 
 hard-constraints:
   - hard-constraint:
