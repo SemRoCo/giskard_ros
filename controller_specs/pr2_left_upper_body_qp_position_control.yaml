@@ -79,10 +79,12 @@ scope:
       - l_wrist_roll
       - l_gripper_offset
   - pr2_fk_pos: {origin-of: pr2_fk}
-  - pr2_fk_goal: {vector3: [goal_x, goal_y, goal_z]}
-  - pr2_fk_error_vector: {vector-sub: [pr2_fk_goal, pr2_fk_pos]}
-  - pr2_fk_error: {vector-norm: pr2_fk_error_vector}
-  - pr2_fk_control_law: {double-mul: [-1.0, pr2_fk_error]}
+  - ee_trans_x: {x-coord: {origin-of: pr2_fk}}
+  - ee_trans_y: {y-coord: {origin-of: pr2_fk}}
+  - ee_trans_z: {z-coord: {origin-of: pr2_fk}}
+  - ee_trans_x_control_law: {double-sub: [goal_x, ee_trans_x]}
+  - ee_trans_y_control_law: {double-sub: [goal_y, ee_trans_y]}
+  - ee_trans_z_control_law: {double-sub: [goal_z, ee_trans_z]}
 
 
 controllable-constraints:
@@ -97,7 +99,9 @@ controllable-constraints:
 
 
 soft-constraints:
-  - soft-constraint: [pr2_fk_control_law, pr2_fk_control_law, 10.0, pr2_fk_error]
+  - soft-constraint: [ee_trans_x_control_law, ee_trans_x_control_law, 10.0, ee_trans_x]
+  - soft-constraint: [ee_trans_y_control_law, ee_trans_y_control_law, 10.0, ee_trans_y]
+  - soft-constraint: [ee_trans_z_control_law, ee_trans_z_control_law, 10.0, ee_trans_z]
   - soft-constraint: [0.1, 0.1, 1.0, pr2_elbow_y]
 
 hard-constraints:
