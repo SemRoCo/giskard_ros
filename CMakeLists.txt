@@ -2,7 +2,14 @@ cmake_minimum_required(VERSION 2.8.3)
 project(giskard_examples)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
-find_package(catkin REQUIRED COMPONENTS roscpp roslib giskard interactive_markers geometry_msgs)
+find_package(catkin REQUIRED COMPONENTS 
+  roscpp 
+  roslib 
+  giskard 
+  tf2_ros
+  tf2_geometry_msgs
+  interactive_markers 
+  geometry_msgs)
 
 ## Finding system dependencies which come without cmake
 find_package(PkgConfig)
@@ -11,7 +18,7 @@ find_path(YAML_CPP_INCLUDE_DIRS yaml-cpp/yaml.h PATH_SUFFIXES include)
 find_library(YAML_CPP_LIBRARIES NAMES yaml-cpp)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp roslib giskard interactive_markers geometry_msgs
+  CATKIN_DEPENDS roscpp roslib giskard tf2_ros tf2_geometry_msgs interactive_markers geometry_msgs
   DEPENDS yaml_cpp
 )
 
@@ -30,3 +37,6 @@ target_link_libraries(pr2_controller
 
 add_executable(interactive_marker src/${PROJECT_NAME}/interactive_marker.cpp)
 target_link_libraries(interactive_marker ${catkin_LIBRARIES})
+
+add_executable(pose_stamped_transformer src/${PROJECT_NAME}/pose_stamped_transformer.cpp)
+target_link_libraries(pose_stamped_transformer ${catkin_LIBRARIES})
