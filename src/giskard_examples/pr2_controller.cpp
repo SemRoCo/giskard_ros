@@ -24,7 +24,7 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
 
@@ -32,10 +32,11 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
-geometry_msgs::Point goal_point_;
+geometry_msgs::PoseStamped goal_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
+std::string frame_id_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
@@ -73,20 +74,32 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   }
 }
 
-void goal_callback(const geometry_msgs::Point::ConstPtr& msg)
+void printGoal(const geometry_msgs::PoseStamped& goal)
 {
-  ROS_INFO("New goal: %f, %f, %f", msg->x, msg->y, msg->z);
+  ROS_INFO("New goal: frame_id=%s, position=(%f, %f, %f)", goal.header.frame_id.c_str(),
+      goal.pose.position.x, goal.pose.position.y, goal.pose.position.z);
+}
 
-  state_[joint_names_.size()] = msg->x;
-  state_[joint_names_.size() + 1] = msg->y;
-  state_[joint_names_.size() + 2] = msg->z;
+void goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+  printGoal(*msg);
+
+  if(msg->header.frame_id.compare(frame_id_) != 0)
+  {
+    ROS_WARN("frame_id of goal did not match expected frame_id '%s'. Ignoring goal", frame_id_.c_str());
+    return;
+  }
+
+  state_[joint_names_.size()] = msg->pose.position.x;
+  state_[joint_names_.size() + 1] = msg->pose.position.y;
+  state_[joint_names_.size() + 2] = msg->pose.position.z;
 
   if (!controller_started_)
   {
     if (controller_.start(state_, nWSR_))
     {
       ROS_INFO("Controller started.");
-      goal_point_ = *msg;
+      goal_ = *msg;
       controller_started_ = true;
     }
     else
@@ -113,6 +126,12 @@ int main(int argc, char **argv)
   if (!nh.getParam("joint_names", joint_names_))
   {
     ROS_ERROR("Parameter 'joint_names' not found in namespace '%s'.", nh.getNamespace().c_str());
+    return 0;
+  }
+
+  if (!nh.getParam("frame_id", frame_id_))
+  {
+    ROS_ERROR("Parameter 'frame_id' not found in namespace '%s'.", nh.getNamespace().c_str());
     return 0;
   }
 
