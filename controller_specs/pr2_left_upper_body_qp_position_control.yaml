@@ -34,9 +34,14 @@ scope:
   - l_forearm_roll_joint: {input-var: 5}
   - l_wrist_flex_joint: {input-var: 6}
   - l_wrist_roll_joint: {input-var: 7}
+
+  # definition goal input variables
   - goal_x: {input-var: 8}
   - goal_y: {input-var: 9}
   - goal_z: {input-var: 10}
+  - goal_rot_z: {input-var: 11}
+  - goal_rot_y: {input-var: 12}
+  - goal_rot_x: {input-var: 13}
 
 
   # definition of joint transforms
@@ -70,6 +75,7 @@ scope:
       - l_elbow_flex
   - pr2_elbow_y: {y-coord: {origin-of: pr2_elbow}}
 
+
   # defintion of EE FK, goal, and control law
   - pr2_fk:
       frame-mul:
@@ -78,13 +84,18 @@ scope:
       - l_wrist_flex
       - l_wrist_roll
       - l_gripper_offset
-  - pr2_fk_pos: {origin-of: pr2_fk}
   - ee_trans_x: {x-coord: {origin-of: pr2_fk}}
   - ee_trans_y: {y-coord: {origin-of: pr2_fk}}
   - ee_trans_z: {z-coord: {origin-of: pr2_fk}}
   - ee_trans_x_control_law: {double-sub: [goal_x, ee_trans_x]}
   - ee_trans_y_control_law: {double-sub: [goal_y, ee_trans_y]}
   - ee_trans_z_control_law: {double-sub: [goal_z, ee_trans_z]}
+  - goal_rot: 
+      rotation-mul: 
+        - {axis-angle: [unit_z, goal_rot_z]}
+        - {axis-angle: [unit_y, goal_rot_y]}
+        - {axis-angle: [unit_x, goal_rot_x]}
+  - ee_rot_control_law: {double-mul: [-1.0, {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: pr2_fk}}, goal_rot]}}}]}
 
 
 controllable-constraints:
@@ -102,6 +113,7 @@ soft-constraints:
   - soft-constraint: [ee_trans_x_control_law, ee_trans_x_control_law, 10.0, ee_trans_x]
   - soft-constraint: [ee_trans_y_control_law, ee_trans_y_control_law, 10.0, ee_trans_y]
   - soft-constraint: [ee_trans_z_control_law, ee_trans_z_control_law, 10.0, ee_trans_z]
+#  - soft-constraint: [ee_rot_control_law, ee_rot_control_law, 1.0, {vector-norm: {rot-vector: {orientation-of: pr2_fk}}}]
   - soft-constraint: [0.1, 0.1, 1.0, pr2_elbow_y]
 
 hard-constraints:

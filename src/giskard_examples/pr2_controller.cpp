@@ -15,8 +15,7 @@
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License
-* along with this program; if not, write to the Free Software
+* You should have received a copy of the GNU General Public License * along with this program; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
@@ -27,6 +26,8 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
+#include <kdl_conversions/kdl_msg.h>
+#include <boost/lexical_cast.hpp>
 
 int nWSR_;
 giskard::QPController controller_;
@@ -76,8 +77,27 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 
 void printGoal(const geometry_msgs::PoseStamped& goal)
 {
-  ROS_INFO("New goal: frame_id=%s, position=(%f, %f, %f)", goal.header.frame_id.c_str(),
-      goal.pose.position.x, goal.pose.position.y, goal.pose.position.z);
+  ROS_INFO("New goal: frame_id=%s\nposition=(%f, %f, %f), orientation=(%f, %f, %f, %f)", 
+      goal.header.frame_id.c_str(), 
+      goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
+      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z,
+      goal.pose.orientation.w);
+}
+
+void print_command(const Eigen::VectorXd& command)
+{
+  std::string cmd_str = " ";
+  for(size_t i=0; i<command.rows(); ++i)
+    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
+  ROS_INFO("Command: (%s)", cmd_str.c_str());
+
+  using namespace KDL;
+  Rotation r(Rotation::EulerZYX(command[3], command[4], command[5]));
+  double x, y, z, w;
+  r.GetQuaternion(x, y, z, w);
+  ROS_INFO_STREAM("Command back through KDL: \nposition=(" << command[0] << 
+     ", " << command[1] << ", " << command[2] << "), orientation=(" <<
+    x << ", " << y << ", " << z << ", " << w << ")"); 
 }
 
 void goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
@@ -93,6 +113,13 @@ void goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
   state_[joint_names_.size()] = msg->pose.position.x;
   state_[joint_names_.size() + 1] = msg->pose.position.y;
   state_[joint_names_.size() + 2] = msg->pose.position.z;
+
+  KDL::Rotation rot;
+  tf::quaternionMsgToKDL(msg->pose.orientation, rot);
+  rot.GetEulerZYX(state_[joint_names_.size() + 3], state_[joint_names_.size() + 4], 
+      state_[joint_names_.size() + 5]);
+
+  print_command(state_.segment<6>(joint_names_.size()));
 
   if (!controller_started_)
   {
@@ -138,7 +165,7 @@ int main(int argc, char **argv)
   YAML::Node node = YAML::Load(controller_description);
   giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
   controller_ = giskard::generate(spec);
-  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 3);
+  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 6);
   controller_started_ = false;
 
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)

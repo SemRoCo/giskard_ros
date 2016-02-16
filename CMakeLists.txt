@@ -9,7 +9,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   interactive_markers 
-  geometry_msgs)
+  geometry_msgs
+  kdl_conversions)
 
 ## Finding system dependencies which come without cmake
 find_package(PkgConfig)
@@ -18,7 +19,7 @@ find_path(YAML_CPP_INCLUDE_DIRS yaml-cpp/yaml.h PATH_SUFFIXES include)
 find_library(YAML_CPP_LIBRARIES NAMES yaml-cpp)
 
 catkin_package(
-  CATKIN_DEPENDS roscpp roslib giskard tf2_ros tf2_geometry_msgs interactive_markers geometry_msgs
+  CATKIN_DEPENDS roscpp roslib giskard tf2_ros tf2_geometry_msgs interactive_markers geometry_msgs kdl_conversions
   DEPENDS yaml_cpp
 )
 
