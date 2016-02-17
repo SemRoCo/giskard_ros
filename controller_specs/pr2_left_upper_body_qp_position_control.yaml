@@ -95,7 +95,8 @@ scope:
         - {axis-angle: [unit_z, goal_rot_z]}
         - {axis-angle: [unit_y, goal_rot_y]}
         - {axis-angle: [unit_x, goal_rot_x]}
-  - ee_rot_control_law: {double-mul: [-1.0, {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: pr2_fk}}, goal_rot]}}}]}
+  - rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: pr2_fk}}, goal_rot]}}}
+  - ee_rot_control_law: {double-mul: [-0.3, rot_error]}
 
 
 controllable-constraints:
@@ -113,7 +114,7 @@ soft-constraints:
   - soft-constraint: [ee_trans_x_control_law, ee_trans_x_control_law, 10.0, ee_trans_x]
   - soft-constraint: [ee_trans_y_control_law, ee_trans_y_control_law, 10.0, ee_trans_y]
   - soft-constraint: [ee_trans_z_control_law, ee_trans_z_control_law, 10.0, ee_trans_z]
-#  - soft-constraint: [ee_rot_control_law, ee_rot_control_law, 1.0, {vector-norm: {rot-vector: {orientation-of: pr2_fk}}}]
+  - soft-constraint: [ee_rot_control_law, ee_rot_control_law, 10.0, rot_error]
   - soft-constraint: [0.1, 0.1, 1.0, pr2_elbow_y]
 
 hard-constraints:
