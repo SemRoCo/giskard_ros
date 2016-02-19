@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+# Copyright (C) 2015-2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 #
 # This file is part of giskard.
 #
@@ -34,14 +34,27 @@ scope:
   - l_forearm_roll_joint: {input-var: 5}
   - l_wrist_flex_joint: {input-var: 6}
   - l_wrist_roll_joint: {input-var: 7}
+  - r_shoulder_pan_joint: {input-var: 8}
+  - r_shoulder_lift_joint: {input-var: 9}
+  - r_upper_arm_roll_joint: {input-var: 10}
+  - r_elbow_flex_joint: {input-var: 11}
+  - r_forearm_roll_joint: {input-var: 12}
+  - r_wrist_flex_joint: {input-var: 13}
+  - r_wrist_roll_joint: {input-var: 14}
 
   # definition goal input variables
-  - goal_x: {input-var: 8}
-  - goal_y: {input-var: 9}
-  - goal_z: {input-var: 10}
-  - goal_rot_z: {input-var: 11}
-  - goal_rot_y: {input-var: 12}
-  - goal_rot_x: {input-var: 13}
+  - l_goal_x: {input-var: 15}
+  - l_goal_y: {input-var: 16}
+  - l_goal_z: {input-var: 17}
+  - l_goal_rot_z: {input-var: 18}
+  - l_goal_rot_y: {input-var: 19}
+  - l_goal_rot_x: {input-var: 20}
+  - r_goal_x: {input-var: 21}
+  - r_goal_y: {input-var: 22}
+  - r_goal_z: {input-var: 23}
+  - r_goal_rot_z: {input-var: 24}
+  - r_goal_rot_y: {input-var: 25}
+  - r_goal_rot_x: {input-var: 26}
 
 
   # definition of joint transforms
@@ -63,44 +76,85 @@ scope:
       frame: [{axis-angle: [unit_x, l_wrist_roll_joint]}, {vector3: [0, 0, 0]}]
   - l_gripper_offset:
       frame: [{axis-angle: [unit_x, 0]}, {vector3: [0.18, 0, 0]}]
+  - r_shoulder_pan:
+      frame: [{axis-angle: [unit_z, r_shoulder_pan_joint]}, {vector3: [0, -0.188, 0]}]
+  - r_shoulder_lift:
+      frame: [{axis-angle: [unit_y, r_shoulder_lift_joint]}, {vector3: [0.1, 0, 0]}]
+  - r_upper_arm_roll: 
+      frame: [{axis-angle: [unit_x, r_upper_arm_roll_joint]}, {vector3: [0, 0, 0]}]
+  - r_elbow_flex:
+      frame: [{axis-angle: [unit_y, r_elbow_flex_joint]}, {vector3: [0.4, 0, 0]}]
+  - r_forearm_roll:
+      frame: [{axis-angle: [unit_x, r_forearm_roll_joint]}, {vector3: [0, 0, 0]}]
+  - r_wrist_flex:
+      frame: [{axis-angle: [unit_y, r_wrist_flex_joint]}, {vector3: [0.321, 0, 0]}]
+  - r_wrist_roll:
+      frame: [{axis-angle: [unit_x, r_wrist_roll_joint]}, {vector3: [0, 0, 0]}]
+  - r_gripper_offset:
+      frame: [{axis-angle: [unit_x, 0]}, {vector3: [0.18, 0, 0]}]
 
 
-  # definition of elbow FK, goal, and control law
-  - pr2_elbow:
+  # definition of elbow FK
+  - left_elbow:
       frame-mul:
       - torso_lift
       - l_shoulder_pan
       - l_shoulder_lift
       - l_upper_arm_roll
       - l_elbow_flex
-  - pr2_elbow_y: {y-coord: {origin-of: pr2_elbow}}
-
-
-  # defintion of EE FK, goal, and control law
-  - pr2_fk:
+  - right_elbow:
       frame-mul:
-      - pr2_elbow
+      - torso_lift
+      - r_shoulder_pan
+      - r_shoulder_lift
+      - r_upper_arm_roll
+      - r_elbow_flex
+
+  # defintion of EE FK
+  - left_ee:
+      frame-mul:
+      - left_elbow
       - l_forearm_roll
       - l_wrist_flex
       - l_wrist_roll
       - l_gripper_offset
-  - ee_trans_x: {x-coord: {origin-of: pr2_fk}}
-  - ee_trans_y: {y-coord: {origin-of: pr2_fk}}
-  - ee_trans_z: {z-coord: {origin-of: pr2_fk}}
-  - ee_trans_x_control_law: {double-sub: [goal_x, ee_trans_x]}
-  - ee_trans_y_control_law: {double-sub: [goal_y, ee_trans_y]}
-  - ee_trans_z_control_law: {double-sub: [goal_z, ee_trans_z]}
-  - goal_rot: 
+  - right_ee:
+      frame-mul:
+      - right_elbow
+      - r_forearm_roll
+      - r_wrist_flex
+      - r_wrist_roll
+      - r_gripper_offset
+
+  # definition EE goals and control laws
+  # left arm
+  - l_goal_trans: {vector3: [l_goal_x, l_goal_y, l_goal_z]}
+  - l_trans_error: {vector-norm: {vector-sub: [l_goal_trans, {origin-of: left_ee}]}}
+  - l_trans_control: {double-mul: [-1.0, l_trans_error]}
+  - l_goal_rot: 
       rotation-mul: 
-        - {axis-angle: [unit_z, goal_rot_z]}
-        - {axis-angle: [unit_y, goal_rot_y]}
-        - {axis-angle: [unit_x, goal_rot_x]}
-  - rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: pr2_fk}}, goal_rot]}}}
-  - ee_rot_control_law: {double-mul: [-1.0, rot_error]}
+        - {axis-angle: [unit_z, l_goal_rot_z]}
+        - {axis-angle: [unit_y, l_goal_rot_y]}
+        - {axis-angle: [unit_x, l_goal_rot_x]}
+  - l_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: left_ee}}, l_goal_rot]}}}
+  - l_rot_control: {double-mul: [-1.0, l_rot_error]}
+  # right arm
+  - r_goal_trans: {vector3: [r_goal_x, r_goal_y, r_goal_z]}
+  - r_trans_error: {vector-norm: {vector-sub: [r_goal_trans, {origin-of: right_ee}]}}
+  - r_trans_control: {double-mul: [-1.0, r_trans_error]}
+  - r_goal_rot: 
+      rotation-mul: 
+        - {axis-angle: [unit_z, r_goal_rot_z]}
+        - {axis-angle: [unit_y, r_goal_rot_y]}
+        - {axis-angle: [unit_x, r_goal_rot_x]}
+  - r_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: right_ee}}, r_goal_rot]}}}
+  - r_rot_control: {double-mul: [-1.0, r_rot_error]}
 
 
 controllable-constraints:
+  # torso joint
   - controllable-constraint: [-0.05, 0.05, 50.0, 0]
+  # left arm joints
   - controllable-constraint: [-0.3, 0.3, 1.0, 1]
   - controllable-constraint: [-0.3, 0.3, 1.0, 2]
   - controllable-constraint: [-0.3, 0.3, 1.0, 3]
@@ -108,14 +162,22 @@ controllable-constraints:
   - controllable-constraint: [-0.3, 0.3, 1.0, 5]
   - controllable-constraint: [-0.3, 0.3, 1.0, 6]
   - controllable-constraint: [-0.3, 0.3, 1.0, 7]
-
+  # right arm joints
+  - controllable-constraint: [-0.3, 0.3, 1.0, 8]
+  - controllable-constraint: [-0.3, 0.3, 1.0, 9]
+  - controllable-constraint: [-0.3, 0.3, 1.0, 10]
+  - controllable-constraint: [-0.3, 0.3, 1.0, 11]
+  - controllable-constraint: [-0.3, 0.3, 1.0, 12]
+  - controllable-constraint: [-0.3, 0.3, 1.0, 13]
+  - controllable-constraint: [-0.3, 0.3, 1.0, 14]
 
 soft-constraints:
-  - soft-constraint: [ee_trans_x_control_law, ee_trans_x_control_law, 10.0, ee_trans_x]
-  - soft-constraint: [ee_trans_y_control_law, ee_trans_y_control_law, 10.0, ee_trans_y]
-  - soft-constraint: [ee_trans_z_control_law, ee_trans_z_control_law, 10.0, ee_trans_z]
-  - soft-constraint: [ee_rot_control_law, ee_rot_control_law, 1.0, rot_error]
-  - soft-constraint: [0.1, 0.1, 1.0, pr2_elbow_y]
+  - soft-constraint: [l_trans_control, l_trans_control, 10.0, l_trans_error]
+  - soft-constraint: [l_rot_control, l_rot_control, 1.0, l_rot_error]
+  - soft-constraint: [r_trans_control, r_trans_control, 10.0, r_trans_error]
+  - soft-constraint: [r_rot_control, r_rot_control, 1.0, r_rot_error]
+  - soft-constraint: [0.1, 0.1, 1.0, {y-coord: {origin-of: left_elbow}}]
+  - soft-constraint: [-0.1, -0.1, 1.0, {y-coord: {origin-of: right_elbow}}]
 
 hard-constraints:
   - hard-constraint:
@@ -142,3 +204,23 @@ hard-constraints:
       - {double-sub: [-2.0, l_wrist_flex_joint]}
       - {double-sub: [-0.1, l_wrist_flex_joint]}
       - l_wrist_flex_joint
+  - hard-constraint:
+      - {double-sub: [-2.1353, r_shoulder_pan_joint]}
+      - {double-sub: [0.5646, r_shoulder_pan_joint]}
+      - r_shoulder_pan_joint
+  - hard-constraint:
+      - {double-sub: [-0.3536, r_shoulder_lift_joint]}
+      - {double-sub: [1.2963, r_shoulder_lift_joint]}
+      -  r_shoulder_lift_joint
+  - hard-constraint:
+      - {double-sub: [-3.75, r_upper_arm_roll_joint]}
+      - {double-sub: [0.65, r_upper_arm_roll_joint]}
+      - r_upper_arm_roll_joint
+  - hard-constraint:
+      - {double-sub: [-2.1213, r_elbow_flex_joint]}
+      - {double-sub: [-0.15, r_elbow_flex_joint]}
+      - r_elbow_flex_joint
+  - hard-constraint:
+      - {double-sub: [-2.0, r_wrist_flex_joint]}
+      - {double-sub: [-0.1, r_wrist_flex_joint]}
+      - r_wrist_flex_joint

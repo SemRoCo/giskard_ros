@@ -33,7 +33,7 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
-geometry_msgs::PoseStamped goal_;
+geometry_msgs::PoseStamped l_ee_goal_, r_ee_goal_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
@@ -100,7 +100,7 @@ void print_command(const Eigen::VectorXd& command)
     x << ", " << y << ", " << z << ", " << w << ")"); 
 }
 
-void goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void l_ee_goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
   printGoal(*msg);
 
@@ -126,7 +126,43 @@ void goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
     if (controller_.start(state_, nWSR_))
     {
       ROS_INFO("Controller started.");
-      goal_ = *msg;
+      l_ee_goal_ = *msg;
+      controller_started_ = true;
+    }
+    else
+    {
+      ROS_ERROR("Couldn't start controller.");
+    }
+  }
+}
+
+void r_ee_goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
+{
+  printGoal(*msg);
+
+  if(msg->header.frame_id.compare(frame_id_) != 0)
+  {
+    ROS_WARN("frame_id of goal did not match expected frame_id '%s'. Ignoring goal", frame_id_.c_str());
+    return;
+  }
+
+  state_[joint_names_.size() + 6] = msg->pose.position.x;
+  state_[joint_names_.size() + 7] = msg->pose.position.y;
+  state_[joint_names_.size() + 8] = msg->pose.position.z;
+
+  KDL::Rotation rot;
+  tf::quaternionMsgToKDL(msg->pose.orientation, rot);
+  rot.GetEulerZYX(state_[joint_names_.size() + 9], state_[joint_names_.size() + 10], 
+      state_[joint_names_.size() + 11]);
+
+  print_command(state_.segment<6>(joint_names_.size() + 6));
+
+  if (!controller_started_)
+  {
+    if (controller_.start(state_, nWSR_))
+    {
+      ROS_INFO("Controller started.");
+      r_ee_goal_ = *msg;
       controller_started_ = true;
     }
     else
@@ -165,14 +201,15 @@ int main(int argc, char **argv)
   YAML::Node node = YAML::Load(controller_description);
   giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
   controller_ = giskard::generate(spec);
-  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 6);
+  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 2*6);
   controller_started_ = false;
 
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
     vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + *it + "/vel_cmd", 1));
 
   ROS_INFO("Waiting for goal.");
-  ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
+  ros::Subscriber l_ee_goal_sub = nh.subscribe("left_ee_goal", 0, l_ee_goal_callback);
+  ros::Subscriber r_ee_goal_sub = nh.subscribe("right_ee_goal", 0, r_ee_goal_callback);
   js_sub_ = nh.subscribe("joint_states", 0, js_callback);
   ros::spin();
 

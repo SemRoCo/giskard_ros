@@ -37,7 +37,7 @@ class InteractiveMarker
       goal_pub_ = nh_.advertise<geometry_msgs::PoseStamped>("goal_out", 1);
 
       server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>
-          ("interactive_marker", "", false);
+          (nh_.getNamespace(), "", false);
 
       visualization_msgs::InteractiveMarker marker =
           create_6dof_marker(frame_id_, 0.2);
