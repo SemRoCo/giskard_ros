@@ -23,6 +23,8 @@ scope:
   - unit_x: {vector3: [1, 0, 0]}
   - unit_y: {vector3: [0, 1, 0]}
   - unit_z: {vector3: [0, 0, 1]}
+  - identity_rotation: {axis-angle: [unit-x, 0]} 
+  - zero_vec: {vector3: [0, 0, 0]}
 
 
   # definition of joint input variables
