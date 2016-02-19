@@ -55,11 +55,13 @@ public:
         active_ = false;
         moving_ = false;
         controller_started_ = false;
-        isInitialized_ = InitializeController();
+        isInitialized_ = false;
     }
 
     bool isInitialized()
     {
+        if(!isInitialized_)
+            isInitialized_ = InitializeController();
         return isInitialized_;
     }
 
@@ -67,17 +69,7 @@ private:
     bool InitializeController(void)
     {
         std::string controller_description;
-        std::string goal_topic, finished_topic;
-        if (!nh_.getParam("goal_topic", goal_topic))
-        {
-            ROS_ERROR("No goal topic defined.");
-            return false;
-        }
-        if (!nh_.getParam("finished_topic", finished_topic))
-        {
-            ROS_ERROR("No finished topic defined.");
-            return false;
-        }
+
         if (nh_.getParam("controller_description", controller_description))
         {
             if (nh_.getParam("joint_names", joint_names_))
@@ -97,9 +89,9 @@ private:
     
                 enable_service_ = nh_.advertiseService("SetEnable", &ControllerType::doSetEnable, this);
                 ROS_INFO("Waiting for seggoal.");
-                goal_sub_ = nh_.subscribe(goal_topic, 0, &ControllerType::goalCallback, this);
+                goal_sub_ = nh_.subscribe("goal", 0, &ControllerType::goalCallback, this);
                 js_sub_ = nh_.subscribe("joint_states", 0, &ControllerType::jointCallback, this);
-                done_adv_ = nh_.advertise<giskard_msgs::Finished>(finished_topic, 0);
+                done_adv_ = nh_.advertise<giskard_msgs::Finished>("finished", 0);
             }
             else
             {
@@ -217,4 +209,4 @@ private:
 
 }
 
-#endif
+#endiff
