@@ -43,3 +43,6 @@ target_link_libraries(whole_body_interactive_markers ${catkin_LIBRARIES})
 
 add_executable(pose_stamped_transformer src/${PROJECT_NAME}/pose_stamped_transformer.cpp)
 target_link_libraries(pose_stamped_transformer ${catkin_LIBRARIES})
+
+add_executable(goal_transformer src/${PROJECT_NAME}/goal_transformer.cpp)
+target_link_libraries(goal_transformer ${catkin_LIBRARIES})

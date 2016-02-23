@@ -20,11 +20,11 @@
     <remap from="~goal_out" to="/goal_transformer/in" />
   </node>
 
-  <!--node pkg="giskard_examples" type="pose_stamped_transformer" 
-        name="l_ee_pose_transformer" output="screen">
+  <node pkg="giskard_examples" type="goal_transformer" 
+        name="goal_transformer" output="screen">
     <param name="frame_id" value="base_link" />
-    <remap from="~out" to="/pr2_controller/left_ee_goal" />
-  </node-->
+    <remap from="~out" to="/pr2_controller/goal" />
+  </node>
 
   <!--node pkg="giskard_examples" type="pose_stamped_transformer" 
          name="r_ee_pose_transformer" output="screen">
