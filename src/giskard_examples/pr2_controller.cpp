@@ -41,9 +41,6 @@ std::string frame_id_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
-  if (!controller_started_)
-    return;
-
   // TODO: turn this into a map!
   // is there a more efficient way?
   for (unsigned int i=0; i < joint_names_.size(); i++)
@@ -56,6 +53,9 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       }
     }
   }
+
+  if (!controller_started_)
+    return;
 
   if (controller_.update(state_, nWSR_))
   {
@@ -84,21 +84,14 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 //      goal.pose.orientation.w);
 //}
 //
-//void print_command(const Eigen::VectorXd& command)
-//{
-//  std::string cmd_str = " ";
-//  for(size_t i=0; i<command.rows(); ++i)
-//    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
-//  ROS_INFO("Command: (%s)", cmd_str.c_str());
-//
-//  using namespace KDL;
-//  Rotation r(Rotation::EulerZYX(command[3], command[4], command[5]));
-//  double x, y, z, w;
-//  r.GetQuaternion(x, y, z, w);
-//  ROS_INFO_STREAM("Command back through KDL: \nposition=(" << command[0] << 
-//     ", " << command[1] << ", " << command[2] << "), orientation=(" <<
-//    x << ", " << y << ", " << z << ", " << w << ")"); 
-//}
+
+void print_eigen(const Eigen::VectorXd& command)
+{
+  std::string cmd_str = " ";
+  for(size_t i=0; i<command.rows(); ++i)
+    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
+  ROS_INFO("Command: (%s)", cmd_str.c_str());
+}
 
 void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
 {
@@ -147,6 +140,7 @@ void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
     else
     {
       ROS_ERROR("Couldn't start controller.");
+      print_eigen(state_);
     }
   }
 }
@@ -184,7 +178,7 @@ int main(int argc, char **argv)
   controller_started_ = false;
 
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
-    vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + *it + "_velocity_controller/command", 1));
+    vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + it->substr(0, it->size() - 6) + "_velocity_controller/command", 1));
 
   ROS_INFO("Waiting for goal.");
   ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
