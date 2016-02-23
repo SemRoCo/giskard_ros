@@ -38,8 +38,8 @@ add_executable(pr2_controller src/${PROJECT_NAME}/pr2_controller.cpp)
 target_link_libraries(pr2_controller
   ${catkin_LIBRARIES} yaml-cpp)
 
-add_executable(interactive_marker src/${PROJECT_NAME}/interactive_marker.cpp)
-target_link_libraries(interactive_marker ${catkin_LIBRARIES})
+add_executable(whole_body_interactive_markers src/${PROJECT_NAME}/interactive_marker.cpp)
+target_link_libraries(whole_body_interactive_markers ${catkin_LIBRARIES})
 
 add_executable(pose_stamped_transformer src/${PROJECT_NAME}/pose_stamped_transformer.cpp)
 target_link_libraries(pose_stamped_transformer ${catkin_LIBRARIES})

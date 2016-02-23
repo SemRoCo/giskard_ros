@@ -2,37 +2,34 @@
 
   <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server" />
 
-  <node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
+  <!--node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
     <rosparam param="joint_names"
       file="$(find giskard_examples)/config/pr2_left_upper_body.yaml" />
     <param name="controller_description" 
       textfile="$(find giskard_examples)/controller_specs/pr2_left_upper_body_qp_position_control.yaml" />
     <param name="frame_id" value="base_link" />
     <remap from="~joint_states" to="/joint_states" />
+  </node-->
+
+  <node pkg="giskard_examples" type="whole_body_interactive_markers" 
+        name="whole_body_interactive_markers" output="screen">
+    <param name="left_ee_frame_id" value="l_gripper_tool_frame" />
+    <param name="left_ee_name" value="LEFT GRIPPER" />
+    <param name="right_ee_frame_id" value="r_gripper_tool_frame" />
+    <param name="right_ee_name" value="RIGHT GRIPPER" />
+    <remap from="~goal_out" to="/goal_transformer/in" />
   </node>
 
-  <node pkg="giskard_examples" type="interactive_marker" name="l_ee_interactive_marker" 
-        output="screen">
-    <param name="frame_id" value="l_gripper_tool_frame" />
-    <remap from="~goal_out" to="/l_ee_pose_transformer/in" />
-  </node>
-
-  <node pkg="giskard_examples" type="interactive_marker" name="r_ee_interactive_marker" 
-        output="screen">
-    <param name="frame_id" value="r_gripper_tool_frame" />
-    <remap from="~goal_out" to="/r_ee_pose_transformer/in" />
-  </node>
-
-  <node pkg="giskard_examples" type="pose_stamped_transformer" 
+  <!--node pkg="giskard_examples" type="pose_stamped_transformer" 
         name="l_ee_pose_transformer" output="screen">
     <param name="frame_id" value="base_link" />
     <remap from="~out" to="/pr2_controller/left_ee_goal" />
-  </node>
+  </node-->
 
-   <node pkg="giskard_examples" type="pose_stamped_transformer" 
+  <!--node pkg="giskard_examples" type="pose_stamped_transformer" 
          name="r_ee_pose_transformer" output="screen">
     <param name="frame_id" value="base_link" />
     <remap from="~out" to="/pr2_controller/right_ee_goal" />
-  </node>
+  </node-->
  
 </launch>
