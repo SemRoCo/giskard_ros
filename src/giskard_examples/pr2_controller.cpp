@@ -7,15 +7,16 @@
 *
 * giskard_examples is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2
-* of the License, or (at your option) any later version.
+* as published by the Free Software Foundation; either version 2 
+* of the License, or (at your option) any later version.  
 *
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
 *
-* You should have received a copy of the GNU General Public License * along with this program; if not, write to the Free Software
+* You should have received a copy of the GNU General Public License 
+* along with this program; if not, write to the Free Software
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
@@ -183,7 +184,7 @@ int main(int argc, char **argv)
   controller_started_ = false;
 
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
-    vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + *it + "/vel_cmd", 1));
+    vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + *it + "_velocity_controller/command", 1));
 
   ROS_INFO("Waiting for goal.");
   ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
