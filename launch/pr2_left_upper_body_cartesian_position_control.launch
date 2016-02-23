@@ -2,14 +2,14 @@
 
   <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server" />
 
-  <!--node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
+  <node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
     <rosparam param="joint_names"
       file="$(find giskard_examples)/config/pr2_left_upper_body.yaml" />
     <param name="controller_description" 
       textfile="$(find giskard_examples)/controller_specs/pr2_left_upper_body_qp_position_control.yaml" />
     <param name="frame_id" value="base_link" />
     <remap from="~joint_states" to="/joint_states" />
-  </node-->
+  </node>
 
   <node pkg="giskard_examples" type="whole_body_interactive_markers" 
         name="whole_body_interactive_markers" output="screen">
@@ -26,10 +26,4 @@
     <remap from="~out" to="/pr2_controller/goal" />
   </node>
 
-  <!--node pkg="giskard_examples" type="pose_stamped_transformer" 
-         name="r_ee_pose_transformer" output="screen">
-    <param name="frame_id" value="base_link" />
-    <remap from="~out" to="/pr2_controller/right_ee_goal" />
-  </node-->
- 
 </launch>

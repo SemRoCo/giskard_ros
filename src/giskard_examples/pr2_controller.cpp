@@ -23,7 +23,7 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <giskard_msgs/WholeBodyPositionGoal.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
 #include <kdl_conversions/kdl_msg.h>
@@ -33,7 +33,6 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
-geometry_msgs::PoseStamped l_ee_goal_, r_ee_goal_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
@@ -75,94 +74,73 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   }
 }
 
-void printGoal(const geometry_msgs::PoseStamped& goal)
+//void printGoal(const geometry_msgs::PoseStamped& goal)
+//{
+//  ROS_INFO("New goal: frame_id=%s\nposition=(%f, %f, %f), orientation=(%f, %f, %f, %f)", 
+//      goal.header.frame_id.c_str(), 
+//      goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
+//      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z,
+//      goal.pose.orientation.w);
+//}
+//
+//void print_command(const Eigen::VectorXd& command)
+//{
+//  std::string cmd_str = " ";
+//  for(size_t i=0; i<command.rows(); ++i)
+//    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
+//  ROS_INFO("Command: (%s)", cmd_str.c_str());
+//
+//  using namespace KDL;
+//  Rotation r(Rotation::EulerZYX(command[3], command[4], command[5]));
+//  double x, y, z, w;
+//  r.GetQuaternion(x, y, z, w);
+//  ROS_INFO_STREAM("Command back through KDL: \nposition=(" << command[0] << 
+//     ", " << command[1] << ", " << command[2] << "), orientation=(" <<
+//    x << ", " << y << ", " << z << ", " << w << ")"); 
+//}
+
+void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
 {
-  ROS_INFO("New goal: frame_id=%s\nposition=(%f, %f, %f), orientation=(%f, %f, %f, %f)", 
-      goal.header.frame_id.c_str(), 
-      goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
-      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z,
-      goal.pose.orientation.w);
-}
+//  printGoal(*msg);
 
-void print_command(const Eigen::VectorXd& command)
-{
-  std::string cmd_str = " ";
-  for(size_t i=0; i<command.rows(); ++i)
-    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
-  ROS_INFO("Command: (%s)", cmd_str.c_str());
-
-  using namespace KDL;
-  Rotation r(Rotation::EulerZYX(command[3], command[4], command[5]));
-  double x, y, z, w;
-  r.GetQuaternion(x, y, z, w);
-  ROS_INFO_STREAM("Command back through KDL: \nposition=(" << command[0] << 
-     ", " << command[1] << ", " << command[2] << "), orientation=(" <<
-    x << ", " << y << ", " << z << ", " << w << ")"); 
-}
-
-void l_ee_goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-  printGoal(*msg);
-
-  if(msg->header.frame_id.compare(frame_id_) != 0)
+  if(msg->left_ee_goal.header.frame_id.compare(frame_id_) != 0)
   {
-    ROS_WARN("frame_id of goal did not match expected frame_id '%s'. Ignoring goal", frame_id_.c_str());
+    ROS_WARN("frame_id of left EE goal did not match expected '%s'. Ignoring goal", 
+        frame_id_.c_str());
     return;
   }
 
-  state_[joint_names_.size()] = msg->pose.position.x;
-  state_[joint_names_.size() + 1] = msg->pose.position.y;
-  state_[joint_names_.size() + 2] = msg->pose.position.z;
+  if(msg->right_ee_goal.header.frame_id.compare(frame_id_) != 0)
+  {
+    ROS_WARN("frame_id of right EE goal did not match expected '%s'. Ignoring goal", 
+        frame_id_.c_str());
+    return;
+  }
+
+  // copying over left goal
+  state_[joint_names_.size() + 0] = msg->left_ee_goal.pose.position.x;
+  state_[joint_names_.size() + 1] = msg->left_ee_goal.pose.position.y;
+  state_[joint_names_.size() + 2] = msg->left_ee_goal.pose.position.z;
 
   KDL::Rotation rot;
-  tf::quaternionMsgToKDL(msg->pose.orientation, rot);
+  tf::quaternionMsgToKDL(msg->left_ee_goal.pose.orientation, rot);
   rot.GetEulerZYX(state_[joint_names_.size() + 3], state_[joint_names_.size() + 4], 
       state_[joint_names_.size() + 5]);
 
-  print_command(state_.segment<6>(joint_names_.size()));
+  // copying over right goal
+  state_[joint_names_.size() + 6] = msg->right_ee_goal.pose.position.x;
+  state_[joint_names_.size() + 7] = msg->right_ee_goal.pose.position.y;
+  state_[joint_names_.size() + 8] = msg->right_ee_goal.pose.position.z;
 
-  if (!controller_started_)
-  {
-    if (controller_.start(state_, nWSR_))
-    {
-      ROS_INFO("Controller started.");
-      l_ee_goal_ = *msg;
-      controller_started_ = true;
-    }
-    else
-    {
-      ROS_ERROR("Couldn't start controller.");
-    }
-  }
-}
-
-void r_ee_goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-  printGoal(*msg);
-
-  if(msg->header.frame_id.compare(frame_id_) != 0)
-  {
-    ROS_WARN("frame_id of goal did not match expected frame_id '%s'. Ignoring goal", frame_id_.c_str());
-    return;
-  }
-
-  state_[joint_names_.size() + 6] = msg->pose.position.x;
-  state_[joint_names_.size() + 7] = msg->pose.position.y;
-  state_[joint_names_.size() + 8] = msg->pose.position.z;
-
-  KDL::Rotation rot;
-  tf::quaternionMsgToKDL(msg->pose.orientation, rot);
+  tf::quaternionMsgToKDL(msg->right_ee_goal.pose.orientation, rot);
   rot.GetEulerZYX(state_[joint_names_.size() + 9], state_[joint_names_.size() + 10], 
       state_[joint_names_.size() + 11]);
 
-  print_command(state_.segment<6>(joint_names_.size() + 6));
-
   if (!controller_started_)
   {
     if (controller_.start(state_, nWSR_))
     {
       ROS_INFO("Controller started.");
-      r_ee_goal_ = *msg;
       controller_started_ = true;
     }
     else
@@ -208,8 +186,7 @@ int main(int argc, char **argv)
     vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + *it + "/vel_cmd", 1));
 
   ROS_INFO("Waiting for goal.");
-  ros::Subscriber l_ee_goal_sub = nh.subscribe("left_ee_goal", 0, l_ee_goal_callback);
-  ros::Subscriber r_ee_goal_sub = nh.subscribe("right_ee_goal", 0, r_ee_goal_callback);
+  ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
   js_sub_ = nh.subscribe("joint_states", 0, js_callback);
   ros::spin();
 
