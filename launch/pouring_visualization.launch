@@ -6,7 +6,7 @@
         output="screen" args="0.55 0 0 0 0 0 $(arg map_frame) table_frame 100" />
 
   <node pkg="tf" type="static_transform_publisher" name="maker_transform_publisher"
-        output="screen" args="-0.15 0 0.72 3.14 0 0 table_frame maker_frame 100" />
+        output="screen" args="-0.15 0 0.72 0 0 0 table_frame maker_frame 100" />
 
   <node pkg="tf" type="static_transform_publisher" name="cup_bottom_transform_publisher"
         output="screen" args="0 0 -0.08 0 0 0 $(arg grasp_frame) cup_bottom_frame 100" />

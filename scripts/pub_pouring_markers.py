@@ -64,7 +64,7 @@ def table_marker_publisher():
     if not rospy.is_shutdown():
         msg = MarkerArray()
         msg.markers = make_table_markers()
-        msg.markers.append(make_mesh_marker("maker_frame", len(msg.markers) + 1, Pose(position=Point(0, 0, 0.04)), Vector3(1, 1, 1), opaque(), "package://giskard_examples/models/electrical-devices/pancake-maker.dae"))
+        msg.markers.append(make_mesh_marker("maker_frame", len(msg.markers) + 1, Pose(Point(z=0.04), Quaternion(z=1.0)), Vector3(1, 1, 1), opaque(), "package://giskard_examples/models/electrical-devices/pancake-maker.dae"))
         msg.markers.append(make_cylinder_marker("cup_bottom_frame", len(msg.markers) +1, Pose(position=Point(z=0.07)), Vector3(0.085, 0.085, 0.14), transparent_red(), True))
         pub.publish(msg)
 
