@@ -150,34 +150,42 @@ scope:
   - r_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: right_ee}}, r_goal_rot]}}}
   - r_rot_control: {double-mul: [-1.0, r_rot_error]}
 
+  # some constants
+  - weight_arm_joints: 1.0
+  - weight_pos_control: 10.0
+  - weight_rot_control: 1.0
+  - weight_elbow_control: 1.0
+  - neg_vel_limit_arm_joints: -0.5
+  - pos_vel_limit_arm_joints: 0.5
+
 
 controllable-constraints:
   # torso joint
   - controllable-constraint: [-0.05, 0.05, 50.0, 0]
   # left arm joints
-  - controllable-constraint: [-0.3, 0.3, 1.0, 1]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 2]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 3]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 4]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 5]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 6]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 7]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 3]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 4]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 5]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 6]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 7]
   # right arm joints
-  - controllable-constraint: [-0.3, 0.3, 1.0, 8]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 9]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 10]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 11]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 12]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 13]
-  - controllable-constraint: [-0.3, 0.3, 1.0, 14]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 8]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 9]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 10]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 11]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 12]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 13]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 14]
 
 soft-constraints:
-  - soft-constraint: [l_trans_control, l_trans_control, 10.0, l_trans_error]
-  - soft-constraint: [l_rot_control, l_rot_control, 1.0, l_rot_error]
-  - soft-constraint: [r_trans_control, r_trans_control, 10.0, r_trans_error]
-  - soft-constraint: [r_rot_control, r_rot_control, 1.0, r_rot_error]
-  - soft-constraint: [0.1, 0.1, 1.0, {y-coord: {origin-of: left_elbow}}]
-  - soft-constraint: [-0.1, -0.1, 1.0, {y-coord: {origin-of: right_elbow}}]
+  - soft-constraint: [l_trans_control, l_trans_control, weight_pos_control, l_trans_error]
+  - soft-constraint: [l_rot_control, l_rot_control, weight_rot_control, l_rot_error]
+  - soft-constraint: [0.1, 0.1, weight_elbow_control, {y-coord: {origin-of: left_elbow}}]
+  - soft-constraint: [r_trans_control, r_trans_control, weight_pos_control, r_trans_error]
+  - soft-constraint: [r_rot_control, r_rot_control, weight_rot_control, r_rot_error]
+  - soft-constraint: [-0.1, -0.1, weight_elbow_control, {y-coord: {origin-of: right_elbow}}]
 
 hard-constraints:
   - hard-constraint:
