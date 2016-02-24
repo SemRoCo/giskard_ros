@@ -1,7 +1,5 @@
 <launch>
 
-  <node pkg="tf2_ros" type="buffer_server" name="tf2_buffer_server" />
-
   <node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
     <rosparam param="joint_names"
       file="$(find giskard_examples)/config/pr2_left_upper_body.yaml" />
