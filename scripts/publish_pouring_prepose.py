@@ -14,7 +14,7 @@ def publish_cup_prepose(cup_position, maker_position, maker_frame_id):
         msg.header.frame_id = maker_frame_id
         msg.pose.position.x = cup_position[0] - maker_position[0]
         msg.pose.position.y = cup_position[1] - maker_position[1]
-        msg.pose.position.z = cup_position[2] - maker_position[2]
+#        msg.pose.position.z = cup_position[2] - maker_position[2]
         msg.pose.orientation.w = 1.0
         pub.publish(msg)
 
