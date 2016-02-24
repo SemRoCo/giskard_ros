@@ -1,0 +1,20 @@
+<launch>
+  <node pkg="giskard_examples" type="pose_stamped_transformer" name="prepose_transformer"
+        output="screen" >
+    <param name="frame_id" value="base_link" />
+    <remap from="~in" to="publish_cup_prepose/goal" />
+    <remap from="~out" to="prepose_controller/goal" />
+  </node>
+
+  <node pkg="giskard_examples" type="single_pose_controller" name="prepose_controller"
+        output="screen" >
+    <rosparam param="joint_names"
+      file="$(find giskard_examples)/config/pr2_left_upper_body.yaml" />
+    <param name="controller_description" 
+      textfile="$(find giskard_examples)/controller_specs/pr2_pouring_prepose_controller.yaml" />
+    <param name="frame_id" value="base_link" />
+    <remap from="~joint_states" to="/joint_states" />
+  </node>
+
+  <include file="$(find giskard_examples)/launch/pouring_visualization.launch" />
+</launch>
