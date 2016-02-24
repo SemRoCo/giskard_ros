@@ -41,7 +41,7 @@ class PoseStampedTransformer
       try
       {
         geometry_msgs::PoseStamped out_msg;
-        buffer_->transform(*in_msg, out_msg, frame_id_);
+        buffer_->transform(*in_msg, out_msg, frame_id_, ros::Duration(0.1));
         pub_.publish(out_msg);
       }
       catch(tf2::TransformException& ex)
