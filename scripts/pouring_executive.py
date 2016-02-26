@@ -3,22 +3,19 @@
 import yaml
 import rospy
 import rospkg
-from std_msgs.msg import String, Empty
-from sensor_msgs.msg import JointState
+from std_msgs.msg import String, Empty, Float64MultiArray
 
 buffer = []
 max_buffer = 10
-threshold = 0.1
+threshold = 0.05
 joint_names = ['torso_lift_joint', 'r_shoulder_pan_joint', 'r_shoulder_lift_joint', 'r_upper_arm_roll_joint', 'r_elbow_flex_joint', 'r_forearm_roll_joint', 'r_wrist_flex_joint', 'r_wrist_roll_joint']
 flag = False
 
 def callback(data):
     # calculate next value
-    indices = [i for i, joint_name in enumerate(data.name) if joint_names.count(joint_name) > 0]
-
     val = True
-    for index in indices:
-        if abs(data.velocity[index]) > abs(threshold):
+    for vel_cmd in data.data:
+        if abs(vel_cmd) > abs(threshold):
             val = False
             break
 
@@ -43,7 +40,7 @@ def callback(data):
 
 
 def prepare_decider(thresh, buffer_size):
-    rospy.loginfo("threshold=%d, buffer-size=%d", thresh, buffer_size)
+    rospy.loginfo("threshold=%f, buffer-size=%d", thresh, buffer_size)
     global buffer
     buffer = []
     global flag
@@ -74,10 +71,10 @@ def pouring_executive(path, controller_specs):
     rospy.init_node('pouring_executive', anonymous=False)
     pub = rospy.Publisher('/yaml_controller/goal', String, queue_size=1)
     empty_pub = rospy.Publisher('/pouring_executive/finished', Empty, queue_size=1)
-    rospy.Subscriber("joint_states", JointState, callback)
+    rospy.Subscriber("/yaml_controller/cmd", Float64MultiArray, callback)
     rospy.sleep(.3)
     for controller_spec in controller_specs:
-        trigger_motion(pub, path + controller_spec["controller-file"], 0.1, controller_spec["max-twist-buffer-size"] / 10)
+        trigger_motion(pub, path + controller_spec["controller-file"], 0.05, controller_spec["max-twist-buffer-size"] / 10)
         wait_for_flag()
     empty_pub.publish(Empty())
     rospy.loginfo("DONE")
@@ -91,7 +88,7 @@ if __name__ == '__main__':
         package_path = r.get_path('giskard_examples')
         experiment_path = "/experiments/" + experiment_num + "/"
         path = package_path + experiment_path
-        with open(path + "experiment.yaml", 'r') as stream:
+        with open(path + "PR2_experiment.yaml", 'r') as stream:
             try:
                 controller_specs = yaml.load(stream)["controller-specs"]
                 try:

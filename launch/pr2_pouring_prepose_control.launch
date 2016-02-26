@@ -16,5 +16,5 @@
     <remap from="~joint_states" to="/joint_states" />
   </node>
 
-  <include file="$(find giskard_examples)/launch/pouring_visualization.launch" />
+  <!--include file="$(find giskard_examples)/launch/pouring_visualization.launch" /-->
 </launch>

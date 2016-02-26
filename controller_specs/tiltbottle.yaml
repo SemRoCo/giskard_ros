@@ -42,15 +42,6 @@ scope:
   - r_wrist_flex_joint: {input-var: 13}
   - r_wrist_roll_joint: {input-var: 14}
 
-  # definition goal input variables
-  - mug_goal_x: {input-var: 15}
-  - mug_goal_y: {input-var: 16}
-  - mug_goal_z: {input-var: 17}
-  # ignored!
-  - mug_rot_x: {input-var: 18}
-  - mug_rot_y: {input-var: 19}
-  - mug_rot_z: {input-var: 20}
-
   # definition of joint transforms
   - torso_lift:
       frame: [{axis-angle: [unit_x, 0]}, {vector3: [-0.05, 0, {double-add: [0.739675, torso_lift_joint]}]}]
@@ -90,29 +81,28 @@ scope:
       - r_wrist_roll
       - r_gripper_offset
 
+  # definition of maker top
+  - maker_frame:
+      frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [0.4, 0.0, 0.798]}]
+  - maker_top: {origin-of: maker_frame}
   # definition of points on mug
   - mug_bottom: {transform-vector: [right_ee, {vector3: [0, 0, -0.08]}]}
   - mug_top: {transform-vector: [right_ee, {vector3: [0, 0, 0.06]}]}
 
-  # definition mug goal and control law
-  - mug_goal: {vector3: [mug_goal_x, mug_goal_y, mug_goal_z]}
-  - mug_error: {vector-norm: {vector-sub: [mug_goal, mug_bottom]}}
-  - mug_control: {double-mul: [-1.0, mug_error]}
-
-  - mug_upright: {double-sub: [{z-coord: mug_top}, {z-coord: mug_bottom}]}
-  - mug_upright_error: {double-sub: [0.14, mug_upright]}
-  - mug_upright_control: {double-mul: [-1.0, mug_upright_error]}
-
-  - mug_upright_x: {double-sub: [{x-coord: mug_top}, {x-coord: mug_bottom}]}
-  - mug_upright_error_x: {double-sub: [0.0, mug_upright]}
-  - mug_upright_control_x: {double-mul: [-1.0, mug_upright_error]}
-
-  - mug_upright_y: {double-sub: [{y-coord: mug_top}, {y-coord: mug_bottom}]}
-  - mug_upright_error_y: {double-sub: [0.0, mug_upright]}
-  - mug_upright_control_y: {double-mul: [-1.0, mug_upright_error]}
+  # definition of feature points
+  - mug_top_to_maker_top:
+      cached-vector: {vector-sub: [mug_top, maker_top]}
+  - mug_top_to_mug_bottom:
+      cached-vector: {vector-sub: [mug_top, mug_bottom]}
+  - mug_top_behind_maker: {x-coord: mug_top_to_maker_top}
+  - mug_top_left_maker: {y-coord: mug_top_to_maker_top}
+  - mug_top_above_maker: {z-coord: mug_top_to_maker_top}
+  - mug_behind_itself: {x-coord: mug_top_to_mug_bottom}
+  - mug_left_itself: {y-coord: mug_top_to_mug_bottom}
+  - mug_above_itself: {z-coord: mug_top_to_mug_bottom}
 
   # some constants
-  - weight_arm_joints: 0.01
+  - weight_arm_joints: 0.001
   - weight_pos_control: 1.0
   - weight_elbow_control: 0.1
   - neg_vel_limit_arm_joints: -0.5
@@ -140,13 +130,16 @@ controllable-constraints:
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 14]
 
 soft-constraints:
-  - soft-constraint: [mug_control, mug_control, weight_pos_control, mug_error]
-  - soft-constraint: [-0.03, 0.0, weight_elbow_control, {y-coord: {origin-of: right_elbow}}]
-  - soft-constraint: [0.0, 0.03, weight_elbow_control, {z-coord: {origin-of: right_elbow}}]
-  - soft-constraint: [mug_upright_control_x, mug_upright_control_x, weight_pos_control, mug_upright_error_x]
-  - soft-constraint: [mug_upright_control_y, mug_upright_control_y, weight_pos_control, mug_upright_error_y]
-  - soft-constraint: [mug_upright_control, mug_upright_control, weight_pos_control, mug_upright_error]
-  - soft-constraint: [{double-sub: [0.2, torso_lift_joint]}, {double-sub: [0.3, torso_lift_joint]} , weight_pos_control, torso_lift_joint]
+  - soft-constraint: [-0.03, -0.01, weight_elbow_control, {y-coord: {origin-of: right_elbow}}]
+  #  - soft-constraint: [0.0, 0.03, weight_elbow_control, {z-coord: {origin-of: right_elbow}}]
+  - soft-constraint: [{double-sub: [0.18, torso_lift_joint]}, {double-sub: [0.3, torso_lift_joint]} , weight_pos_control, torso_lift_joint]
+  # TODO(YUEN): this where you fill the data from your model
+  - soft-constraint: [{double-sub: [-0.036, mug_top_behind_maker]}, {double-sub: [0.0051, mug_top_behind_maker]}, weight_pos_control, mug_top_behind_maker]
+  - soft-constraint: [{double-sub: [-0.038, mug_top_left_maker]}, {double-sub: [-0.011, mug_top_left_maker]}, weight_pos_control, mug_top_left_maker]
+  - soft-constraint: [{double-sub: [0.1767, mug_top_above_maker]}, {double-sub: [0.2181, mug_top_above_maker]}, weight_pos_control, mug_top_above_maker]
+  - soft-constraint: [{double-sub: [-0.0768, mug_behind_itself]}, {double-sub: [-0.0354, mug_behind_itself]}, weight_pos_control, mug_behind_itself]
+  - soft-constraint: [{double-sub: [0.0698, mug_left_itself]}, {double-sub: [0.0981, mug_left_itself]}, weight_pos_control, mug_left_itself]
+  - soft-constraint: [{double-sub: [-0.0398, mug_above_itself]}, {double-sub: [-0.0302, mug_above_itself]}, weight_pos_control, mug_above_itself]
 
 hard-constraints:
   - hard-constraint:

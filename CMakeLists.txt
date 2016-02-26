@@ -40,6 +40,9 @@ target_link_libraries(pr2_controller ${catkin_LIBRARIES} yaml-cpp)
 add_executable(single_pose_controller src/${PROJECT_NAME}/single_pose_controller.cpp)
 target_link_libraries(single_pose_controller ${catkin_LIBRARIES} yaml-cpp)
 
+add_executable(yaml_controller src/${PROJECT_NAME}/yaml_controller.cpp)
+target_link_libraries(yaml_controller ${catkin_LIBRARIES} yaml-cpp)
+
 add_executable(whole_body_interactive_markers src/${PROJECT_NAME}/interactive_marker.cpp)
 target_link_libraries(whole_body_interactive_markers ${catkin_LIBRARIES})
 
