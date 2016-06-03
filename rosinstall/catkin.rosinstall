@@ -1,0 +1,20 @@
+- git: 
+    local-name: qpoases
+    uri: https://github.com/SemRoCo/qpOASES.git
+    version: master
+- git: 
+    local-name: expressiongraph
+    uri: https://github.com/SemRoCo/expressiongraph.git
+    version: catkin-lib-export-bug-fix
+- git: 
+    local-name: giskard
+    uri: https://github.com/SemRoCo/giskard.git
+    version: master
+- git: 
+    local-name: giskard_msgs
+    uri: https://github.com/SemRoCo/giskard_msgs.git
+    version: master
+- git: 
+    local-name: giskard_examples
+    uri: https://github.com/SemRoCo/giskard_examples.git
+    version: master
