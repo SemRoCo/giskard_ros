@@ -26,4 +26,4 @@ roslaunch giskard_examples pr2_interactive_markers.launch
 ```
 
 Use the interactive markers to give commands to controller controlling the both arms and the torso.
-![rviz view](https://raw.githubusercontent.com/airballking/giskard_examples/master/docs/pr2_interactive_markers.png)
+![rviz view](https://raw.githubusercontent.com/SemRoCo/giskard_examples/master/docs/pr2_interactive_markers.png)
