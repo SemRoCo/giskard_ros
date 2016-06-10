@@ -25,9 +25,10 @@ For a trial using ```iai_naive_kinematics_sim```, run this command:
 roslaunch giskard_examples pr2_interactive_markers.launch
 ```
 
-For a trial in ```gazebo```, do these commands (TO BE VERIFIED):
+For a trial in ```gazebo```, do these commands:
 ```
 roslaunch pr2_gazebo pr2_empty_world.launch
+rosrun tf2_ros buffer_server
 roslaunch giskard_examples pr2_interactive_markers.launch sim:=false
 ```
 
