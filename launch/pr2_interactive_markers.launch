@@ -1,5 +1,5 @@
 <launch>
-  <arg name="sim" value="true" />
+  <arg name="sim" default="true" />
 
   <include file="$(find giskard_examples)/launch/pr2.launch" >
     <arg name="sim" value="$(arg sim)" />
