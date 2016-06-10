@@ -20,9 +20,15 @@ source ~/giskard_ws/devel/setup.bash       # source new overlay
 ## Examples
 ### PR2 + Interactive Markers + Upper-Body Cartesian Position Control
 
-For a trial in simulation, start RVIZ, the PR2, and the controllers with this command:
+For a trial using ```iai_naive_kinematics_sim```, run this command:
 ```
 roslaunch giskard_examples pr2_interactive_markers.launch
+```
+
+For a trial in ```gazebo```, do these commands (TO BE VERIFIED):
+```
+roslaunch pr2_gazebo pr2_empty_world.launch
+roslaunch giskard_examples pr2_interactive_markers.launch sim:=false
 ```
 
 Use the interactive markers to give commands to controller controlling the both arms and the torso.
