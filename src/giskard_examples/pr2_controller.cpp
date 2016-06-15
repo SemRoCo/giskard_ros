@@ -54,6 +54,7 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
     }
   }
 
+  // TODO: add watchdog
   if (!controller_started_)
     return;
 
@@ -70,33 +71,23 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   else
   {
     ROS_WARN("Update failed.");
-    // TODO: remove or change to ros_debug
-    std::cout << "State " << state_ << std::endl;
+    ROS_DEBUG_STREAM("Update failed. State: " << state_);
   }
-}
 
-//void printGoal(const geometry_msgs::PoseStamped& goal)
-//{
-//  ROS_INFO("New goal: frame_id=%s\nposition=(%f, %f, %f), orientation=(%f, %f, %f, %f)", 
-//      goal.header.frame_id.c_str(), 
-//      goal.pose.position.x, goal.pose.position.y, goal.pose.position.z,
-//      goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z,
-//      goal.pose.orientation.w);
-//}
-//
+  // TODO: publish diagnostics
+  // TODO: publish feedback
+}
 
 void print_eigen(const Eigen::VectorXd& command)
 {
   std::string cmd_str = " ";
   for(size_t i=0; i<command.rows(); ++i)
     cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
-  ROS_INFO("Command: (%s)", cmd_str.c_str());
+  ROS_DEBUG("Command: (%s)", cmd_str.c_str());
 }
 
 void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
 {
-//  printGoal(*msg);
-
   if(msg->left_ee_goal.header.frame_id.compare(frame_id_) != 0)
   {
     ROS_WARN("frame_id of left EE goal did not match expected '%s'. Ignoring goal", 
@@ -134,7 +125,7 @@ void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
   {
     if (controller_.start(state_, nWSR_))
     {
-      ROS_INFO("Controller started.");
+      ROS_DEBUG("Controller started.");
       controller_started_ = true;
     }
     else
@@ -180,7 +171,7 @@ int main(int argc, char **argv)
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
     vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + it->substr(0, it->size() - 6) + "_velocity_controller/command", 1));
 
-  ROS_INFO("Waiting for goal.");
+  ROS_DEBUG("Waiting for goal.");
   ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
   js_sub_ = nh.subscribe("joint_states", 0, js_callback);
   ros::spin();
