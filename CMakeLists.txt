@@ -37,6 +37,9 @@ include_directories(
 add_executable(pr2_controller src/${PROJECT_NAME}/pr2_controller.cpp)
 target_link_libraries(pr2_controller ${catkin_LIBRARIES} yaml-cpp)
 
+add_executable(pr2_controller_action_server src/${PROJECT_NAME}/pr2_controller_action_server.cpp)
+target_link_libraries(pr2_controller_action_server ${catkin_LIBRARIES} yaml-cpp)
+
 add_executable(single_pose_controller src/${PROJECT_NAME}/single_pose_controller.cpp)
 target_link_libraries(single_pose_controller ${catkin_LIBRARIES} yaml-cpp)
 
