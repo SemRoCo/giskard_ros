@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <tf2_ros/buffer_client.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <giskard_msgs/WholeBodyPositionGoal.h>
+#include <giskard_msgs/WholeBodyCommand.h>
 #include <memory>
 
 class GoalTransformer
@@ -24,7 +24,7 @@ class GoalTransformer
         return false;
       }
 
-      pub_ = nh_.advertise<giskard_msgs::WholeBodyPositionGoal>("out", 1);
+      pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("out", 1);
       sub_ = nh_.subscribe("in", 1000, &GoalTransformer::callback, this);
       return true;
     }
@@ -36,9 +36,9 @@ class GoalTransformer
     ros::Subscriber sub_;
     std::string frame_id_;
 
-    void callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& in_msg)
+    void callback(const giskard_msgs::WholeBodyCommand::ConstPtr& in_msg)
     {
-      giskard_msgs::WholeBodyPositionGoal out_msg;
+      giskard_msgs::WholeBodyCommand out_msg;
 
       try
       {

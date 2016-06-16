@@ -24,7 +24,7 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
-#include <giskard_msgs/WholeBodyPositionGoal.h>
+#include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
@@ -93,7 +93,7 @@ void print_eigen(const Eigen::VectorXd& command)
   ROS_DEBUG("Command: (%s)", cmd_str.c_str());
 }
 
-void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
+void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
 {
   if(msg->left_ee_goal.header.frame_id.compare(frame_id_) != 0)
   {

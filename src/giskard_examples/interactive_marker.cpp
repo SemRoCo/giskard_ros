@@ -20,7 +20,7 @@
 
 #include <ros/ros.h>
 #include <interactive_markers/interactive_marker_server.h>
-#include <giskard_msgs/WholeBodyPositionGoal.h>
+#include <giskard_msgs/WholeBodyCommand.h>
 #include <memory>
 #include <boost/bind.hpp>
 
@@ -77,7 +77,7 @@ class WholeBodyInteractiveMarkers
 
     void start()
     {
-      goal_pub_ = nh_.advertise<giskard_msgs::WholeBodyPositionGoal>("goal_out", 1);
+      goal_pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("goal_out", 1);
 
       server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>
           (nh_.getNamespace(), "", false);
@@ -101,7 +101,7 @@ class WholeBodyInteractiveMarkers
   private:
     ros::NodeHandle nh_;
     ros::Publisher goal_pub_;
-    giskard_msgs::WholeBodyPositionGoal goal_;
+    giskard_msgs::WholeBodyCommand goal_;
     std::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
     BodyPartSemantics left_ee_semantics_, right_ee_semantics_;
 
