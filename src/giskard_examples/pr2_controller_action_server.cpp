@@ -20,46 +20,110 @@
 */
 
 #include <exception>
+#include <functional>
 #include <ros/ros.h>
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
+#include <giskard_msgs/ControllerFeedback.h>
 
 namespace giskard_examples
 {
-  class PR2ControllerActionServer
+  inline size_t calculateGoalHash(const giskard_msgs::WholeBodyCommand& msg)
+  {
+    std::stringstream ss;
+    ss << msg;
+    std::hash<std::string> hash_fn;
+    return hash_fn(ss.str());
+  }
+
+  inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg)
+  {
+    // TODO: implement me
+    return giskard_msgs::WholeBodyFeedback();
+  }
+
+  inline bool motionFinished(const giskard_msgs::WholeBodyFeedback& msg)
+  {
+    // TODO: implement me
+    return false;
+  }
+
+  inline giskard_msgs::WholeBodyResult calculateResult(const giskard_msgs::WholeBodyFeedback& msg)
+  {
+    giskard_msgs::WholeBodyResult result;
+    result.state = msg.state;
+    return result;
+  }
+
+  class ControllerActionServer
   {
     public:
-      PR2ControllerActionServer(const ros::NodeHandle& nh, const std::string& name) : 
-        nh_(nh), server_(nh, name, boost::bind(&PR2ControllerActionServer::execute, this, _1), false) 
+      ControllerActionServer(const ros::NodeHandle& nh, const std::string& name) : 
+        nh_(nh), server_(nh, name, boost::bind(&ControllerActionServer::execute, this, _1), false) 
       {}
 
-      ~PR2ControllerActionServer() {}
+      ~ControllerActionServer() {}
 
       void start()
       {
+        // TODO: get this from parameter server
+        period_ = ros::Duration(0.02);
+        command_pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("command", 1);
+        feedback_sub_ = nh_.subscribe("feedback", 1, &ControllerActionServer::feedback, this);
+        running_goal_sub_ = nh_.subscribe("running_goal", 1, &ControllerActionServer::runningGoal, this);
         server_.start();
       }
 
     private:
       ros::NodeHandle nh_;
+      ros::Subscriber feedback_sub_, running_goal_sub_;
+      ros::Publisher command_pub_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> server_;
+      giskard_msgs::ControllerFeedback controller_feedback_;
+      giskard_msgs::WholeBodyFeedback feedback_;
+      size_t running_goal_hash_;
+      ros::Duration period_;
+
+      void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
+      {
+        controller_feedback_ = *msg;
+      }
+
+      void runningGoal(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
+      {
+        running_goal_hash_ = calculateGoalHash(*msg);
+      }
 
       void execute(const giskard_msgs::WholeBodyGoalConstPtr& goal)
       {
-        // TODO: implement me
-        ROS_INFO("Got a goal.");
-        ros::Duration(1.0).sleep();
-        server_.setSucceeded();
+        ROS_DEBUG("Received a new motion goal.");
+        do
+        {
+          if(server_.isPreemptRequested() || !ros::ok())
+          {
+            server_.setPreempted();
+            return;
+          }
+          else
+          {
+            command_pub_.publish(goal->command);
+            feedback_ = calculateFeedback(controller_feedback_);
+            server_.publishFeedback(feedback_);
+            period_.sleep();
+          }
+        }
+        while(!motionFinished(feedback_));
+        server_.setSucceeded(calculateResult(feedback_));
       }
   };
 }
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "pr2_controller_action_server");
+  ros::init(argc, argv, "controller_action_server");
   ros::NodeHandle nh("~");
 
-  giskard_examples::PR2ControllerActionServer server(nh, "move");
+  giskard_examples::ControllerActionServer server(nh, "move");
   try
   {
     server.start();

@@ -14,7 +14,7 @@ int main (int argc, char **argv)
 
   client.sendGoal(giskard_msgs::WholeBodyGoal());
   
-  if (client.waitForResult(ros::Duration(1.0)))
+  if (client.waitForResult(ros::Duration(1.5)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
     ROS_INFO("Action timeod out.");
