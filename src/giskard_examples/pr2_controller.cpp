@@ -128,6 +128,8 @@ void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
   rot.GetEulerZYX(state_[joint_names_.size() + 9], state_[joint_names_.size() + 10], 
       state_[joint_names_.size() + 11]);
 
+  // TODO: check that joint-state contains all necessary joints
+
   if (!controller_started_)
   {
     if (controller_.start(state_, nWSR_))
@@ -172,6 +174,7 @@ int main(int argc, char **argv)
     return 0;
   }
 
+  // TODO: extract joint_names from controller description
   if (!nh.getParam("joint_names", joint_names_))
   {
     ROS_ERROR("Parameter 'joint_names' not found in namespace '%s'.", nh.getNamespace().c_str());
