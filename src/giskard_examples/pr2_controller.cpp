@@ -35,7 +35,7 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
-ros::Publisher feedback_pub_;
+ros::Publisher feedback_pub_, current_goal_pub_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
@@ -128,6 +128,8 @@ void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
   rot.GetEulerZYX(state_[joint_names_.size() + 9], state_[joint_names_.size() + 10], 
       state_[joint_names_.size() + 11]);
 
+  current_goal_pub_.publish(*msg);
+
   // TODO: check that joint-state contains all necessary joints
 
   if (!controller_started_)
@@ -197,6 +199,7 @@ int main(int argc, char **argv)
     vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + it->substr(0, it->size() - 6) + "_velocity_controller/command", 1));
 
   feedback_pub_ = nh.advertise<giskard_msgs::ControllerFeedback>("feedback", 1);
+  current_goal_pub_ = nh.advertise<giskard_msgs::WholeBodyCommand>("current_goal", 1, true);
   feedback_msg_ = initFeedbackMsg(controller_);
 
   ROS_DEBUG("Waiting for goal.");
