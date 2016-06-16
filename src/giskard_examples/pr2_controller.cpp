@@ -60,11 +60,10 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 
   if (controller_.update(state_, nWSR_))
   {
-    Eigen::VectorXd commands = controller_.get_command();
     for (unsigned int i=0; i < vel_controllers_.size(); i++)
     {
       std_msgs::Float64 command;
-      command.data = commands[i];
+      command.data = controller_.get_command()[i];
       vel_controllers_[i].publish(command);
     }
   }
