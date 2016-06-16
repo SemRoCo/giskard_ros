@@ -25,6 +25,7 @@
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
 #include <giskard_msgs/WholeBodyPositionGoal.h>
+#include <giskard_msgs/ControllerFeedback.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
 #include <kdl_conversions/kdl_msg.h>
@@ -34,10 +35,12 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
+ros::Publisher feedback_pub_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
 std::string frame_id_;
+giskard_msgs::ControllerFeedback feedback_msg_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
@@ -66,6 +69,12 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       command.data = controller_.get_command()[i];
       vel_controllers_[i].publish(command);
     }
+ 
+    for(size_t i=0; i<feedback_msg_.commands.size(); ++i)
+      feedback_msg_.commands[i].value = controller_.get_command()[i];
+    for(size_t i=0; i<feedback_msg_.slacks.size(); ++i)
+      feedback_msg_.slacks[i].value = controller_.get_slack()[i];
+    feedback_pub_.publish(feedback_msg_);
   }
   else
   {
@@ -74,7 +83,6 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   }
 
   // TODO: publish diagnostics
-  // TODO: publish feedback
 }
 
 void print_eigen(const Eigen::VectorXd& command)
@@ -135,6 +143,21 @@ void goal_callback(const giskard_msgs::WholeBodyPositionGoal::ConstPtr& msg)
   }
 }
 
+giskard_msgs::ControllerFeedback initFeedbackMsg(const giskard::QPController& controller)
+{
+  giskard_msgs::ControllerFeedback msg;
+
+  msg.commands.resize(controller.get_controllable_names().size());
+  for(size_t i=0; i<controller.get_controllable_names().size(); ++i)
+    msg.commands[i].semantics = controller.get_controllable_names()[i];
+
+  msg.slacks.resize(controller.get_soft_constraint_names().size());
+  for(size_t i=0; i<controller.get_soft_constraint_names().size(); ++i)
+    msg.slacks[i].semantics = controller.get_soft_constraint_names()[i];
+
+  return msg;
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "pr2_controller");
@@ -169,6 +192,9 @@ int main(int argc, char **argv)
 
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
     vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + it->substr(0, it->size() - 6) + "_velocity_controller/command", 1));
+
+  feedback_pub_ = nh.advertise<giskard_msgs::ControllerFeedback>("feedback", 1);
+  feedback_msg_ = initFeedbackMsg(controller_);
 
   ROS_DEBUG("Waiting for goal.");
   ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
