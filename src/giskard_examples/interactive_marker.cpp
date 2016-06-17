@@ -20,7 +20,8 @@
 
 #include <ros/ros.h>
 #include <interactive_markers/interactive_marker_server.h>
-#include <giskard_msgs/WholeBodyCommand.h>
+#include <actionlib/client/simple_action_client.h>
+#include <giskard_msgs/WholeBodyAction.h>
 #include <memory>
 #include <boost/bind.hpp>
 
@@ -68,16 +69,20 @@ class WholeBodyInteractiveMarkers
 {
   public:
     WholeBodyInteractiveMarkers(const ros::NodeHandle& nh, const BodyPartSemantics& left_ee_semantics,
-        const BodyPartSemantics& right_ee_semantics) :
-        nh_( nh ), left_ee_semantics_( left_ee_semantics ), right_ee_semantics_( right_ee_semantics )
+        const BodyPartSemantics& right_ee_semantics, const std::string& action_name) :
+        nh_( nh ), left_ee_semantics_( left_ee_semantics ), right_ee_semantics_( right_ee_semantics ),
+        client_(action_name, true)
+
     {
-      goal_.left_ee_goal = create_identity_goal(left_ee_semantics_);
-      goal_.right_ee_goal = create_identity_goal(right_ee_semantics_);
+      goal_.command.left_ee_goal = create_identity_goal(left_ee_semantics_);
+      goal_.command.right_ee_goal = create_identity_goal(right_ee_semantics_);
     }
 
     void start()
     {
-      goal_pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("goal_out", 1);
+      ROS_INFO("Waiting for action server to start.");
+      client_.waitForServer();
+      ROS_INFO("Action server started.");
 
       server_ = std::make_shared<interactive_markers::InteractiveMarkerServer>
           (nh_.getNamespace(), "", false);
@@ -100,8 +105,8 @@ class WholeBodyInteractiveMarkers
 
   private:
     ros::NodeHandle nh_;
-    ros::Publisher goal_pub_;
-    giskard_msgs::WholeBodyCommand goal_;
+    actionlib::SimpleActionClient<giskard_msgs::WholeBodyAction> client_;
+    giskard_msgs::WholeBodyGoal goal_;
     std::shared_ptr<interactive_markers::InteractiveMarkerServer> server_;
     BodyPartSemantics left_ee_semantics_, right_ee_semantics_;
 
@@ -117,13 +122,13 @@ class WholeBodyInteractiveMarkers
 
         if(feedback->marker_name.compare(left_ee_semantics_.get_name()) == 0)
         {
-          goal_.left_ee_goal.header = feedback->header;
-          goal_.left_ee_goal.pose = feedback->pose;
+          goal_.command.left_ee_goal.header = feedback->header;
+          goal_.command.left_ee_goal.pose = feedback->pose;
         }
         else if (feedback->marker_name.compare(right_ee_semantics_.get_name()) == 0)
         {
-          goal_.right_ee_goal.header = feedback->header;
-          goal_.right_ee_goal.pose = feedback->pose;
+          goal_.command.right_ee_goal.header = feedback->header;
+          goal_.command.right_ee_goal.pose = feedback->pose;
         }
         else
         {
@@ -131,7 +136,7 @@ class WholeBodyInteractiveMarkers
           return;
         }
 
-        goal_pub_.publish(goal_);
+        client_.sendGoal(goal_);
       }
     }
 
@@ -216,8 +221,15 @@ int main(int argc, char** argv)
     return 0;
   }
 
+  std::string action_name;
+  if (!nh.getParam("action_name", action_name))
+  {
+    ROS_ERROR("Parameter 'action_name' not found in namespace '%s'.", nh.getNamespace().c_str());
+    return 0;
+  }
+
   WholeBodyInteractiveMarkers wbim(nh, BodyPartSemantics(left_ee_name, left_ee_frame_id),
-      BodyPartSemantics(right_ee_name, right_ee_frame_id));
+      BodyPartSemantics(right_ee_name, right_ee_frame_id), action_name);
   wbim.start();
 
   ros::spin();

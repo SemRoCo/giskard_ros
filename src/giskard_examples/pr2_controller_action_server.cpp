@@ -105,6 +105,7 @@ namespace giskard_examples
         catch(tf2::TransformException& ex)
         {
           ROS_ERROR("Could not transform goal. Error: %s", ex.what());
+          server_.setAborted(giskard_msgs::WholeBodyResult(), ex.what());
           return;
         }
  
