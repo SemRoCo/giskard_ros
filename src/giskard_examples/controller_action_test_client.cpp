@@ -12,6 +12,7 @@ int main (int argc, char **argv)
   client.waitForServer();
   ROS_INFO("Action server started, sending goal.");
 
+  // SEND FIRST GOAL WHICH TIMES OUT AFTER 10s
   giskard_msgs::WholeBodyGoal goal;
   goal.command.left_ee_goal.header.stamp = ros::Time::now();
   goal.command.left_ee_goal.header.frame_id = "base_link";
@@ -35,47 +36,38 @@ int main (int argc, char **argv)
 
   client.sendGoal(goal);
 
-  // ECHO OF A MEANINGFUL GOAL
-  //
-  // left_ee_goal: 
-  //  header: 
-  //    seq: 0
-  //    stamp: 
-  //      secs: 1466101028
-  //      nsecs: 986925737
-  //    frame_id: base_link
-  //  pose: 
-  //    position: 
-  //      x: 0.408104267942
-  //      y: 0.0457644589442
-  //      z: 0.753605697287
-  //    orientation: 
-  //      x: 0.461663572793
-  //      y: -0.39932199905
-  //      z: -0.488951012493
-  //      w: 0.623165783731
-  //right_ee_goal: 
-  //  header: 
-  //    seq: 0
-  //    stamp: 
-  //      secs: 1466101044
-  //      nsecs: 386898175
-  //    frame_id: base_link
-  //  pose: 
-  //    position: 
-  //      x: 0.381812181883
-  //      y: -0.110539927419
-  //      z: 1.10948410003
-  //    orientation: 
-  //      x: -0.193389274
-  //      y: 0.00863179543304
-  //      z: 0.71675563293
-  //      w: 0.669915997326
- 
-  if (client.waitForResult(ros::Duration(8)))
+  if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
-    ROS_INFO("Action timeod out.");
-  
+    ROS_INFO("Action timed out.");
+
+  // SEND SECOND GOAL WITHOUT WAITING FOR IT TO FINISH
+
+  goal.command.left_ee_goal.header.stamp = ros::Time::now();
+  goal.command.right_ee_goal.header.stamp = ros::Time::now();
+  goal.command.left_ee_goal.pose.position.z = 0.653605697287;
+  goal.command.right_ee_goal.pose.position.z = 1.20948410003;
+
+  client.sendGoal(goal);
+
+  ros::Duration(1.0).sleep();
+
+
+  // SEND THIRD GOAL, SHOULD AUTOMATICALLY PREEMPT SECOND GOAL
+
+  goal.command.left_ee_goal.header.stamp = ros::Time::now();
+  goal.command.right_ee_goal.header.stamp = ros::Time::now();
+  goal.command.left_ee_goal.pose.position.x = 0.508104267942;
+  goal.command.right_ee_goal.pose.position.x = 0.481812181883;
+
+  ROS_INFO("Sent final goal to finish first one.");
+  client.sendGoal(goal);
+
+  if (client.waitForResult(ros::Duration(10)))
+    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
+  else
+    ROS_INFO("Action timed out.");
+
+
   return 0;
 }
