@@ -30,6 +30,10 @@
 #include <giskard/giskard.hpp>
 #include <kdl_conversions/kdl_msg.h>
 #include <boost/lexical_cast.hpp>
+#include <giskard_examples/utils.hpp>
+
+// TODO: separate this into a library and executable part
+// TODO: refactor this into classes
 
 int nWSR_;
 giskard::QPController controller_;
@@ -41,6 +45,7 @@ Eigen::VectorXd state_;
 bool controller_started_;
 std::string frame_id_;
 giskard_msgs::ControllerFeedback feedback_msg_;
+size_t current_goal_hash_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
@@ -95,6 +100,12 @@ void print_eigen(const Eigen::VectorXd& command)
 
 void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
 {
+  size_t new_goal_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
+  if(current_goal_hash_ == new_goal_hash)
+    return;
+  else
+    current_goal_hash_ = new_goal_hash;
+
   if(msg->left_ee_goal.header.frame_id.compare(frame_id_) != 0)
   {
     ROS_WARN("frame_id of left EE goal did not match expected '%s'. Ignoring goal", 

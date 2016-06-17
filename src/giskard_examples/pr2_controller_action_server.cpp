@@ -20,22 +20,14 @@
 */
 
 #include <exception>
-#include <functional>
 #include <ros/ros.h>
+#include <giskard_examples/utils.hpp>
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_msgs/ControllerFeedback.h>
 
 namespace giskard_examples
 {
-  inline size_t calculateGoalHash(const giskard_msgs::WholeBodyCommand& msg)
-  {
-    std::stringstream ss;
-    ss << msg;
-    std::hash<std::string> hash_fn;
-    return hash_fn(ss.str());
-  }
-
   inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg)
   {
     // TODO: implement me
@@ -91,7 +83,7 @@ namespace giskard_examples
 
       void runningGoal(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
       {
-        running_goal_hash_ = calculateGoalHash(*msg);
+        running_goal_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
       }
 
       void execute(const giskard_msgs::WholeBodyGoalConstPtr& goal)
