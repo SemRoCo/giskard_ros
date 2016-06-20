@@ -56,6 +56,10 @@ public:
         moving_ = false;
         controller_started_ = false;
         isInitialized_ = false;
+        spec_.controllable_constraints_.clear();
+        spec_.hard_constraints_.clear();
+        spec_.soft_constraints_.clear();
+        spec_.scope_.clear();
     }
 
     bool isInitialized()
@@ -76,15 +80,24 @@ private:
             {
                 YAML::Node node = YAML::Load(controller_description);
                 ROS_INFO("Loaded controller description.");
-                giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
+                spec_ = node.as< giskard::QPControllerSpec >();
                 ROS_INFO("Parsed controller description.");
-                controller_ = giskard::generate(spec);
+                controller_ = giskard::generate(spec_);
                 ROS_INFO("Generated controller description.");
                 state_ = Eigen::VectorXd::Zero(joint_names_.size() + goalSize_);
                 ROS_INFO("Created a state.");
                 controller_started_ = false;
+
+                int maxK = spec_.controllable_constraints_.size();
+                controllable_joint_names_.resize(maxK);
+                for(int k = 0; k < maxK; k++)
+                    controllable_joint_names_[k] = joint_names_[spec_.controllable_constraints_[k].input_number_];
+
+                std::cout << "CONTROLLABLE JOINTS\n";
+                for(int k = 0; k < maxK; k++)
+                    std::cout << "\t" << controllable_joint_names_[k] << std::endl;
     
-                for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
+                for (std::vector<std::string>::iterator it = controllable_joint_names_.begin(); it != controllable_joint_names_.end(); ++it)
                     vel_controllers_.push_back(nh_.advertise<std_msgs::Float64>("/" + *it + "/vel_cmd", 1));
     
                 enable_service_ = nh_.advertiseService("SetEnable", &ControllerType::doSetEnable, this);
@@ -195,6 +208,7 @@ private:
 
     giskard::QPController controller_;
     std::vector<std::string> joint_names_;
+    std::vector<std::string> controllable_joint_names_;
     std::vector<ros::Publisher> vel_controllers_;
     ros::Subscriber js_sub_;
     Eigen::VectorXd state_;
@@ -202,6 +216,7 @@ private:
 
     ros::ServiceServer enable_service_;
     ros::Subscriber goal_sub_;
+    giskard::QPControllerSpec spec_;
 
     ros::Publisher done_adv_;
 
