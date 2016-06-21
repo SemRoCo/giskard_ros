@@ -56,13 +56,14 @@ class BodyPartSemantics
     std::string name_, frame_id_;
 };
 
-geometry_msgs::PoseStamped create_identity_goal(const BodyPartSemantics& bodypart)
+giskard_msgs::SemanticArmCommand create_identity_goal(const BodyPartSemantics& bodypart)
 {
-  geometry_msgs::PoseStamped goal;
-  goal.header.stamp = ros::Time::now();
-  goal.header.frame_id = bodypart.get_frame_id();
-  goal.pose.orientation.w = 1.0;
-  return goal;
+  giskard_msgs::SemanticArmCommand command;
+  command.goal.header.stamp = ros::Time::now();
+  command.goal.header.frame_id = bodypart.get_frame_id();
+  command.goal.pose.orientation.w = 1.0;
+  command.process = true;
+  return command;
 }
 
 class WholeBodyInteractiveMarkers
@@ -74,8 +75,8 @@ class WholeBodyInteractiveMarkers
         client_(action_name, true)
 
     {
-      goal_.command.left_ee_goal = create_identity_goal(left_ee_semantics_);
-      goal_.command.right_ee_goal = create_identity_goal(right_ee_semantics_);
+      goal_.command.left_ee = create_identity_goal(left_ee_semantics_);
+      goal_.command.right_ee = create_identity_goal(right_ee_semantics_);
     }
 
     void start()
@@ -122,13 +123,13 @@ class WholeBodyInteractiveMarkers
 
         if(feedback->marker_name.compare(left_ee_semantics_.get_name()) == 0)
         {
-          goal_.command.left_ee_goal.header = feedback->header;
-          goal_.command.left_ee_goal.pose = feedback->pose;
+          goal_.command.left_ee.goal.header = feedback->header;
+          goal_.command.left_ee.goal.pose = feedback->pose;
         }
         else if (feedback->marker_name.compare(right_ee_semantics_.get_name()) == 0)
         {
-          goal_.command.right_ee_goal.header = feedback->header;
-          goal_.command.right_ee_goal.pose = feedback->pose;
+          goal_.command.right_ee.goal.header = feedback->header;
+          goal_.command.right_ee.goal.pose = feedback->pose;
         }
         else
         {

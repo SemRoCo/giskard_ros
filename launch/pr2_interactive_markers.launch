@@ -13,7 +13,7 @@
     <param name="left_ee_name" value="LEFT GRIPPER" />
     <param name="right_ee_frame_id" value="r_gripper_tool_frame" />
     <param name="right_ee_name" value="RIGHT GRIPPER" />
-    <param name="action_name" value="/pr2_controller_action_server/move" />
+    <param name="action_name" value="/controller_action_server/move" />
     <remap from="~goal_out" to="/goal_transformer/in" />
   </node>
 

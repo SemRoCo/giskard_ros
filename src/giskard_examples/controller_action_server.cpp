@@ -27,6 +27,7 @@
 #include <giskard_examples/utils.hpp>
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
+#include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
 
 namespace giskard_examples
@@ -65,23 +66,32 @@ namespace giskard_examples
       {
         if(!tf_->waitForServer(timeout))
           throw std::runtime_error("Wait for TF2 BufferServer timed out. Aborting.");
+
+        initializeCurrentGoal();
+
         command_pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("command", 1);
         feedback_sub_ = nh_.subscribe("feedback", 1, &ControllerActionServer::feedback, this);
-        running_goal_sub_ = nh_.subscribe("running_goal", 1, &ControllerActionServer::runningGoal, this);
+        running_command_sub_ = nh_.subscribe("running_goal", 1, &ControllerActionServer::runningGoal, this);
         server_.start();
       }
 
     private:
       ros::NodeHandle nh_;
-      ros::Subscriber feedback_sub_, running_goal_sub_;
+      ros::Subscriber feedback_sub_, running_command_sub_;
       ros::Publisher command_pub_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> server_;
       std::shared_ptr<tf2_ros::BufferClient> tf_;
       giskard_msgs::ControllerFeedback controller_feedback_;
       giskard_msgs::WholeBodyFeedback feedback_;
-      size_t running_goal_hash_;
+      giskard_msgs::WholeBodyCommand current_command_;
+      size_t running_command_hash_;
       ros::Duration period_;
       std::string frame_id_;
+
+      void initializeCurrentGoal()
+      {
+        // TODO: implement me
+      }
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
@@ -90,17 +100,16 @@ namespace giskard_examples
 
       void runningGoal(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
       {
-        running_goal_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
+        running_command_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
       }
 
       void execute(const giskard_msgs::WholeBodyGoalConstPtr& goal)
       {
         ROS_DEBUG("Received a new motion goal.");
 
-        giskard_msgs::WholeBodyCommand command_msg;
         try
         {
-          command_msg = transformCommand(goal->command);
+          current_command_ = processCommand(goal->command);
         }
         catch(tf2::TransformException& ex)
         {
@@ -118,7 +127,7 @@ namespace giskard_examples
           }
           else
           {
-            command_pub_.publish(command_msg);
+            command_pub_.publish(current_command_);
             feedback_ = calculateFeedback(controller_feedback_);
             server_.publishFeedback(feedback_);
             period_.sleep();
@@ -128,11 +137,20 @@ namespace giskard_examples
         server_.setSucceeded(calculateResult(feedback_));
       }
 
-      giskard_msgs::WholeBodyCommand transformCommand(const giskard_msgs::WholeBodyCommand& in_msg)
+      // TODO: refactor this into a non-member function with more parameters
+      giskard_msgs::WholeBodyCommand processCommand(const giskard_msgs::SemanticWholeBodyCommand& in_msg)
       {
         giskard_msgs::WholeBodyCommand out_msg;
-        tf_->transform(in_msg.left_ee_goal, out_msg.left_ee_goal, frame_id_);
-        tf_->transform(in_msg.right_ee_goal, out_msg.right_ee_goal, frame_id_);
+        // TODO: refactor this into twice processArmCommand
+        if(in_msg.left_ee.process)
+          tf_->transform(in_msg.left_ee.goal, out_msg.left_ee_goal, frame_id_);
+        else
+          out_msg.left_ee_goal = current_command_.left_ee_goal;
+        if(in_msg.right_ee.process)
+          tf_->transform(in_msg.right_ee.goal, out_msg.right_ee_goal, frame_id_);
+        else
+          out_msg.right_ee_goal = current_command_.right_ee_goal;
+
         return out_msg;
       }
   };
