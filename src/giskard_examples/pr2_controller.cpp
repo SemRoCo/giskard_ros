@@ -32,6 +32,7 @@
 #include <kdl_conversions/kdl_msg.h>
 #include <boost/lexical_cast.hpp>
 #include <giskard_examples/utils.hpp>
+#include <giskard_examples/watchdog.hpp>
 
 // TODO: separate this into a library and executable part
 // TODO: refactor this into classes
@@ -48,6 +49,7 @@ std::string frame_id_;
 giskard_msgs::ControllerFeedback feedback_;
 giskard_msgs::WholeBodyCommand current_command_;
 size_t current_command_hash_hash_;
+giskard_examples::Watchdog<ros::Time, ros::Duration> watchdog_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
@@ -64,31 +66,45 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
     }
   }
 
-  // TODO: add watchdog
-  // TODO: start controller here
   if (!controller_started_)
     return;
 
-  if (controller_.update(state_, nWSR_))
+  if (watchdog_.barking(ros::Time::now()))
   {
     for (unsigned int i=0; i < vel_controllers_.size(); i++)
     {
       std_msgs::Float64 command;
-      command.data = controller_.get_command()[i];
+      command.data = 0.0;
       vel_controllers_[i].publish(command);
     }
- 
+  
     for(size_t i=0; i<feedback_.commands.size(); ++i)
-      feedback_.commands[i].value = controller_.get_command()[i];
+      feedback_.commands[i].value = 0.0;
     for(size_t i=0; i<feedback_.slacks.size(); ++i)
-      feedback_.slacks[i].value = controller_.get_slack()[i];
+      feedback_.slacks[i].value = 0.0;
     feedback_pub_.publish(feedback_);
   }
   else
-  {
-    ROS_WARN("Update failed.");
-    ROS_DEBUG_STREAM("Update failed. State: " << state_);
-  }
+    if (controller_.update(state_, nWSR_))
+    {
+      for (unsigned int i=0; i < vel_controllers_.size(); i++)
+      {
+        std_msgs::Float64 command;
+        command.data = controller_.get_command()[i];
+        vel_controllers_[i].publish(command);
+      }
+   
+      for(size_t i=0; i<feedback_.commands.size(); ++i)
+        feedback_.commands[i].value = controller_.get_command()[i];
+      for(size_t i=0; i<feedback_.slacks.size(); ++i)
+        feedback_.slacks[i].value = controller_.get_slack()[i];
+      feedback_pub_.publish(feedback_);
+    }
+    else
+    {
+      ROS_WARN("Update failed.");
+      ROS_DEBUG_STREAM("Update failed. State: " << state_);
+    }
 
   // TODO: publish diagnostics
 }
@@ -125,9 +141,10 @@ void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
 {
   size_t new_command_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
   if(current_command_hash_hash_ == new_command_hash)
+  {
+    watchdog_.kick(ros::Time::now());
     return;
-  else
-    current_command_hash_hash_ = new_command_hash;
+  }
 
   try
   {
@@ -141,6 +158,9 @@ void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
     ROS_WARN("%s", e.what());
     return;
   }
+
+  current_command_hash_hash_ = new_command_hash;
+  watchdog_.kick(ros::Time::now());
 
   if(msg->left_ee.process)
     current_command_.left_ee = msg->left_ee;
@@ -210,6 +230,15 @@ int main(int argc, char **argv)
     ROS_ERROR("Parameter 'frame_id' not found in namespace '%s'.", nh.getNamespace().c_str());
     return 0;
   }
+
+  double watchdog_period;
+  if (!nh.getParam("watchdog_period", watchdog_period))
+  {
+    ROS_ERROR("Parameter 'watchdog_period' not found in namespace '%s'.", nh.getNamespace().c_str());
+    return 0;
+  }
+
+  watchdog_.setPeriod(ros::Duration(watchdog_period));
 
   YAML::Node node = YAML::Load(controller_description);
   giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
