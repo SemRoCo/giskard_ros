@@ -2,9 +2,9 @@
 #include <actionlib/client/simple_action_client.h>
 #include <giskard_msgs/WholeBodyAction.h>
 
-giskard_msgs::SemanticArmCommand make_arm_command(const geometry_msgs::Pose& pose)
+giskard_msgs::ArmCommand make_arm_command(const geometry_msgs::Pose& pose)
 {
-  giskard_msgs::SemanticArmCommand msg;
+  giskard_msgs::ArmCommand msg;
   msg.goal.header.stamp = ros::Time::now();
   msg.goal.header.frame_id = "base_link";
   msg.goal.pose = pose;

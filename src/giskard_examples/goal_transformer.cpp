@@ -42,7 +42,7 @@ class GoalTransformer
 
       try
       {
-        buffer_->transform(in_msg->left_ee_goal, out_msg.left_ee_goal, frame_id_);
+        buffer_->transform(in_msg->left_ee.goal, out_msg.left_ee.goal, frame_id_);
       }
       catch(tf2::TransformException& ex)
       {
@@ -52,7 +52,7 @@ class GoalTransformer
 
       try
       {
-        buffer_->transform(in_msg->right_ee_goal, out_msg.right_ee_goal, frame_id_);
+        buffer_->transform(in_msg->right_ee.goal, out_msg.right_ee.goal, frame_id_);
       }
       catch(tf2::TransformException& ex)
       {

@@ -56,9 +56,9 @@ class BodyPartSemantics
     std::string name_, frame_id_;
 };
 
-giskard_msgs::SemanticArmCommand create_identity_goal(const BodyPartSemantics& bodypart)
+giskard_msgs::ArmCommand create_identity_goal(const BodyPartSemantics& bodypart)
 {
-  giskard_msgs::SemanticArmCommand command;
+  giskard_msgs::ArmCommand command;
   command.goal.header.stamp = ros::Time::now();
   command.goal.header.frame_id = bodypart.get_frame_id();
   command.goal.pose.orientation.w = 1.0;

@@ -11,7 +11,7 @@
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
     <remap from="~command" to="pr2_controller/goal" />
-    <remap from="~running_goal" to="pr2_controller/current_goal" />
+    <remap from="~current_goal_hash" to="pr2_controller/current_goal_hash" />
     <remap from="~feedback" to="pr2_controller/feedback" />
   </node>
 </launch>
