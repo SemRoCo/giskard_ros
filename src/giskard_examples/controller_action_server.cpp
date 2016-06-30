@@ -29,19 +29,105 @@
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <std_msgs/UInt64.h>
+#include <algorithm>
 
 namespace giskard_examples
 {
-  inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg)
+  inline std::map<std::string, double> toIndex(const std::vector<giskard_msgs::SemanticFloat64>& msgs)
   {
-    // TODO: implement me
-    return giskard_msgs::WholeBodyFeedback();
+    std::map<std::string, size_t> index;
+    for (size_t i=0; i<msgs.size(); ++i)
+      index.insert(std::pair<std::string, size_t>(msgs[i].semantics, msgs[i].value);
+
+    return index;
+  }
+
+  inline double exception_lookup(const std::map<std::string, double>& index, const std::string& name)
+  {
+    std::map<std::string, double> it = index.find(name);
+    if( it == index.end())
+      throw std::runtime_error("Could not find element with semantics '" + name +
+        "' in feedback message from controller.");
+
+    return it->second;
+  }
+
+  inline double maxAbsValue(double a, double b)
+  {
+    if (std::abs(a) > std::abs(b))
+      return a;
+    else
+      return b;
+  }
+
+  inline double lookupMaxAbsValue(const std::map<std::string, double>& index, 
+    const std::vector<std::string>& search_names)
+  {
+    double result = 0.0;
+    for (size_t i=0; i<search_names.size(); ++i)
+      result = maxAbsValue(result, exception_lookup(index, search_names[i]));
+    
+    return result;
+  }
+
+  class WholeBodySemantics
+  {
+    public:
+      std::vector<std::string> left_arm_names;
+      std::vector<std::string> right_arm_names;
+      std::string torso_name;
+  };
+
+  class FeedbackThresholds
+  {
+    public:
+      ros::Duration motion_old;
+      double bodypart_moves, convergence;
+  };
+
+  inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg,
+      const ros::Time& motion_start_time, const WholeBodySemantics& body_semantics)
+  {
+    giskard_msgs::WholeBodyFeedback result;
+    result.state.header = msg.header;
+    result.state.running_time = msg.header.stamp - motion_start_time;
+
+    command_index = toIndex(msg.commands);
+    slack_index = toIndex(msg.slacks);
+
+    result.state.left_arm_max_vel = 
+      lookupMaxAbsValue(command_index, body_semantics.left_arm_names);
+    result.state.right_arm_max_vel = 
+      lookupMaxAbsValue(command_index, body_semantics.right_arm_names);
+    result.state.torso_vel = 
+      exception_lookup(command_index, body_semantics.torso_name);
+    result.state.left_arm_error =
+      maxAbsValue(exception_lookup(slack_index, "left EE position control slack"),
+          exception_lookup(slack_index, "left EE rotation control slack"));
+    result.state.right_arm_error =
+      maxAbsValue(exception_lookup(slack_index, "right EE position control slack"),
+          exception_lookup(slack_index, "right EE rotation control slack"));
+
+    result.state.motion_started = 
+      running_command_hash_ == current_command_hash_;
+    result.state.motion_old = result.state.running_time > thresholds.motion_old;
+    result.state.torso_moving =
+      std::abs(result.state.torso_vel) > std::abs(thresholds.bodypart_moves);
+    result.state.left_arm_moving =
+      std::abs(result.state.left_arm_max_vel) > std::abs(thresholds.bodypart_moves);
+    result.state.right_arm_moving =
+      std::abs(result.state.right_arm_max_vel) > std::abs(thresholds.bodypart_moves);
+    result.state.left_arm_converged =
+      std::abs(result.state.left_arm_max_vel) > std::abs(thresholds.convergence);
+
+    return result;
   }
 
   inline bool motionFinished(const giskard_msgs::WholeBodyFeedback& msg)
   {
-    // TODO: implement me
-    return false;
+    return msg.state.motion_started && msg.state.motion_old && 
+      !msg.state.torso_moving && !msg.state.left_arm_moving && !msg.state.right_arm_moving &&
+      msg.state.left_arm_converged && msg.state.right_arm_converged;
   }
 
   inline giskard_msgs::WholeBodyResult calculateResult(const giskard_msgs::WholeBodyFeedback& msg)
@@ -83,6 +169,7 @@ namespace giskard_examples
       giskard_msgs::WholeBodyFeedback feedback_;
       size_t running_command_hash_, current_command_hash_;
       ros::Duration period_;
+      ros::Time motion_start_time_;
       std::string frame_id_;
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
@@ -111,6 +198,8 @@ namespace giskard_examples
           return;
         }
  
+        motion_start_time_ = ros::Time::now();
+
         current_command_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(current_command);
 
         do
@@ -123,7 +212,7 @@ namespace giskard_examples
           else
           {
             command_pub_.publish(current_command);
-            feedback_ = calculateFeedback(controller_feedback_);
+            feedback_ = calculateFeedback(controller_feedback_, motion_start_time_);
             server_.publishFeedback(feedback_);
             period_.sleep();
           }
