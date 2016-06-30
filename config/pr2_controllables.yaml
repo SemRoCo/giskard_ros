@@ -1,0 +1,17 @@
+body_controllables:
+  right_arm:
+    - r_elbow_flex_joint velocity
+    - r_shoulder_lift_joint velocity
+    - r_shoulder_pan_joint velocity
+    - r_upper_arm_roll_joint velocity
+    - r_wrist_flex_joint velocity
+    - r_wrist_roll_joint velocity
+  left_arm:
+    - l_elbow_flex_joint velocity
+    - l_forearm_roll_joint velocity
+    - l_shoulder_lift_joint velocity
+    - l_shoulder_pan_joint velocity
+    - l_upper_arm_roll_joint velocity
+    - l_wrist_flex_joint velocity
+    - l_wrist_roll_joint velocity
+  torso: torso_lift_joint velocity

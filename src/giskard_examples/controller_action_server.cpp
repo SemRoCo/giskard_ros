@@ -25,6 +25,7 @@
 #include <tf2_ros/buffer_client.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <giskard_examples/utils.hpp>
+#include <giskard_examples/ros_utils.hpp>
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_msgs/ControllerFeedback.h>
@@ -70,12 +71,12 @@ namespace giskard_examples
     return result;
   }
 
-  class WholeBodySemantics
+  class WholeBodyControllables
   {
     public:
-      std::vector<std::string> left_arm_names;
-      std::vector<std::string> right_arm_names;
-      std::string torso_name;
+      std::vector<std::string> left_arm;
+      std::vector<std::string> right_arm;
+      std::string torso;
   };
 
   class FeedbackThresholds
@@ -86,7 +87,7 @@ namespace giskard_examples
   };
 
   inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg,
-      const ros::Time& motion_start_time, const WholeBodySemantics& body_semantics,
+      const ros::Time& motion_start_time, const WholeBodyControllables& body_controllables,
       const FeedbackThresholds& thresholds, size_t running_command_hash,
       size_t current_command_hash)
   {
@@ -98,11 +99,11 @@ namespace giskard_examples
     std::map<std::string, double> slack_index = toIndex(msg.slacks);
 
     result.state.left_arm_max_vel = 
-      lookupMaxAbsValue(command_index, body_semantics.left_arm_names);
+      lookupMaxAbsValue(command_index, body_controllables.left_arm);
     result.state.right_arm_max_vel = 
-      lookupMaxAbsValue(command_index, body_semantics.right_arm_names);
+      lookupMaxAbsValue(command_index, body_controllables.right_arm);
     result.state.torso_vel = 
-      exception_lookup(command_index, body_semantics.torso_name);
+      exception_lookup(command_index, body_controllables.torso);
     result.state.left_arm_pos_error =
       exception_lookup(slack_index, "left EE position control slack");
     result.state.left_arm_rot_error =
@@ -152,11 +153,11 @@ namespace giskard_examples
   {
     public:
       ControllerActionServer(const ros::NodeHandle& nh, const std::string& name, double period,
-          const std::string& tf_ns, const std::string& frame_id, const WholeBodySemantics& body_semantics,
+          const std::string& tf_ns, const std::string& frame_id, const WholeBodyControllables& body_controllables,
           const FeedbackThresholds& thresholds) : 
         nh_(nh), server_(nh, name, boost::bind(&ControllerActionServer::execute, this, _1), false),
         period_(ros::Duration(period)), frame_id_(frame_id), tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns)),
-        body_semantics_(body_semantics), thresholds_(thresholds)
+        body_controllables_(body_controllables), thresholds_(thresholds)
       {}
 
       ~ControllerActionServer() {}
@@ -184,7 +185,7 @@ namespace giskard_examples
       ros::Duration period_;
       ros::Time motion_start_time_;
       std::string frame_id_;
-      WholeBodySemantics body_semantics_;
+      WholeBodyControllables body_controllables_;
       FeedbackThresholds thresholds_;
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
@@ -192,7 +193,7 @@ namespace giskard_examples
         controller_feedback_ = *msg;
         // TODO: refactor by getting rid of 'controller_feedback_'
         feedback_ = calculateFeedback(controller_feedback_, motion_start_time_, 
-            body_semantics_, thresholds_, running_command_hash_,
+            body_controllables_, thresholds_, running_command_hash_,
             current_command_hash_);
       }
 
@@ -254,32 +255,31 @@ namespace giskard_examples
 
 int main(int argc, char **argv)
 {
+  using namespace giskard_examples;
   ros::init(argc, argv, "controller_action_server");
   ros::NodeHandle nh("~");
 
-  // TODO: get this info from the parameter server
-  giskard_examples::FeedbackThresholds thresholds;
-  thresholds.motion_old = ros::Duration(0.1);
-  thresholds.bodypart_moves = 0.03;
-  thresholds.pos_convergence = 0.03;
-  thresholds.rot_convergence = 0.05;
+  FeedbackThresholds thresholds;
+  thresholds.motion_old = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
+  thresholds.bodypart_moves = readParam<double>(nh, "thresholds/bodypart_moves");
+  thresholds.pos_convergence = readParam<double>(nh, "thresholds/pos_convergence");
+  thresholds.rot_convergence = readParam<double>(nh, "thresholds/rot_convergence");
 
-  giskard_examples::WholeBodySemantics body_semantics;
-  body_semantics.left_arm_names = {"l_shoulder_pan_joint velocity",
-    "l_shoulder_lift_joint velocity", "l_upper_arm_roll_joint velocity",
-    "l_elbow_flex_joint velocity", "l_forearm_roll_joint velocity",
-    "l_wrist_flex_joint velocity", "l_wrist_roll_joint velocity"};
-  body_semantics.right_arm_names = {"r_shoulder_pan_joint velocity",
-    "r_shoulder_lift_joint velocity", "r_upper_arm_roll_joint velocity",
-    "r_elbow_flex_joint velocity", "r_forearm_roll_joint velocity",
-    "r_wrist_flex_joint velocity", "r_wrist_roll_joint velocity"};
-  body_semantics.torso_name = "torso_lift_joint velocity";
-  giskard_examples::ControllerActionServer server(
-      nh, "move", 0.05, "/tf2_buffer_server", "base_link",
-      body_semantics, thresholds);
+  WholeBodyControllables body_controllables;
+  body_controllables.left_arm = readParam< std::vector<std::string> >
+    (nh, "body_controllables/left_arm");
+  body_controllables.right_arm = readParam< std::vector<std::string> >
+    (nh, "body_controllables/right_arm");
+  body_controllables.torso = readParam<std::string>(nh, "body_controllables/torso");
+  std::string frame_id = readParam<std::string>(nh, "frame_id");
+  double update_period = readParam<double>(nh, "update_period");
+  double server_timeout = readParam<double>(nh, "server_timeout");
+
+  ControllerActionServer server(nh, "move", update_period, "/tf2_buffer_server", 
+      frame_id, body_controllables, thresholds);
   try
   {
-    server.start(ros::Duration(2.0));
+    server.start(ros::Duration(server_timeout));
   }
   catch (const std::exception& e)
   {
