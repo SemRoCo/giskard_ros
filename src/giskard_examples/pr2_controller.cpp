@@ -69,7 +69,9 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   if (!controller_started_)
     return;
 
-  if (watchdog_.barking(ros::Time::now()))
+  feedback_.header.stamp = msg->header.stamp;
+  feedback_.header.frame_id = frame_id_;
+  if (watchdog_.barking(msg->header.stamp))
   {
     for (unsigned int i=0; i < vel_controllers_.size(); i++)
     {
