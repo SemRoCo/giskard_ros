@@ -22,3 +22,7 @@
     local-name: iai_naive_kinematics_sim
     uri: https://github.com/code-iai/iai_naive_kinematics_sim.git
     version: master
+- git:
+    local-name: iai_robots
+    uri: https://github.com/code-iai/iai_robots.git
+    version: master
