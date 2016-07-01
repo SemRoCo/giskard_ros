@@ -74,5 +74,20 @@ Acts as a convenience interface in front of the ```whole_body_controller```. Add
 * ```~command``` (giskard_msgs/WholeBodyCommand): Command to ```whole_body_controller```, repeated published at high frequency to kick watchdog in ```whole_body_controller```.
 
 #### Parameters
+Several threshold parameters determine when a motion succeeded:
+* ```~thresholds/motion_old``` (Double): Duration (in seconds) required after which a motion goal is considered old.
+* ```~thresholds/bodypart_moves``` (Double): Speed threshold (in rad/s) for the fast joint of a body part to consider that body part moving.
+* ```~thresholds/pos_convergence``` (Double) Error threshold (in m) for a position controller to have reached its goal.
+* ```~thresholds/rot_convergence``` (Double): Error threshold (in rad) for an orientation controller to have reached its goal.
+
+A set of identifiers are used to associated the feedback from the ```whole_body_controller``` with the respective body parts.
+* ```~body_controllables/left_arm``` (List of Strings): Names of controllable variables that form the left arm of the robot.
+* ```~body_controllables/right_arm``` (List of Strings): Names of controllable variables that form the right arm of the robot.
+* ```~body_controllables/torso``` (String): Name of controllable variable making up the torso of the robot.
+
+Finally, there are a couple of parameters which influence the behavior of the node:
+* ```~frame_id``` (String): Reference frame (known to ```TF```) into which all Cartesian goal poses shall be transformed.
+* ```~update_period``` (Double) Time (in seconds) between updates, i.e. feedback publishes to client and commands publishes to ```whole_body_controller```.
+* ```~server_timeout``` (Double): Time (in seconds) after which the server aborts in case it fails to initialize its action interface.
 
 
