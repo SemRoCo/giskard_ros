@@ -55,12 +55,24 @@ Use the interactive markers to give commands to controller controlling the both 
 
 ## API of nodes
 ### ```controller_action_server```
+Acts as a convenience interface in front of the ```whole_body_controller```. Added values is twofold: (1) offers action interface with its feedback- and cancelation-semantics, and (2) provides intelligent parsing of motion goals to meet the specific requirements of the ```whole_body_controller```.
+
 #### Provided actions
-* ```~move``` (giskard_msgs/WholeBody): Movement command to be executed. The server supports only one goal at a time, and provides the following conveniences:
+* ```~move``` (giskard_msgs/WholeBody): Movement command to be executed. The server supports only one goal at a time, and provides the following intelligent parsing of motion goals:
   - Automatic transformation of all goal poses of type ```geometry_msgs/PoseStamped``` into the reference frame of the controller using ```TF2```.
   - Support of partial commands for body parts by using the previous commands for the respective body parts.
   - Frequent publishing of internal monitoring flags, e.g. "left arm moving" or "right arm position converged " which determine succeeded movements.
+
 #### Called actions
+* ```/tf2_buffer_server``` (tf2_msgs/LookupTransform): Connection to ```TF2``` buffer server to transform Cartesian goal poses.
+
 #### Subscribed topics
+* ```~feedback``` (giskard_msgs/ControllerFeedback): Low-level feedback from ```whole_body_controller```; used to determine when a movement goal succeeded.
+* ```~current_command_hash``` (std_msgs/UInt64): Hash of command currently pursued by ```whole_body_controller```; acts as a safe-guard to synchronize ```whole_body_controller``` and ```controller_action_server```.
+
 #### Published topics
+* ```~command``` (giskard_msgs/WholeBodyCommand): Command to ```whole_body_controller```, repeated published at high frequency to kick watchdog in ```whole_body_controller```.
+
 #### Parameters
+
+
