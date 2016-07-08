@@ -34,9 +34,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS})
 
-add_executable(pr2_controller src/${PROJECT_NAME}/pr2_controller.cpp)
-target_link_libraries(pr2_controller ${catkin_LIBRARIES} yaml-cpp)
-add_dependencies(pr2_controller ${catkin_EXPORTED_TARGETS})
+add_executable(whole_body_controller src/${PROJECT_NAME}/whole_body_controller.cpp)
+target_link_libraries(whole_body_controller ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(whole_body_controller ${catkin_EXPORTED_TARGETS})
 
 add_executable(controller_action_server src/${PROJECT_NAME}/controller_action_server.cpp)
 target_link_libraries(controller_action_server ${catkin_LIBRARIES} yaml-cpp)

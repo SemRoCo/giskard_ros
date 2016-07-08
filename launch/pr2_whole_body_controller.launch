@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="giskard_examples" type="pr2_controller" name="pr2_controller" output="screen">
+  <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
     <rosparam param="joint_names"
       file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
     <param name="controller_description" 
@@ -11,9 +11,9 @@
 
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
-    <remap from="~command" to="pr2_controller/goal" />
-    <remap from="~current_command_hash" to="pr2_controller/current_command_hash" />
-    <remap from="~feedback" to="pr2_controller/feedback" />
+    <remap from="~command" to="whole_body_controller/goal" />
+    <remap from="~current_command_hash" to="whole_body_controller/current_command_hash" />
+    <remap from="~feedback" to="whole_body_controller/feedback" />
     <param name="thresholds/motion_old" value="0.1" />
     <param name="thresholds/bodypart_moves" value="0.03" />
     <param name="thresholds/pos_convergence" value="0.02" />

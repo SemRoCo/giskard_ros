@@ -208,7 +208,7 @@ giskard_msgs::ControllerFeedback initFeedbackMsg(const giskard::QPController& co
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "pr2_controller");
+  ros::init(argc, argv, "whole_body_controller");
   ros::NodeHandle nh("~");
 
   nh.param("nWSR", nWSR_, 10);

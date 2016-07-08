@@ -14,7 +14,6 @@
     <param name="right_ee_frame_id" value="r_gripper_tool_frame" />
     <param name="right_ee_name" value="RIGHT GRIPPER" />
     <param name="action_name" value="/controller_action_server/move" />
-    <remap from="~goal_out" to="/goal_transformer/in" />
   </node>
 
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find giskard_examples)/config/pr2_interactive.rviz" />
