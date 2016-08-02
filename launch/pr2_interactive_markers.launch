@@ -16,6 +16,10 @@
     <param name="action_name" value="/controller_action_server/move" />
   </node>
 
+  <node pkg="giskard_examples" type="goal_marker_viz" name="command_viz" >
+    <remap from="~goal" to="/whole_body_controller/current_command" />
+  </node>
+
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find giskard_examples)/config/pr2_interactive.rviz" />
 
 </launch>

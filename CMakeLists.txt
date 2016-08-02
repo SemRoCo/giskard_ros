@@ -65,3 +65,7 @@ add_dependencies(pose_stamped_transformer ${catkin_EXPORTED_TARGETS})
 add_executable(goal_transformer src/${PROJECT_NAME}/goal_transformer.cpp)
 target_link_libraries(goal_transformer ${catkin_LIBRARIES})
 add_dependencies(goal_transformer ${catkin_EXPORTED_TARGETS})
+
+add_executable(goal_marker_viz src/${PROJECT_NAME}/goal_marker_viz.cpp)
+target_link_libraries(goal_marker_viz ${catkin_LIBRARIES})
+add_dependencies(goal_marker_viz ${catkin_EXPORTED_TARGETS})
