@@ -39,7 +39,7 @@
 
 int nWSR_;
 giskard::QPController controller_;
-std::vector<std::string> joint_names_;
+std::vector<std::string> joint_names_, double_names_;
 std::vector<ros::Publisher> vel_controllers_;
 ros::Publisher feedback_pub_, current_command_hash_pub_, current_command_pub_;
 ros::Subscriber js_sub_;
@@ -113,6 +113,16 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
         feedback_.commands[i].value = controller_.get_command()[i];
       for(size_t i=0; i<feedback_.slacks.size(); ++i)
         feedback_.slacks[i].value = controller_.get_slack()[i];
+      for(size_t i=0; i<feedback_.doubles.size(); ++i)
+        try
+        {
+          feedback_.doubles[i].value = controller_.get_scope().find_double_expression(feedback_.doubles[i].semantics)->value();
+        }
+        catch (const std::runtime_error& e)
+        {
+          ROS_WARN("Could not find internal double expression '%s'.", feedback_.doubles[i].semantics.c_str());
+        }
+
       feedback_pub_.publish(feedback_);
     }
     else
@@ -216,6 +226,10 @@ giskard_msgs::ControllerFeedback initFeedbackMsg(const giskard::QPController& co
   for(size_t i=0; i<controller.get_soft_constraint_names().size(); ++i)
     msg.slacks[i].semantics = controller.get_soft_constraint_names()[i];
 
+  msg.doubles.resize(double_names_.size());
+  for(size_t i=0; i<double_names_.size(); ++i)
+    msg.doubles[i].semantics = double_names_[i];
+
   return msg;
 }
 
@@ -239,6 +253,8 @@ int main(int argc, char **argv)
     ROS_ERROR("Parameter 'joint_names' not found in namespace '%s'.", nh.getNamespace().c_str());
     return 0;
   }
+
+  nh.getParam("internals/doubles", double_names_);
 
   if (!nh.getParam("frame_id", frame_id_))
   {

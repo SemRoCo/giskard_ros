@@ -96,7 +96,7 @@ namespace giskard_examples
     result.state.running_time = msg.header.stamp - motion_start_time;
 
     std::map<std::string, double> command_index = toIndex(msg.commands);
-    std::map<std::string, double> slack_index = toIndex(msg.slacks);
+    std::map<std::string, double> doubles_index = toIndex(msg.doubles);
 
     result.state.left_arm_max_vel = 
       lookupMaxAbsValue(command_index, body_controllables.left_arm);
@@ -105,13 +105,13 @@ namespace giskard_examples
     result.state.torso_vel = 
       exception_lookup(command_index, body_controllables.torso);
     result.state.left_arm_pos_error =
-      exception_lookup(slack_index, "left EE position control slack");
+      exception_lookup(doubles_index, "l_trans_error");
     result.state.left_arm_rot_error =
-      exception_lookup(slack_index, "left EE rotation control slack");
+      exception_lookup(doubles_index, "l_rot_error");
     result.state.right_arm_pos_error =
-      exception_lookup(slack_index, "right EE position control slack");
+      exception_lookup(doubles_index, "r_trans_error");
     result.state.right_arm_rot_error =
-      exception_lookup(slack_index, "right EE rotation control slack");
+      exception_lookup(doubles_index, "r_rot_error");
 
     result.state.motion_started = 
       running_command_hash == current_command_hash;

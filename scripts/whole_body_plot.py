@@ -32,7 +32,7 @@ def init_feedbacks(keys):
         feedbacks[key] = []
     return feedbacks
 
-keys = ["left EE position control slack", "left EE rotation control slack", "right EE position control slack", "right EE rotation control slack"] 
+keys = ["l_trans_error", "l_rot_error", "r_trans_error", "r_rot_error"] 
 feedbacks = init_feedbacks(keys)
 processes = []
 
@@ -57,10 +57,10 @@ def plot_graph(data):
 
 
 def feedback_callback(data):
-    for slack in data.slacks:
+    for d in data.doubles:
         for key in keys:
-            if slack.semantics == key:
-                feedbacks[key].append(slack.value)
+            if d.semantics == key:
+                feedbacks[key].append(d.value)
 
 def command_callback(data):
     global feedbacks
