@@ -73,6 +73,19 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
   feedback_.header.frame_id = frame_id_;
   if (watchdog_.barking(msg->header.stamp))
   {
+    // switch controller, and inform the outside world
+    // TODO: replace me with something meaningful, once we have joint-control
+    giskard_msgs::WholeBodyCommand watchdog_cmd;
+    size_t watchdog_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(watchdog_cmd);
+ 
+    if (current_command_hash_hash_ != watchdog_hash)
+    {
+      current_command_hash_hash_ = watchdog_hash;
+      current_command_pub_.publish(watchdog_cmd);
+      std_msgs::UInt64 hash_msg;
+      hash_msg.data = watchdog_hash;
+      current_command_hash_pub_.publish(hash_msg);
+    }
     for (unsigned int i=0; i < vel_controllers_.size(); i++)
     {
       std_msgs::Float64 command;
@@ -80,11 +93,11 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       vel_controllers_[i].publish(command);
     }
   
-    for(size_t i=0; i<feedback_.commands.size(); ++i)
-      feedback_.commands[i].value = 0.0;
-    for(size_t i=0; i<feedback_.slacks.size(); ++i)
-      feedback_.slacks[i].value = 0.0;
-    feedback_pub_.publish(feedback_);
+//    for(size_t i=0; i<feedback_.commands.size(); ++i)
+//      feedback_.commands[i].value = 0.0;
+//    for(size_t i=0; i<feedback_.slacks.size(); ++i)
+//      feedback_.slacks[i].value = 0.0;
+//    feedback_pub_.publish(feedback_);
   }
   else
     if (controller_.update(state_, nWSR_))
