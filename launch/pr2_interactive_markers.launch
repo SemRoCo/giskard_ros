@@ -6,8 +6,9 @@
     <arg name="sim" value="$(arg sim)" />
   </include>
 
-  <!-- TODO: pass through sim param -->
-  <include file="$(find giskard_examples)/launch/pr2_whole_body_controller.launch" />
+  <include file="$(find giskard_examples)/launch/pr2_whole_body_controller.launch" >
+    <arg name="sim" value="$(arg sim)" />
+  </include>
 
   <include file="$(find giskard_examples)/launch/pr2_gui.launch" >
     <arg name="plot" value="$(arg plot)" />
