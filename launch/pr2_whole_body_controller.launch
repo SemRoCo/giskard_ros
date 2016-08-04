@@ -1,13 +1,32 @@
 <launch>
-  <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
-    <rosparam param="joint_names"
-      file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
-    <param name="controller_description" 
-      textfile="$(find giskard_examples)/controller_specs/pr2_upper_body_qp_position_control.yaml" />
-    <param name="frame_id" value="base_link" />
-    <param name="watchdog_period" value="0.1" />
-    <remap from="~joint_states" to="/joint_states" />
-  </node>
+  <arg name="sim" default="true" />
+
+  <group if="$(arg sim)" >
+    <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
+      <rosparam param="joint_names"
+        file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
+      <param name="controller_description" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_upper_body_qp_position_control.yaml" />
+      <rosparam command="load" file="$(find giskard_examples)/config/pr2_internals.yaml" />
+       <param name="frame_id" value="base_link" />
+      <param name="watchdog_period" value="0.1" />
+      <remap from="~joint_states" to="/joint_states" />
+    </node>
+  </group>
+
+  <group unless="$(arg sim)" >
+    <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
+      <rosparam param="joint_names"
+        file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
+      <param name="controller_description" 
+        textfile="$(find giskard_examples)/controller_specs/iai_pr2_upper_body_qp_position_control.yaml" />
+      <rosparam command="load" file="$(find giskard_examples)/config/pr2_internals.yaml" />
+       <param name="frame_id" value="base_link" />
+      <param name="watchdog_period" value="0.1" />
+      <remap from="~joint_states" to="/joint_states" />
+    </node>
+  </group>
+
 
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">

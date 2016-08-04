@@ -75,7 +75,7 @@ scope:
   - l_wrist_roll:
       frame: [{axis-angle: [unit_x, l_wrist_roll_joint]}, {vector3: [0, 0, 0]}]
   - l_gripper_offset:
-      frame: [{axis-angle: [unit_x, 0]}, {vector3: [0.18, 0, 0]}]
+      frame: [{axis-angle: [unit_x, 0]}, {vector3: [0.2156, 0, 0]}]
   - r_shoulder_pan:
       frame: [{axis-angle: [unit_z, r_shoulder_pan_joint]}, {vector3: [0, -0.188, 0]}]
   - r_shoulder_lift:

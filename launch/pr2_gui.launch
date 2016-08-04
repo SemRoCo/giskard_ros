@@ -1,0 +1,13 @@
+<launch>
+  <arg name="plot" default="false" />
+
+  <node pkg="giskard_examples" type="goal_marker_viz" name="command_viz" >
+    <remap from="~goal" to="/whole_body_controller/current_command" />
+  </node>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find giskard_examples)/config/pr2_interactive.rviz" />
+
+  <group if="$(arg plot)" >
+    <node pkg="giskard_examples" type="whole_body_plot.py" name="whole_body_plot" output="screen" />
+  </group>
+</launch>
