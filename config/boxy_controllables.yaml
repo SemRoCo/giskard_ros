@@ -1,0 +1,18 @@
+body_controllables:
+  right_arm:
+    - right_arm_0_joint velocity
+    - right_arm_1_joint velocity
+    - right_arm_2_joint velocity
+    - right_arm_3_joint velocity
+    - right_arm_4_joint velocity
+    - right_arm_5_joint velocity
+    - right_arm_6_joint velocity
+  left_arm:
+    - left_arm_0_joint velocity
+    - left_arm_1_joint velocity
+    - left_arm_2_joint velocity
+    - left_arm_3_joint velocity
+    - left_arm_4_joint velocity
+    - left_arm_5_joint velocity
+    - left_arm_6_joint velocity
+  torso: triangle_base_joint velocity
