@@ -126,42 +126,48 @@ scope:
       - r_wrist_roll
       - r_gripper_offset
 
+  # control params
+  - pos_p_gain: -6.0
+  - rot_p_gain: -2.0
+  - pos_thresh: 0.05
+  - rot_thresh: 0.2
+
   # definition EE goals and control laws
   # left arm
   - l_goal_trans: {vector3: [l_goal_x, l_goal_y, l_goal_z]}
   - l_trans_error: {vector-norm: {vector-sub: [l_goal_trans, {origin-of: left_ee}]}}
-  - l_trans_control: {double-mul: [-1.0, l_trans_error]}
+  - l_trans_control: {double-mul: [pos_p_gain, {min: [pos_thresh, l_trans_error]}]}
   - l_goal_rot: 
       rotation-mul: 
         - {axis-angle: [unit_z, l_goal_rot_z]}
         - {axis-angle: [unit_y, l_goal_rot_y]}
         - {axis-angle: [unit_x, l_goal_rot_x]}
   - l_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: left_ee}}, l_goal_rot]}}}
-  - l_rot_control: {double-mul: [-1.0, l_rot_error]}
+  - l_rot_control: {double-mul: [rot_p_gain, {min: [rot_thresh, l_rot_error]}]}
   # right arm
   - r_goal_trans: {vector3: [r_goal_x, r_goal_y, r_goal_z]}
   - r_trans_error: {vector-norm: {vector-sub: [r_goal_trans, {origin-of: right_ee}]}}
-  - r_trans_control: {double-mul: [-4.0, {min: [0.05, r_trans_error]}]}
+  - r_trans_control: {double-mul: [pos_p_gain, {min: [pos_thresh, r_trans_error]}]}
   - r_goal_rot: 
       rotation-mul: 
         - {axis-angle: [unit_z, r_goal_rot_z]}
         - {axis-angle: [unit_y, r_goal_rot_y]}
         - {axis-angle: [unit_x, r_goal_rot_x]}
   - r_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: right_ee}}, r_goal_rot]}}}
-  - r_rot_control: {double-mul: [-4.0, {min: [0.05, r_rot_error]}]}
+  - r_rot_control: {double-mul: [rot_p_gain, {min: [rot_thresh, r_rot_error]}]}
 
   # some constants
   - weight_arm_joints: 1.0
   - weight_pos_control: 10.0
-  - weight_rot_control: 10.0
-  - weight_elbow_control: 1.0
-  - neg_vel_limit_arm_joints: -0.5
-  - pos_vel_limit_arm_joints: 0.5
+  - weight_rot_control: 30.0
+  - weight_elbow_control: 0.0
+  - neg_vel_limit_arm_joints: -0.6
+  - pos_vel_limit_arm_joints: 0.6
 
 
 controllable-constraints:
   # torso joint
-  - controllable-constraint: [-0.05, 0.05, 50.0, 0, torso_lift_joint velocity]
+  - controllable-constraint: [-0.02, 0.02, 100.0, 0, torso_lift_joint velocity]
   # left arm joints
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, l_shoulder_pan_joint velocity]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, l_shoulder_lift_joint velocity]
