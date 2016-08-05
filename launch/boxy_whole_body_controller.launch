@@ -5,7 +5,7 @@
     <param name="controller_description" 
       textfile="$(find giskard_examples)/controller_specs/boxy_upper_body_qp_position_control.yaml" />
     <rosparam command="load" file="$(find giskard_examples)/config/boxy_internals.yaml" />
-     <param name="frame_id" value="base_link" />
+     <param name="frame_id" value="base_footprint" />
     <param name="watchdog_period" value="0.1" />
     <remap from="~joint_states" to="/joint_states" />
   </node>

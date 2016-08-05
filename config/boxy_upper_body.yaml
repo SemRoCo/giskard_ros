@@ -1,3 +1,4 @@
+- triangle_base_joint
 - left_arm_0_joint
 - left_arm_1_joint
 - left_arm_2_joint
@@ -12,4 +13,3 @@
 - right_arm_4_joint
 - right_arm_5_joint
 - right_arm_6_joint
-- triangle_base_joint
