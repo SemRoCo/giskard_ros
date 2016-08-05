@@ -39,7 +39,7 @@
 
 int nWSR_;
 giskard::QPController controller_;
-std::vector<std::string> joint_names_, double_names_;
+std::vector<std::string> joint_names_, double_names_, vector_names_;
 std::vector<ros::Publisher> vel_controllers_;
 ros::Publisher feedback_pub_, current_command_hash_pub_, current_command_pub_;
 ros::Subscriber js_sub_;
@@ -122,6 +122,17 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
         {
           ROS_WARN("Could not find internal double expression '%s'.", feedback_.doubles[i].semantics.c_str());
         }
+
+      for(size_t i=0; i<feedback_.vectors.size(); ++i)
+        try
+        {
+          tf::vectorKDLToMsg(controller_.get_scope().find_vector_expression(feedback_.vectors[i].semantics)->value(), feedback_.vectors[i].value);
+        }
+        catch (const std::runtime_error& e)
+        {
+          ROS_WARN("Could not find internal vector expression '%s'.", feedback_.vectors[i].semantics.c_str());
+        }
+
 
       feedback_pub_.publish(feedback_);
     }
@@ -230,6 +241,10 @@ giskard_msgs::ControllerFeedback initFeedbackMsg(const giskard::QPController& co
   for(size_t i=0; i<double_names_.size(); ++i)
     msg.doubles[i].semantics = double_names_[i];
 
+  msg.vectors.resize(vector_names_.size());
+  for(size_t i=0; i<vector_names_.size(); ++i)
+    msg.vectors[i].semantics = vector_names_[i];
+
   return msg;
 }
 
@@ -255,6 +270,7 @@ int main(int argc, char **argv)
   }
 
   nh.getParam("internals/doubles", double_names_);
+  nh.getParam("internals/vectors", vector_names_);
 
   if (!nh.getParam("frame_id", frame_id_))
   {
