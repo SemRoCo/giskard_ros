@@ -1,0 +1,9 @@
+internals:
+  doubles:
+    - l_trans_error
+    - l_rot_error
+    - r_trans_error
+    - r_rot_error
+  vectors:
+    - l_goal_trans
+    - l_trans

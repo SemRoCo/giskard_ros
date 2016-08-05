@@ -27,6 +27,9 @@
     </node>
   </group>
 
+  <node pkg="giskard_examples" type="float_array_separator" name="velocity_cmd_separator" output="screen" >
+    <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
+  </node>
 
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
