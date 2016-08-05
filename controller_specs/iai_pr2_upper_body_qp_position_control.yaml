@@ -160,7 +160,7 @@ scope:
   - weight_arm_joints: 1.0
   - weight_pos_control: 10.0
   - weight_rot_control: 30.0
-  - weight_elbow_control: 0.0
+  - weight_elbow_control: 0.1
   - neg_vel_limit_arm_joints: -0.6
   - pos_vel_limit_arm_joints: 0.6
 
@@ -189,9 +189,11 @@ soft-constraints:
   - soft-constraint: [l_trans_control, l_trans_control, weight_pos_control, l_trans_error, left EE position control slack]
   - soft-constraint: [l_rot_control, l_rot_control, weight_rot_control, l_rot_error, left EE rotation control slack]
   - soft-constraint: [0.1, 0.1, weight_elbow_control, {y-coord: {origin-of: left_elbow}}, left elbow out control slack]
+  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: left_elbow}}, left elbow up control slack]
   - soft-constraint: [r_trans_control, r_trans_control, weight_pos_control, r_trans_error, right EE position control slack]
   - soft-constraint: [r_rot_control, r_rot_control, weight_rot_control, r_rot_error, right EE rotation control slack]
   - soft-constraint: [-0.1, -0.1, weight_elbow_control, {y-coord: {origin-of: right_elbow}}, right elbow out control slack]
+  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
 
 hard-constraints:
   - hard-constraint:
