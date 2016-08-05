@@ -27,6 +27,7 @@
 #include <std_msgs/UInt64.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
+#include <giskard_msgs/SemanticFloat64Array.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard/giskard.hpp>
 #include <kdl_conversions/kdl_msg.h>
@@ -41,11 +42,12 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_, double_names_, vector_names_;
 std::vector<ros::Publisher> vel_controllers_;
-ros::Publisher feedback_pub_, current_command_hash_pub_, current_command_pub_;
+ros::Publisher velocity_pub_, feedback_pub_, current_command_hash_pub_, current_command_pub_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
 std::string frame_id_;
+giskard_msgs::SemanticFloat64Array velocity_cmd_;
 giskard_msgs::ControllerFeedback feedback_;
 giskard_msgs::WholeBodyCommand current_command_;
 size_t current_command_hash_hash_;
@@ -86,28 +88,16 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       hash_msg.data = watchdog_hash;
       current_command_hash_pub_.publish(hash_msg);
     }
-    for (unsigned int i=0; i < vel_controllers_.size(); i++)
-    {
-      std_msgs::Float64 command;
-      command.data = 0.0;
-      vel_controllers_[i].publish(command);
-    }
-  
-//    for(size_t i=0; i<feedback_.commands.size(); ++i)
-//      feedback_.commands[i].value = 0.0;
-//    for(size_t i=0; i<feedback_.slacks.size(); ++i)
-//      feedback_.slacks[i].value = 0.0;
-//    feedback_pub_.publish(feedback_);
+    for (size_t i=0; i<velocity_cmd_.data.size(); ++i)
+      velocity_cmd_.data[i].value = 0.0;
+    velocity_pub_.publish(velocity_cmd_);
   }
   else
     if (controller_.update(state_, nWSR_))
     {
-      for (unsigned int i=0; i < vel_controllers_.size(); i++)
-      {
-        std_msgs::Float64 command;
-        command.data = controller_.get_command()[i];
-        vel_controllers_[i].publish(command);
-      }
+      for (size_t i=0; i<velocity_cmd_.data.size(); ++i)
+        velocity_cmd_.data[i].value = controller_.get_command()[i];
+      velocity_pub_.publish(velocity_cmd_);
    
       for(size_t i=0; i<feedback_.commands.size(); ++i)
         feedback_.commands[i].value = controller_.get_command()[i];
@@ -293,8 +283,11 @@ int main(int argc, char **argv)
   state_ = Eigen::VectorXd::Zero(joint_names_.size() + 2*6);
   controller_started_ = false;
 
-  for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
-    vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + it->substr(0, it->size() - 6) + "_velocity_controller/command", 1));
+  velocity_pub_ = nh.advertise<giskard_msgs::SemanticFloat64Array>("velocity_cmd", 1);
+
+  velocity_cmd_.data.resize(joint_names_.size());
+  for (size_t i=0; i<joint_names_.size(); ++i)
+    velocity_cmd_.data[i].semantics = joint_names_[i];
 
   feedback_pub_ = nh.advertise<giskard_msgs::ControllerFeedback>("feedback", 1);
   current_command_hash_pub_ = nh.advertise<std_msgs::UInt64>("current_command_hash", 1, true);

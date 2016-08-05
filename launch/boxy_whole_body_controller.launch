@@ -1,4 +1,6 @@
 <launch>
+  <arg name="sim" default="true" />
+
   <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
     <rosparam param="joint_names"
       file="$(find giskard_examples)/config/boxy_upper_body.yaml" />
@@ -9,6 +11,15 @@
     <param name="watchdog_period" value="0.1" />
     <remap from="~joint_states" to="/joint_states" />
   </node>
+
+  <group if="$(arg sim)" >
+    <node pkg="giskard_examples" type="float_array_separator" name="velocity_cmd_separator" output="screen" >
+      <rosparam param="joint_names"
+        file="$(find giskard_examples)/config/boxy_upper_body.yaml" />
+      <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
+    </node>
+  </group>
+
 
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">

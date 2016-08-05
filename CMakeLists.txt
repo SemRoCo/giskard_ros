@@ -46,6 +46,10 @@ add_executable(controller_action_test_client src/${PROJECT_NAME}/controller_acti
 target_link_libraries(controller_action_test_client ${catkin_LIBRARIES} yaml-cpp)
 add_dependencies(controller_action_test_client ${catkin_EXPORTED_TARGETS})
 
+add_executable(float_array_separator src/${PROJECT_NAME}/float_array_separator.cpp)
+target_link_libraries(float_array_separator ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(float_array_separator ${catkin_EXPORTED_TARGETS})
+
 add_executable(single_pose_controller src/${PROJECT_NAME}/single_pose_controller.cpp)
 target_link_libraries(single_pose_controller ${catkin_LIBRARIES} yaml-cpp)
 add_dependencies(single_pose_controller ${catkin_EXPORTED_TARGETS})

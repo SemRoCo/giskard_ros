@@ -6,7 +6,11 @@
     <arg name="sim" value="$(arg sim)" />
   </include>
 
-  <include file="$(find giskard_examples)/launch/boxy_whole_body_controller.launch" />
+  <include file="$(find giskard_examples)/launch/boxy_whole_body_controller.launch" >
+    <arg name="sim" value="$(arg sim)" />
+  </include>
+
+   
 
   <include file="$(find giskard_examples)/launch/boxy_gui.launch" >
     <arg name="plot" value="$(arg plot)" />
