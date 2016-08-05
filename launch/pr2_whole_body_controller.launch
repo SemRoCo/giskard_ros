@@ -28,6 +28,8 @@
   </group>
 
   <node pkg="giskard_examples" type="float_array_separator" name="velocity_cmd_separator" output="screen" >
+    <rosparam param="joint_names"
+      file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
     <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
   </node>
 
