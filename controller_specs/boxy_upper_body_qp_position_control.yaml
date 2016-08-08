@@ -666,8 +666,8 @@ scope:
         - right_gripper_tool_frame_joint_frame     
 
   # control params
-  - pos_p_gain: 3.0
-  - rot_p_gain: -1.0
+  - pos_p_gain: 6.0
+  - rot_p_gain: -2.0
   - pos_thresh: 0.05
   - rot_thresh: 0.2
 
@@ -677,7 +677,9 @@ scope:
   - l_trans: {origin-of: left_ee}
   - l_trans_error_vector: {vector-sub: [l_goal_trans, l_trans]}
   - l_trans_error: {vector-norm: l_trans_error_vector}
-  - l_trans_control: {scale-vector: [pos_p_gain, l_trans_error_vector]}
+  - l_trans_scale: {double-if: [{double-sub: [pos_thresh, l_trans_error]}, 1.0, {double-div: [pos_thresh, l_trans_error]}]}
+  - l_trans_scaled_error: {double-mul: [l_trans_scale, l_trans_error]}
+  - l_trans_control: {scale-vector: [{double-mul: [pos_p_gain, l_trans_scale]}, l_trans_error_vector]}
   # left arm rotation
   - l_goal_rot: 
       rotation-mul: 
@@ -691,7 +693,9 @@ scope:
   - r_trans: {origin-of: right_ee}
   - r_trans_error_vector: {vector-sub: [r_goal_trans, r_trans]}
   - r_trans_error: {vector-norm: r_trans_error_vector}
-  - r_trans_control: {scale-vector: [pos_p_gain, r_trans_error_vector]}
+  - r_trans_scale: {double-if: [{double-sub: [pos_thresh, r_trans_error]}, 1.0, {double-div: [pos_thresh, r_trans_error]}]}
+  - r_trans_scaled_error: {double-mul: [r_trans_scale, r_trans_error]}
+  - r_trans_control: {scale-vector: [{double-mul: [pos_p_gain, r_trans_scale]}, r_trans_error_vector]}
   # right arm rotation
   - r_goal_rot: 
       rotation-mul: 
@@ -703,8 +707,8 @@ scope:
 
   # some constants
   - weight_arm_joints: 1.0
-  - weight_pos_control: 10.0
-  - weight_rot_control: 30.0
+  - weight_pos_control: 20.0
+  - weight_rot_control: 5.0
 #  - weight_elbow_control: 0.0
   - neg_vel_limit_arm_joints: -0.6
   - pos_vel_limit_arm_joints: 0.6
