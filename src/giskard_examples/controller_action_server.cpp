@@ -209,6 +209,7 @@ namespace giskard_examples
         giskard_msgs::WholeBodyCommand current_command;
         try
         {
+          // TODO: this one occasionally throws an error. Uncool!
           current_command = processCommand(goal->command);
         }
         catch(tf2::TransformException& ex)

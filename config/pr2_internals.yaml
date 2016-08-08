@@ -4,3 +4,7 @@ internals:
     - l_rot_error
     - r_trans_error
     - r_rot_error
+    - l_trans_scaled_error
+    - l_trans_error
+    - r_trans_scaled_error
+    - r_trans_error
