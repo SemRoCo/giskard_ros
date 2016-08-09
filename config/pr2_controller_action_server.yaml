@@ -1,3 +1,14 @@
+thresholds:
+  cartesian:
+    l_trans_error: 0.02
+    l_rot_error: 0.03
+    r_trans_error: 0.02
+    r_rot_error: 0.03
+  bodypart_moves:
+    left_arm: 0.03
+    right_arm: 0.03
+    torso: 0.005
+  motion_old: 0.1
 body_controllables:
   right_arm:
     - r_elbow_flex_joint velocity
@@ -15,3 +26,6 @@ body_controllables:
     - l_wrist_flex_joint velocity
     - l_wrist_roll_joint velocity
   torso: torso_lift_joint velocity
+frame_id: base_link
+update_period: 0.05
+server_timeout: 2.0

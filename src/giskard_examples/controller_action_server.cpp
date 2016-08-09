@@ -43,9 +43,19 @@ namespace giskard_examples
     return index;
   }
 
-  inline double exception_lookup(const std::map<std::string, double>& index, const std::string& name)
+  inline std::map<std::string, giskard_msgs::SemanticFloat64> toIndex2(const std::vector<giskard_msgs::SemanticFloat64>& msgs)
   {
-    std::map<std::string, double>::const_iterator it = index.find(name);
+    std::map<std::string, giskard_msgs::SemanticFloat64> index;
+    for (size_t i=0; i<msgs.size(); ++i)
+      index.insert(std::pair<std::string, giskard_msgs::SemanticFloat64>(msgs[i].semantics, msgs[i]));
+
+    return index;
+  }
+
+  template<class T>
+  inline T exception_lookup(const std::map<std::string, T>& index, const std::string& name)
+  {
+    typename std::map<std::string, T>::const_iterator it = index.find(name);
     if( it == index.end())
       throw std::runtime_error("Could not find element with semantics '" + name +
         "' in feedback message from controller.");
@@ -66,7 +76,7 @@ namespace giskard_examples
   {
     double result = 0.0;
     for (size_t i=0; i<search_names.size(); ++i)
-      result = maxAbsValue(result, exception_lookup(index, search_names[i]));
+      result = maxAbsValue(result, exception_lookup<double>(index, search_names[i]));
     
     return result;
   }
@@ -83,7 +93,9 @@ namespace giskard_examples
   {
     public:
       ros::Duration motion_old;
-      double bodypart_moves, pos_convergence, rot_convergence;
+      // TODO: update
+      std::map<std::string, double> cartesian_;
+      std::map<std::string, double> bodypart_moves_;
   };
 
   inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg,
@@ -96,50 +108,75 @@ namespace giskard_examples
     result.state.running_time = msg.header.stamp - motion_start_time;
 
     std::map<std::string, double> command_index = toIndex(msg.commands);
-    std::map<std::string, double> doubles_index = toIndex(msg.doubles);
+    std::map<std::string, giskard_msgs::SemanticFloat64> doubles_index = toIndex2(msg.doubles);
 
     result.state.left_arm_max_vel = 
       lookupMaxAbsValue(command_index, body_controllables.left_arm);
     result.state.right_arm_max_vel = 
       lookupMaxAbsValue(command_index, body_controllables.right_arm);
     result.state.torso_vel = 
-      exception_lookup(command_index, body_controllables.torso);
-    result.state.left_arm_pos_error =
-      exception_lookup(doubles_index, "l_trans_error");
-    result.state.left_arm_rot_error =
-      exception_lookup(doubles_index, "l_rot_error");
-    result.state.right_arm_pos_error =
-      exception_lookup(doubles_index, "r_trans_error");
-    result.state.right_arm_rot_error =
-      exception_lookup(doubles_index, "r_rot_error");
+      exception_lookup<double>(command_index, body_controllables.torso);
+//    std::vector<std::string> feature_names;
+//    feature_names.push_back("l_trans_error");
+//    feature_names.push_back("r_trans_error");
+//    feature_names.push_back("l_rot_error");
+//    feature_names.push_back("r_rot_error");
+//    for (size_t i=0; i<feature_names.size(); ++i)
+ 
+//    result.state.left_arm_pos_error =
+//      exception_lookup(doubles_index, "l_trans_error");
+//    result.state.left_arm_rot_error =
+//      exception_lookup(doubles_index, "l_rot_error");
+//    result.state.right_arm_pos_error =
+//      exception_lookup(doubles_index, "r_trans_error");
+//    result.state.right_arm_rot_error =
+//      exception_lookup(doubles_index, "r_rot_error");
 
     result.state.motion_started = 
       running_command_hash == current_command_hash;
     result.state.motion_old = result.state.running_time > thresholds.motion_old;
     result.state.torso_moving =
-      std::abs(result.state.torso_vel) > std::abs(thresholds.bodypart_moves);
+      std::abs(result.state.torso_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "torso"));
     result.state.left_arm_moving =
-      std::abs(result.state.left_arm_max_vel) > std::abs(thresholds.bodypart_moves);
+      std::abs(result.state.left_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "left_arm"));
     result.state.right_arm_moving =
-      std::abs(result.state.right_arm_max_vel) > std::abs(thresholds.bodypart_moves);
-    result.state.left_arm_pos_converged =
-      std::abs(result.state.left_arm_pos_error) < std::abs(thresholds.pos_convergence);
-    result.state.left_arm_rot_converged =
-      std::abs(result.state.left_arm_rot_error) < std::abs(thresholds.rot_convergence);
-    result.state.right_arm_pos_converged =
-      std::abs(result.state.right_arm_pos_error) < std::abs(thresholds.pos_convergence);
-    result.state.right_arm_rot_converged =
-      std::abs(result.state.right_arm_rot_error) < std::abs(thresholds.rot_convergence);
+      std::abs(result.state.right_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "right_arm"));
+    for (std::map<std::string, double>::const_iterator it=thresholds.cartesian_.begin(); it!=thresholds.cartesian_.end(); ++it)
+    {
+      giskard_msgs::SemanticFloat64 feature_value = 
+        exception_lookup<giskard_msgs::SemanticFloat64>(doubles_index, it->first);
+      result.state.feature_values.push_back(feature_value);
+
+      giskard_msgs::SemanticBool flag;
+      flag.semantics = it->first;
+      flag.value = (std::abs(feature_value.value) < std::abs(it->second));
+      result.state.feature_flags.push_back(flag);
+    }
+
+//    result.state.left_arm_pos_converged =
+//      std::abs(result.state.left_arm_pos_error) < std::abs(thresholds.pos_convergence);
+//    result.state.left_arm_rot_converged =
+//      std::abs(result.state.left_arm_rot_error) < std::abs(thresholds.rot_convergence);
+//    result.state.right_arm_pos_converged =
+//      std::abs(result.state.right_arm_pos_error) < std::abs(thresholds.pos_convergence);
+//    result.state.right_arm_rot_converged =
+//      std::abs(result.state.right_arm_rot_error) < std::abs(thresholds.rot_convergence);
 
     return result;
   }
 
   inline bool motionFinished(const giskard_msgs::WholeBodyFeedback& msg)
   {
-    return msg.state.motion_started && msg.state.motion_old && 
-      !msg.state.torso_moving && !msg.state.left_arm_moving && !msg.state.right_arm_moving &&
-      msg.state.left_arm_pos_converged && msg.state.left_arm_rot_converged &&
-      msg.state.right_arm_pos_converged && msg.state.right_arm_rot_converged;
+    bool result = msg.state.motion_started && msg.state.motion_old && 
+      !msg.state.torso_moving && !msg.state.left_arm_moving && !msg.state.right_arm_moving;
+
+    for (size_t i=0; i<msg.state.feature_flags.size(); ++i)
+      if (result)
+        result &= msg.state.feature_flags[i].value;
+      else
+        return false;
+
+    return result;
   }
 
   inline giskard_msgs::WholeBodyResult calculateResult(const giskard_msgs::WholeBodyFeedback& msg)
@@ -187,12 +224,11 @@ namespace giskard_examples
       std::string frame_id_;
       WholeBodyControllables body_controllables_;
       FeedbackThresholds thresholds_;
+      std::map< std::string, double> thresh_map_;
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
-        controller_feedback_ = *msg;
-        // TODO: refactor by getting rid of 'controller_feedback_'
-        feedback_ = calculateFeedback(controller_feedback_, motion_start_time_, 
+        feedback_ = calculateFeedback(*msg, motion_start_time_, 
             body_controllables_, thresholds_, running_command_hash_,
             current_command_hash_);
       }
@@ -262,9 +298,8 @@ int main(int argc, char **argv)
 
   FeedbackThresholds thresholds;
   thresholds.motion_old = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
-  thresholds.bodypart_moves = readParam<double>(nh, "thresholds/bodypart_moves");
-  thresholds.pos_convergence = readParam<double>(nh, "thresholds/pos_convergence");
-  thresholds.rot_convergence = readParam<double>(nh, "thresholds/rot_convergence");
+  thresholds.bodypart_moves_ = readParam< std::map<std::string, double> >(nh, "thresholds/bodypart_moves");
+  thresholds.cartesian_ = readParam< std::map<std::string, double> >(nh, "thresholds/cartesian");
 
   WholeBodyControllables body_controllables;
   body_controllables.left_arm = readParam< std::vector<std::string> >
