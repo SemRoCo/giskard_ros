@@ -29,7 +29,6 @@
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_msgs/ControllerFeedback.h>
-#include <std_msgs/UInt64.h>
 #include <algorithm>
 
 namespace giskard_examples
@@ -92,8 +91,7 @@ namespace giskard_examples
   class FeedbackThresholds
   {
     public:
-      ros::Duration motion_old;
-      // TODO: update
+      ros::Duration motion_old_;
       std::map<std::string, double> cartesian_;
       std::map<std::string, double> bodypart_moves_;
   };
@@ -116,25 +114,9 @@ namespace giskard_examples
       lookupMaxAbsValue(command_index, body_controllables.right_arm);
     result.state.torso_vel = 
       exception_lookup<double>(command_index, body_controllables.torso);
-//    std::vector<std::string> feature_names;
-//    feature_names.push_back("l_trans_error");
-//    feature_names.push_back("r_trans_error");
-//    feature_names.push_back("l_rot_error");
-//    feature_names.push_back("r_rot_error");
-//    for (size_t i=0; i<feature_names.size(); ++i)
- 
-//    result.state.left_arm_pos_error =
-//      exception_lookup(doubles_index, "l_trans_error");
-//    result.state.left_arm_rot_error =
-//      exception_lookup(doubles_index, "l_rot_error");
-//    result.state.right_arm_pos_error =
-//      exception_lookup(doubles_index, "r_trans_error");
-//    result.state.right_arm_rot_error =
-//      exception_lookup(doubles_index, "r_rot_error");
-
     result.state.motion_started = 
       running_command_hash == current_command_hash;
-    result.state.motion_old = result.state.running_time > thresholds.motion_old;
+    result.state.motion_old = result.state.running_time > thresholds.motion_old_;
     result.state.torso_moving =
       std::abs(result.state.torso_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "torso"));
     result.state.left_arm_moving =
@@ -152,15 +134,6 @@ namespace giskard_examples
       flag.value = (std::abs(feature_value.value) < std::abs(it->second));
       result.state.feature_flags.push_back(flag);
     }
-
-//    result.state.left_arm_pos_converged =
-//      std::abs(result.state.left_arm_pos_error) < std::abs(thresholds.pos_convergence);
-//    result.state.left_arm_rot_converged =
-//      std::abs(result.state.left_arm_rot_error) < std::abs(thresholds.rot_convergence);
-//    result.state.right_arm_pos_converged =
-//      std::abs(result.state.right_arm_pos_error) < std::abs(thresholds.pos_convergence);
-//    result.state.right_arm_rot_converged =
-//      std::abs(result.state.right_arm_rot_error) < std::abs(thresholds.rot_convergence);
 
     return result;
   }
@@ -190,10 +163,12 @@ namespace giskard_examples
   {
     public:
       ControllerActionServer(const ros::NodeHandle& nh, const std::string& name, double period,
-          const std::string& tf_ns, const std::string& frame_id, const WholeBodyControllables& body_controllables,
+          const std::string& tf_ns, const std::string& frame_id, const std::string l_frame_id,
+          const std::string r_frame_id, const WholeBodyControllables& body_controllables,
           const FeedbackThresholds& thresholds) : 
         nh_(nh), server_(nh, name, boost::bind(&ControllerActionServer::execute, this, _1), false),
-        period_(ros::Duration(period)), frame_id_(frame_id), tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns)),
+        period_(ros::Duration(period)), frame_id_(frame_id), l_frame_id_(l_frame_id),
+        r_frame_id_(r_frame_id), tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns)),
         body_controllables_(body_controllables), thresholds_(thresholds)
       {}
 
@@ -204,38 +179,36 @@ namespace giskard_examples
         if(!tf_->waitForServer(timeout))
           throw std::runtime_error("Wait for TF2 BufferServer timed out. Aborting.");
 
+        initLastCommand();
+
         command_pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("command", 1);
         feedback_sub_ = nh_.subscribe("feedback", 1, &ControllerActionServer::feedback, this);
-        current_command_sub_ = nh_.subscribe("current_command_hash", 1, &ControllerActionServer::currentCommandHash, this);
+
         server_.start();
       }
 
     private:
       ros::NodeHandle nh_;
-      ros::Subscriber feedback_sub_, current_command_sub_;
+      ros::Subscriber feedback_sub_;
       ros::Publisher command_pub_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> server_;
       std::shared_ptr<tf2_ros::BufferClient> tf_;
       giskard_msgs::ControllerFeedback controller_feedback_;
-      giskard_msgs::WholeBodyFeedback feedback_;
-      size_t running_command_hash_, current_command_hash_;
+      giskard_msgs::WholeBodyFeedback action_feedback_;
+      giskard_msgs::WholeBodyCommand last_command_;
+      size_t current_command_hash_;
       ros::Duration period_;
       ros::Time motion_start_time_;
-      std::string frame_id_;
+      std::string frame_id_, l_frame_id_, r_frame_id_;
       WholeBodyControllables body_controllables_;
       FeedbackThresholds thresholds_;
       std::map< std::string, double> thresh_map_;
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
-        feedback_ = calculateFeedback(*msg, motion_start_time_, 
-            body_controllables_, thresholds_, running_command_hash_,
+        action_feedback_ = calculateFeedback(*msg, motion_start_time_, 
+            body_controllables_, thresholds_, current_command_hash_,
             current_command_hash_);
-      }
-
-      void currentCommandHash(const std_msgs::UInt64::ConstPtr& msg)
-      {
-        running_command_hash_ = msg->data;
       }
 
       void execute(const giskard_msgs::WholeBodyGoalConstPtr& goal)
@@ -245,8 +218,7 @@ namespace giskard_examples
         giskard_msgs::WholeBodyCommand current_command;
         try
         {
-          // TODO: this one occasionally throws an error. Uncool!
-          current_command = processCommand(goal->command);
+          current_command = processCommand(goal->command, last_command_);
         }
         catch(tf2::TransformException& ex)
         {
@@ -269,23 +241,54 @@ namespace giskard_examples
           else
           {
             command_pub_.publish(current_command);
-            server_.publishFeedback(feedback_);
+            server_.publishFeedback(action_feedback_);
+            last_command_ = current_command;
             period_.sleep();
           }
         }
-        while(!motionFinished(feedback_));
-        server_.setSucceeded(calculateResult(feedback_));
+        while(!motionFinished(action_feedback_));
+
+        server_.setSucceeded(calculateResult(action_feedback_));
       }
 
-      giskard_msgs::WholeBodyCommand processCommand(const giskard_msgs::WholeBodyCommand& in_msg)
+      giskard_msgs::WholeBodyCommand processCommand(const giskard_msgs::WholeBodyCommand& new_command,
+          const giskard_msgs::WholeBodyCommand& old_command)
       {
-        giskard_msgs::WholeBodyCommand out_msg = in_msg;
-        if(in_msg.left_ee.process)
-          tf_->transform(in_msg.left_ee.goal, out_msg.left_ee.goal, frame_id_);
-        if(in_msg.right_ee.process)
-          tf_->transform(in_msg.right_ee.goal, out_msg.right_ee.goal, frame_id_);
+        giskard_msgs::WholeBodyCommand processed_command = new_command;
+        if(new_command.left_ee.process)
+          tf_->transform(new_command.left_ee.goal, processed_command.left_ee.goal, frame_id_);
+        else
+          processed_command.left_ee = old_command.left_ee;
+        if(new_command.right_ee.process)
+          tf_->transform(new_command.right_ee.goal, processed_command.right_ee.goal, frame_id_);
+        else
+          processed_command.right_ee = old_command.right_ee;
 
-        return out_msg;
+        return processed_command;
+      }
+
+      giskard_msgs::ArmCommand initArmCommand(const std::string& ee_frame_id, const ros::Time& stamp)
+      {
+        giskard_msgs::ArmCommand result;
+        result.process = true;
+        result.goal.header.stamp = stamp;
+        result.goal.header.frame_id = ee_frame_id;
+        result.goal.pose.orientation.w = 1.0;
+        std::string err_string;
+        if (!tf_->canTransform(ee_frame_id, frame_id_, stamp, ros::Duration(2), &err_string))
+          throw std::runtime_error(err_string);
+
+        tf_->transform(result.goal, result.goal, frame_id_);
+        return result;
+      }
+
+      void initLastCommand()
+      {
+        giskard_msgs::WholeBodyCommand init_command;
+        ros::Time now = ros::Time(0);
+        init_command.left_ee = initArmCommand(l_frame_id_, now);
+        init_command.right_ee = initArmCommand(r_frame_id_, now);
+        last_command_ = init_command;
       }
   };
 }
@@ -297,7 +300,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh("~");
 
   FeedbackThresholds thresholds;
-  thresholds.motion_old = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
+  thresholds.motion_old_ = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
   thresholds.bodypart_moves_ = readParam< std::map<std::string, double> >(nh, "thresholds/bodypart_moves");
   thresholds.cartesian_ = readParam< std::map<std::string, double> >(nh, "thresholds/cartesian");
 
@@ -307,12 +310,15 @@ int main(int argc, char **argv)
   body_controllables.right_arm = readParam< std::vector<std::string> >
     (nh, "body_controllables/right_arm");
   body_controllables.torso = readParam<std::string>(nh, "body_controllables/torso");
+  // TODO: refactor this into a container class
   std::string frame_id = readParam<std::string>(nh, "frame_id");
+  std::string l_frame_id = readParam<std::string>(nh, "l_frame_id");
+  std::string r_frame_id = readParam<std::string>(nh, "r_frame_id");
   double update_period = readParam<double>(nh, "update_period");
   double server_timeout = readParam<double>(nh, "server_timeout");
 
   ControllerActionServer server(nh, "move", update_period, "/tf2_buffer_server", 
-      frame_id, body_controllables, thresholds);
+      frame_id, l_frame_id, r_frame_id, body_controllables, thresholds);
   try
   {
     server.start(ros::Duration(server_timeout));

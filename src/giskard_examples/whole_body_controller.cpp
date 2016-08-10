@@ -23,8 +23,6 @@
 #include <ros/ros.h>
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
-#include <std_msgs/Float64.h>
-#include <std_msgs/UInt64.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <giskard_msgs/SemanticFloat64Array.h>
@@ -42,15 +40,13 @@ int nWSR_;
 giskard::QPController controller_;
 std::vector<std::string> joint_names_, double_names_, vector_names_;
 std::vector<ros::Publisher> vel_controllers_;
-ros::Publisher velocity_pub_, feedback_pub_, current_command_hash_pub_, current_command_pub_;
+ros::Publisher velocity_pub_, feedback_pub_;
 ros::Subscriber js_sub_;
 Eigen::VectorXd state_;
 bool controller_started_;
 std::string frame_id_;
 giskard_msgs::SemanticFloat64Array velocity_cmd_;
 giskard_msgs::ControllerFeedback feedback_;
-giskard_msgs::WholeBodyCommand current_command_;
-size_t current_command_hash_hash_;
 giskard_examples::Watchdog<ros::Time, ros::Duration> watchdog_;
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
@@ -80,25 +76,29 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
     giskard_msgs::WholeBodyCommand watchdog_cmd;
     size_t watchdog_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(watchdog_cmd);
  
-    if (current_command_hash_hash_ != watchdog_hash)
+    if (feedback_.current_command_hash != watchdog_hash)
     {
-      current_command_hash_hash_ = watchdog_hash;
-      current_command_pub_.publish(watchdog_cmd);
-      std_msgs::UInt64 hash_msg;
-      hash_msg.data = watchdog_hash;
-      current_command_hash_pub_.publish(hash_msg);
+      feedback_.current_command_hash= watchdog_hash;
+      feedback_.current_command = watchdog_cmd;
     }
     for (size_t i=0; i<velocity_cmd_.data.size(); ++i)
+    {
       velocity_cmd_.data[i].value = 0.0;
+      feedback_.commands[i].value = 0.0;
+    }
+
     velocity_pub_.publish(velocity_cmd_);
+    feedback_pub_.publish(feedback_);
   }
   else
     if (controller_.update(state_, nWSR_))
     {
+      // do control
       for (size_t i=0; i<velocity_cmd_.data.size(); ++i)
         velocity_cmd_.data[i].value = controller_.get_command()[i];
       velocity_pub_.publish(velocity_cmd_);
-   
+
+      // assemble feedback
       for(size_t i=0; i<feedback_.commands.size(); ++i)
         feedback_.commands[i].value = controller_.get_command()[i];
       for(size_t i=0; i<feedback_.slacks.size(); ++i)
@@ -166,7 +166,7 @@ Eigen::Matrix<double, 6, 1> process_pose(const geometry_msgs::PoseStamped& pose,
 void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
 {
   size_t new_command_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
-  if(current_command_hash_hash_ == new_command_hash)
+  if(feedback_.current_command_hash == new_command_hash)
   {
     watchdog_.kick(ros::Time::now());
     return;
@@ -185,18 +185,13 @@ void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
     return;
   }
 
-  current_command_hash_hash_ = new_command_hash;
   watchdog_.kick(ros::Time::now());
 
   if(msg->left_ee.process)
-    current_command_.left_ee = msg->left_ee;
+    feedback_.current_command.left_ee = msg->left_ee;
   if(msg->right_ee.process)
-    current_command_.right_ee = msg->right_ee;
-  current_command_pub_.publish(current_command_);
-
-  std_msgs::UInt64 hash_msg;
-  hash_msg.data = new_command_hash;
-  current_command_hash_pub_.publish(hash_msg);
+    feedback_.current_command.right_ee = msg->right_ee;
+  feedback_.current_command_hash = new_command_hash;
 
   // TODO: check that joint-state contains all necessary joints
 
@@ -290,8 +285,6 @@ int main(int argc, char **argv)
     velocity_cmd_.data[i].semantics = joint_names_[i];
 
   feedback_pub_ = nh.advertise<giskard_msgs::ControllerFeedback>("feedback", 1);
-  current_command_hash_pub_ = nh.advertise<std_msgs::UInt64>("current_command_hash", 1, true);
-  current_command_pub_ = nh.advertise<giskard_msgs::WholeBodyCommand>("current_command", 1, true);
   feedback_ = initFeedbackMsg(controller_);
 
   ROS_DEBUG("Waiting for goal.");

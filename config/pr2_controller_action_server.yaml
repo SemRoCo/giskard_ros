@@ -27,5 +27,7 @@ body_controllables:
     - l_wrist_roll_joint velocity
   torso: torso_lift_joint velocity
 frame_id: base_link
+l_frame_id: l_gripper_tool_frame
+r_frame_id: r_gripper_tool_frame
 update_period: 0.05
 server_timeout: 2.0

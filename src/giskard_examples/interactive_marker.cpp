@@ -62,7 +62,7 @@ giskard_msgs::ArmCommand create_identity_goal(const BodyPartSemantics& bodypart)
   command.goal.header.stamp = ros::Time::now();
   command.goal.header.frame_id = bodypart.get_frame_id();
   command.goal.pose.orientation.w = 1.0;
-  command.process = true;
+  command.process = false;
   return command;
 }
 
@@ -125,11 +125,15 @@ class WholeBodyInteractiveMarkers
         {
           goal_.command.left_ee.goal.header = feedback->header;
           goal_.command.left_ee.goal.pose = feedback->pose;
+          goal_.command.left_ee.process = true;
+          goal_.command.right_ee = create_identity_goal(right_ee_semantics_);
         }
         else if (feedback->marker_name.compare(right_ee_semantics_.get_name()) == 0)
         {
           goal_.command.right_ee.goal.header = feedback->header;
           goal_.command.right_ee.goal.pose = feedback->pose;
+          goal_.command.right_ee.process = true;
+          goal_.command.left_ee = create_identity_goal(left_ee_semantics_);
         }
         else
         {
