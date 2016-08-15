@@ -97,8 +97,8 @@ std::vector<visualization_msgs::Marker> to_markers(const giskard_msgs::WholeBody
 
   std::vector<visualization_msgs::Marker> l_arm_markers, r_arm_markers, result;
   // TODO: fix me
-  l_arm_markers = to_markers(msg.left_ee.goal, 0, marker_length, ns);
-  r_arm_markers = to_markers(msg.right_ee.goal, 3, marker_length, ns);
+  l_arm_markers = to_markers(msg.left_ee.goal_pose, 0, marker_length, ns);
+  r_arm_markers = to_markers(msg.right_ee.goal_pose, 3, marker_length, ns);
   result.reserve(l_arm_markers.size() + r_arm_markers.size());
   result.insert(result.end(), l_arm_markers.begin(), l_arm_markers.end());
   result.insert(result.end(), r_arm_markers.begin(), r_arm_markers.end());

@@ -35,3 +35,16 @@ frame_id: base_link
 l_fk_name: left_ee
 r_fk_name: right_ee
 watchdog_period: 0.1
+internals:
+  cart_cart:
+    doubles: [r_rot_error, l_rot_error, l_trans_error, r_trans_error]
+    vectors: []
+  cart_joint:
+    doubles: [l_rot_error, l_trans_error]
+    vectors: []
+  joint_cart:
+    doubles: [r_rot_error, r_trans_error]
+    vectors: []
+  joint_joint:
+    doubles: []
+    vectors: []

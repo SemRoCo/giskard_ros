@@ -8,7 +8,7 @@ thresholds:
     left_arm: 0.03
     right_arm: 0.03
     torso: 0.005
-  motion_old: 0.1
+  motion_old: 0.5
 body_controllables:
   right_arm:
     - r_elbow_flex_joint velocity

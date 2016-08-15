@@ -5,10 +5,10 @@
 giskard_msgs::ArmCommand make_arm_command(const geometry_msgs::Pose& pose)
 {
   giskard_msgs::ArmCommand msg;
-  msg.goal.header.stamp = ros::Time::now();
-  msg.goal.header.frame_id = "base_link";
-  msg.goal.pose = pose;
-  msg.process = true;
+  msg.goal_pose.header.stamp = ros::Time::now();
+  msg.goal_pose.header.frame_id = "base_link";
+  msg.goal_pose.pose = pose;
+  msg.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
   return msg;
 }
 

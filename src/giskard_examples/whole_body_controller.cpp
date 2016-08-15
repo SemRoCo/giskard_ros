@@ -74,7 +74,7 @@ namespace giskard_examples
       {
         controller_ = controller;
 
-        feedback_ = giskard_msgs::ControllerFeedback();
+//        feedback_ = giskard_msgs::ControllerFeedback();
 
         feedback_.commands.resize(controller_.num_controllables());
         for (size_t i=0; i<controller_.num_controllables(); ++i)
@@ -94,57 +94,56 @@ namespace giskard_examples
         return controller_;
       }
 
+      void set_double_names(const std::vector<std::string>& names)
+      {
+        feedback_.doubles.resize(names.size());
+        for (size_t i=0; i<names.size(); ++i)
+          feedback_.doubles[i].semantics = names[i];
+      }
+
+      void set_vector_names(const std::vector<std::string>& names)
+      {
+        feedback_.vectors.resize(names.size());
+        for (size_t i=0; i<names.size(); ++i)
+          feedback_.vectors[i].semantics = names[i];
+      }
+
       void set_command(const giskard_msgs::WholeBodyCommand& command)
       {
-        ROS_INFO("Call set_command");
         feedback_.current_command_hash = 
           giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(command);
         feedback_.current_command = command;
 
-        ROS_INFO("Setting left goal configuration.");
+        // FIXME: morph doubles and vectors
+
         switch (command.left_ee.type)
         {
           case giskard_msgs::ArmCommand::JOINT_GOAL:
-            ROS_INFO("left type: joint");
-            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
-            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
             state_.block(controller_.num_controllables(), 0, command.left_ee.goal_configuration.size(), 1) =
               to_eigen(command.left_ee.goal_configuration);
             break;
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-            ROS_INFO("left type: cartesian");
-            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
-            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
              state_.block(controller_.num_controllables(), 0, 6, 1) =
-              to_eigen(command.left_ee.goal.pose);
+              to_eigen(command.left_ee.goal_pose.pose);
             break;
           default:
             throw std::runtime_error("Received command of unknown type for left arm.");
         }
-        ROS_INFO("Setting right goal configuration.");
 
         size_t offset = (command.left_ee.type == giskard_msgs::ArmCommand::JOINT_GOAL ? 7 : 6);
-        ROS_INFO("offset: %lu", offset);
         switch (command.right_ee.type)
         {
           case giskard_msgs::ArmCommand::JOINT_GOAL:
-            ROS_INFO("right type: joint");
-            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
-            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
             state_.block(controller_.num_controllables() + offset, 0, command.right_ee.goal_configuration.size(), 1) =
               to_eigen(command.right_ee.goal_configuration);
             break;
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-            ROS_INFO("right type: cartesian");
-            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
-            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
             state_.block(controller_.num_controllables() + offset, 0, 6, 1) =
-              to_eigen(command.right_ee.goal.pose);
+              to_eigen(command.right_ee.goal_pose.pose);
             break;
           default:
             throw std::runtime_error("Received command of unknown type for left arm.");
         }
-        ROS_INFO("Finish set_command");
       }
 
       const giskard_msgs::WholeBodyCommand& get_command() const
@@ -170,15 +169,15 @@ namespace giskard_examples
         {
           // fill feedback
           feedback_.header = msg.header;
-          for(size_t i=0; i<feedback_.commands.size(); ++i)
+          for (size_t i=0; i<feedback_.commands.size(); ++i)
             feedback_.commands[i].value = controller_.get_command()[i];
-          for(size_t i=0; i<feedback_.slacks.size(); ++i)
+          for (size_t i=0; i<feedback_.slacks.size(); ++i)
             feedback_.slacks[i].value = controller_.get_slack()[i];
-          for(size_t i=0; i<feedback_.doubles.size(); ++i)
+          for (size_t i=0; i<feedback_.doubles.size(); ++i)
             feedback_.doubles[i].value = 
               controller_.get_scope().find_double_expression(
                 feedback_.doubles[i].semantics)->value();
-          for(size_t i=0; i<feedback_.vectors.size(); ++i)
+          for (size_t i=0; i<feedback_.vectors.size(); ++i)
               tf::vectorKDLToMsg(controller_.get_scope().find_vector_expression(
                     feedback_.vectors[i].semantics)->value(), feedback_.vectors[i].value);
           // fill command
@@ -197,14 +196,12 @@ namespace giskard_examples
 
       void set_joint_state(const sensor_msgs::JointState& msg)
       {
-        ROS_INFO("Call set_joint_state");
         // TODO: turn this into a map!
         // is there a more efficient way?
         for (size_t i=0; i < get_controller().num_controllables(); ++i)
           for (size_t j=0; j < msg.name.size(); ++j)
-            if (msg.name[j].compare(get_controller().get_controllable_names()[i]) == 0)
+            if (get_controller().get_controllable_names()[i].find(msg.name[j]) == 0)
               state_[i] = msg.position[j];
-        ROS_INFO("Finish set_joint_state");
       }
   };
 
@@ -385,6 +382,8 @@ namespace giskard_examples
                   "' did not match.");
 
           ControllerContext context;
+          context.set_double_names(readParam< std::vector<std::string> >(nh_, "internals/" + *it + "/doubles"));
+          context.set_vector_names(readParam< std::vector<std::string> >(nh_, "internals/" + *it + "/vectors"));
           ROS_INFO("Init controller %s", it->c_str());
           context.set_controller(controller);
           contexts_.insert( std::pair<std::string, ControllerContext>(*it, context));
@@ -460,7 +459,7 @@ namespace giskard_examples
         for (size_t i=0; i<joint_names.size(); ++i)
           for (size_t j=0; j<msg.name.size(); ++j)
             if (msg.name[j].compare(joint_names[i]) == 0)
-              result.goal_configuration.push_back(msg.position[i]);
+              result.goal_configuration.push_back(msg.position[j]);
 
         return result;
       }
@@ -470,8 +469,8 @@ namespace giskard_examples
       {
         giskard_msgs::ArmCommand result;
         result.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
-        result.goal.header.stamp = msg.header.stamp;
-        result.goal.header.frame_id = frame_id;
+        result.goal_pose.header.stamp = msg.header.stamp;
+        result.goal_pose.header.frame_id = frame_id;
         const giskard::QPController& controller = get_context("cart_cart").get_controller();
         KDL::Expression<KDL::Frame>::Ptr fk = controller.get_scope().find_frame_expression(fk_name);
         std::set<int> deps;
@@ -480,7 +479,7 @@ namespace giskard_examples
           for (size_t i=0; i<msg.name.size(); ++i)
             if (controller.get_controllable_names()[*it].find(msg.name[i]) == 0)
               fk->setInputValue(*it, msg.position[i]);
-        tf::poseKDLToMsg(fk->value(), result.goal.pose);
+        tf::poseKDLToMsg(fk->value(), result.goal_pose.pose);
         return result;
       }
 
@@ -538,7 +537,7 @@ namespace giskard_examples
             sanity_check(msg.goal_configuration, joint_names,name);
             break;
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-            sanity_check(msg.goal, name);
+            sanity_check(msg.goal_pose, name);
             break;
           default:
             throw std::runtime_error("Received command of unknown type for " + name + ".");
@@ -557,12 +556,9 @@ namespace giskard_examples
           const sensor_msgs::JointState& msg, 
           const std::string& name)
       {
-        ROS_INFO("Call start_controller '%s'", name.c_str());
         sanity_check(command);
         context.set_command(command);
         context.set_joint_state(msg);
-
-        ROS_INFO("End start_controller '%s'", name.c_str());
 
         if (!context.start(parameters_.nWSR))
           throw std::runtime_error("Could not start " + name + " controller.");

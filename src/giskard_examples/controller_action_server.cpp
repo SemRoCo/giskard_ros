@@ -206,9 +206,13 @@ namespace giskard_examples
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
-        action_feedback_ = calculateFeedback(*msg, motion_start_time_, 
-            body_controllables_, thresholds_, current_command_hash_,
-            current_command_hash_);
+        if (!msg->watchdog_active && server_.isActive())
+        {
+          action_feedback_ = calculateFeedback(*msg, motion_start_time_, 
+              body_controllables_, thresholds_, current_command_hash_,
+              current_command_hash_);
+          server_.publishFeedback(action_feedback_);
+        }
       }
 
       void execute(const giskard_msgs::WholeBodyGoalConstPtr& goal)
@@ -230,6 +234,7 @@ namespace giskard_examples
         motion_start_time_ = ros::Time::now();
 
         current_command_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(current_command);
+        action_feedback_ = giskard_msgs::WholeBodyFeedback();
 
         do
         {
@@ -241,7 +246,6 @@ namespace giskard_examples
           else
           {
             command_pub_.publish(current_command);
-            server_.publishFeedback(action_feedback_);
             last_command_ = current_command;
             period_.sleep();
           }
@@ -255,12 +259,15 @@ namespace giskard_examples
           const giskard_msgs::WholeBodyCommand& old_command)
       {
         giskard_msgs::WholeBodyCommand processed_command = new_command;
-        if(new_command.left_ee.process)
-          tf_->transform(new_command.left_ee.goal, processed_command.left_ee.goal, frame_id_);
+        std::string err_string;
+        // FIXME: get this timeout from somewhere
+        if(new_command.left_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
+          tf_->transform(new_command.left_ee.goal_pose, processed_command.left_ee.goal_pose, frame_id_, ros::Duration(0.1));
         else
           processed_command.left_ee = old_command.left_ee;
-        if(new_command.right_ee.process)
-          tf_->transform(new_command.right_ee.goal, processed_command.right_ee.goal, frame_id_);
+
+        if(new_command.right_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
+          tf_->transform(new_command.right_ee.goal_pose, processed_command.right_ee.goal_pose, frame_id_, ros::Duration(0.1));
         else
           processed_command.right_ee = old_command.right_ee;
 
@@ -270,15 +277,15 @@ namespace giskard_examples
       giskard_msgs::ArmCommand initArmCommand(const std::string& ee_frame_id, const ros::Time& stamp)
       {
         giskard_msgs::ArmCommand result;
-        result.process = true;
-        result.goal.header.stamp = stamp;
-        result.goal.header.frame_id = ee_frame_id;
-        result.goal.pose.orientation.w = 1.0;
+        result.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+        result.goal_pose.header.stamp = stamp;
+        result.goal_pose.header.frame_id = ee_frame_id;
+        result.goal_pose.pose.orientation.w = 1.0;
         std::string err_string;
         if (!tf_->canTransform(ee_frame_id, frame_id_, stamp, ros::Duration(2), &err_string))
           throw std::runtime_error(err_string);
 
-        tf_->transform(result.goal, result.goal, frame_id_);
+        tf_->transform(result.goal_pose, result.goal_pose, frame_id_);
         return result;
       }
 
