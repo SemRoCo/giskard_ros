@@ -263,12 +263,12 @@ namespace giskard_examples
         // FIXME: get this timeout from somewhere
         if(new_command.left_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
           tf_->transform(new_command.left_ee.goal_pose, processed_command.left_ee.goal_pose, frame_id_, ros::Duration(0.1));
-        else
+        if(new_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
           processed_command.left_ee = old_command.left_ee;
 
         if(new_command.right_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
           tf_->transform(new_command.right_ee.goal_pose, processed_command.right_ee.goal_pose, frame_id_, ros::Duration(0.1));
-        else
+        if(new_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
           processed_command.right_ee = old_command.right_ee;
 
         return processed_command;

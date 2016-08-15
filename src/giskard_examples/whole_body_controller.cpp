@@ -85,7 +85,6 @@ namespace giskard_examples
         for (size_t i=0; i<controller_.num_soft_constraints(); ++i)
           feedback_.slacks[i].semantics = controller_.get_soft_constraint_names()[i];
 
-        ROS_INFO("num_observables: %lu", controller_.num_observables());
         state_ = Eigen::VectorXd::Zero(controller_.num_observables());
       }
 
@@ -384,7 +383,6 @@ namespace giskard_examples
           ControllerContext context;
           context.set_double_names(readParam< std::vector<std::string> >(nh_, "internals/" + *it + "/doubles"));
           context.set_vector_names(readParam< std::vector<std::string> >(nh_, "internals/" + *it + "/vectors"));
-          ROS_INFO("Init controller %s", it->c_str());
           context.set_controller(controller);
           contexts_.insert( std::pair<std::string, ControllerContext>(*it, context));
         }
@@ -406,7 +404,6 @@ namespace giskard_examples
 
       void process_first_joint_state(const sensor_msgs::JointState& msg)
       {
-        ROS_INFO("Start process_first_joint_state");
         start_controller(contexts_.at("joint_joint"), 
             init_joint_joint_command(msg), msg, "joint_joint");
         start_controller(contexts_.at("cart_joint"), 
@@ -418,7 +415,6 @@ namespace giskard_examples
         state_ = WholeBodyControllerState::running;
         current_controller_ = "cart_cart";
         goal_sub_ = nh_.subscribe("goal", 0, &WholeBodyController::command_callback, this);
-        ROS_INFO("Finish process_first_joint_state");
       }
 
       void process_regular_joint_state(const sensor_msgs::JointState& msg)

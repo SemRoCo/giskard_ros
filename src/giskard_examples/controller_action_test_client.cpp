@@ -12,6 +12,14 @@ giskard_msgs::ArmCommand make_arm_command(const geometry_msgs::Pose& pose)
   return msg;
 }
 
+giskard_msgs::ArmCommand make_joint_goal(const std::vector<double> config)
+{
+  giskard_msgs::ArmCommand msg;
+  msg.goal_configuration = config;
+  msg.type = giskard_msgs::ArmCommand::JOINT_GOAL;
+  return msg;
+}
+
 geometry_msgs::Pose make_pose(double x, double y, double z, 
     double qx, double qy, double qz, double qw)
 {
@@ -51,6 +59,23 @@ giskard_msgs::WholeBodyGoal make_third_goal()
         0.461663572793, -0.39932199905, -0.488951012493, 0.623165783731));
   return goal;
 }
+
+giskard_msgs::WholeBodyGoal zero_goal()
+{
+  giskard_msgs::WholeBodyGoal goal;
+  return goal;
+}
+
+giskard_msgs::WholeBodyGoal first_goal()
+{
+  std::vector<double> right_config = {-0.9, 0.5, -0.9, -1.6, 5.0, -1.4, 1.8};
+  std::vector<double> left_config = {-0.9, 0.5, -0.9, -1.6, 5.0, -1.4, 1.8};
+  giskard_msgs::WholeBodyGoal goal;
+  goal.command.left_ee = make_joint_goal(left_config);
+  goal.command.right_ee = make_joint_goal(right_config);
+  return goal;
+}
+
 int main (int argc, char **argv)
 {
   ros::init(argc, argv, "controller_action_test_client");
@@ -61,28 +86,41 @@ int main (int argc, char **argv)
   client.waitForServer();
   ROS_INFO("Action server started, sending goal.");
 
-  // SEND FIRST GOAL FOR ENTIRE BODY WHICH TIMES OUT AFTER 10s
-  client.sendGoal(make_first_goal());
+  client.sendGoal(zero_goal());
+  if (client.waitForResult(ros::Duration(3)))
+    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
+  else
+    ROS_INFO("Action timed out.");
 
+  ros::Duration(0.2);
+  client.sendGoal(first_goal());
   if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
     ROS_INFO("Action timed out.");
 
-  // SEND SECOND GOAL FOR LEFT ARM ONLY WITHOUT WAITING FOR IT TO FINISH
-  ROS_INFO("Sending second goal.");
-  client.sendGoal(make_second_goal());
-  ros::Duration(1.0).sleep();
-
-
-  // SEND THIRD GOAL FOR LEFT ARM ONLY, SHOULD AUTOMATICALLY PREEMPT SECOND GOAL
-  ROS_INFO("Sent final goal to abort second one.");
-  client.sendGoal(make_third_goal());
-
-  if (client.waitForResult(ros::Duration(10)))
-    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
-  else
-    ROS_INFO("Action timed out.");
+//  // SEND FIRST GOAL FOR ENTIRE BODY WHICH TIMES OUT AFTER 10s
+//  client.sendGoal(make_first_goal());
+//
+//  if (client.waitForResult(ros::Duration(10)))
+//    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
+//  else
+//    ROS_INFO("Action timed out.");
+//
+//  // SEND SECOND GOAL FOR LEFT ARM ONLY WITHOUT WAITING FOR IT TO FINISH
+//  ROS_INFO("Sending second goal.");
+//  client.sendGoal(make_second_goal());
+//  ros::Duration(1.0).sleep();
+//
+//
+//  // SEND THIRD GOAL FOR LEFT ARM ONLY, SHOULD AUTOMATICALLY PREEMPT SECOND GOAL
+//  ROS_INFO("Sent final goal to abort second one.");
+//  client.sendGoal(make_third_goal());
+//
+//  if (client.waitForResult(ros::Duration(10)))
+//    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
+//  else
+//    ROS_INFO("Action timed out.");
 
   return 0;
 }
