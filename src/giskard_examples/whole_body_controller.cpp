@@ -22,6 +22,7 @@
 
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <ros/console.h>
 #include <sensor_msgs/JointState.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
@@ -30,207 +31,543 @@
 #include <giskard/giskard.hpp>
 #include <kdl_conversions/kdl_msg.h>
 #include <boost/lexical_cast.hpp>
+#include <giskard_examples/ros_utils.hpp>
 #include <giskard_examples/utils.hpp>
 #include <giskard_examples/watchdog.hpp>
 
 // TODO: separate this into a library and executable part
-// TODO: refactor this into classes
 
-int nWSR_;
-giskard::QPController controller_;
-std::vector<std::string> joint_names_, double_names_, vector_names_;
-std::vector<ros::Publisher> vel_controllers_;
-ros::Publisher velocity_pub_, feedback_pub_;
-ros::Subscriber js_sub_;
-Eigen::VectorXd state_;
-bool controller_started_;
-std::string frame_id_;
-giskard_msgs::SemanticFloat64Array velocity_cmd_;
-giskard_msgs::ControllerFeedback feedback_;
-giskard_examples::Watchdog<ros::Time, ros::Duration> watchdog_;
-
-void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
+namespace giskard_examples
 {
-  // TODO: turn this into a map!
-  // is there a more efficient way?
-  for (unsigned int i=0; i < joint_names_.size(); i++)
+  Eigen::VectorXd to_eigen(const std::vector<double>& v)
   {
-    for (unsigned int j=0; j < msg->name.size(); j++)
-    {
-      if (msg->name[j].compare(joint_names_[i]) == 0)
+    Eigen::VectorXd result(v.size());
+    for (size_t i=0; i<v.size(); ++i)
+      result[i] = v[i];
+    return result;
+  }
+
+  Eigen::VectorXd to_eigen(const geometry_msgs::Pose& p)
+  {
+    Eigen::VectorXd result(6);
+    result[0] = p.position.x;
+    result[1] = p.position.y;
+    result[2] = p.position.z;
+  
+    KDL::Rotation rot;
+    tf::quaternionMsgToKDL(p.orientation, rot);
+    rot.GetEulerZYX(result[3], result[4], result[5]);
+
+    return result;
+  }
+
+  class ControllerContext
+  {
+    private:
+      giskard::QPController controller_;
+      Eigen::VectorXd state_;
+      giskard_msgs::ControllerFeedback feedback_;
+      giskard_msgs::SemanticFloat64Array vel_command_;
+
+    public:
+      void set_controller(const giskard::QPController& controller)
       {
-        state_[i] = msg->position[j];
+        controller_ = controller;
+
+        feedback_ = giskard_msgs::ControllerFeedback();
+
+        feedback_.commands.resize(controller_.num_controllables());
+        for (size_t i=0; i<controller_.num_controllables(); ++i)
+          feedback_.commands[i].semantics = controller_.get_controllable_names()[i];
+        vel_command_.data = feedback_.commands;
+
+        feedback_.slacks.resize(controller_.num_soft_constraints());
+        for (size_t i=0; i<controller_.num_soft_constraints(); ++i)
+          feedback_.slacks[i].semantics = controller_.get_soft_constraint_names()[i];
+
+        ROS_INFO("num_observables: %lu", controller_.num_observables());
+        state_ = Eigen::VectorXd::Zero(controller_.num_observables());
       }
-    }
-  }
 
-  if (!controller_started_)
-    return;
+      const giskard::QPController& get_controller() const
+      {
+        return controller_;
+      }
 
-  feedback_.header.stamp = msg->header.stamp;
-  feedback_.header.frame_id = frame_id_;
-  if (watchdog_.barking(msg->header.stamp))
+      void set_command(const giskard_msgs::WholeBodyCommand& command)
+      {
+        ROS_INFO("Call set_command");
+        feedback_.current_command_hash = 
+          giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(command);
+        feedback_.current_command = command;
+
+        ROS_INFO("Setting left goal configuration.");
+        switch (command.left_ee.type)
+        {
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            ROS_INFO("left type: joint");
+            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
+            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
+            state_.block(controller_.num_controllables(), 0, command.left_ee.goal_configuration.size(), 1) =
+              to_eigen(command.left_ee.goal_configuration);
+            break;
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+            ROS_INFO("left type: cartesian");
+            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
+            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
+             state_.block(controller_.num_controllables(), 0, 6, 1) =
+              to_eigen(command.left_ee.goal.pose);
+            break;
+          default:
+            throw std::runtime_error("Received command of unknown type for left arm.");
+        }
+        ROS_INFO("Setting right goal configuration.");
+
+        size_t offset = (command.left_ee.type == giskard_msgs::ArmCommand::JOINT_GOAL ? 7 : 6);
+        ROS_INFO("offset: %lu", offset);
+        switch (command.right_ee.type)
+        {
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            ROS_INFO("right type: joint");
+            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
+            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
+            state_.block(controller_.num_controllables() + offset, 0, command.right_ee.goal_configuration.size(), 1) =
+              to_eigen(command.right_ee.goal_configuration);
+            break;
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+            ROS_INFO("right type: cartesian");
+            ROS_INFO("num_controllables: %lu, goal_size: %lu", controller_.num_controllables(), command.left_ee.goal_configuration.size());
+            ROS_INFO("state.rows: %lu, state.cols: %lu", state_.rows(), state_.cols());
+            state_.block(controller_.num_controllables() + offset, 0, 6, 1) =
+              to_eigen(command.right_ee.goal.pose);
+            break;
+          default:
+            throw std::runtime_error("Received command of unknown type for left arm.");
+        }
+        ROS_INFO("Finish set_command");
+      }
+
+      const giskard_msgs::WholeBodyCommand& get_command() const
+      {
+        return get_feedback().current_command;
+      }
+
+      const giskard_msgs::ControllerFeedback& get_feedback() const
+      {
+        return feedback_;
+      }
+
+      const giskard_msgs::SemanticFloat64Array& get_vel_command() const
+      {
+        return vel_command_;
+      }
+
+      bool update(const sensor_msgs::JointState& msg, int nWSR)
+      {
+        set_joint_state(msg);
+      
+        if (controller_.update(state_, nWSR))
+        {
+          // fill feedback
+          feedback_.header = msg.header;
+          for(size_t i=0; i<feedback_.commands.size(); ++i)
+            feedback_.commands[i].value = controller_.get_command()[i];
+          for(size_t i=0; i<feedback_.slacks.size(); ++i)
+            feedback_.slacks[i].value = controller_.get_slack()[i];
+          for(size_t i=0; i<feedback_.doubles.size(); ++i)
+            feedback_.doubles[i].value = 
+              controller_.get_scope().find_double_expression(
+                feedback_.doubles[i].semantics)->value();
+          for(size_t i=0; i<feedback_.vectors.size(); ++i)
+              tf::vectorKDLToMsg(controller_.get_scope().find_vector_expression(
+                    feedback_.vectors[i].semantics)->value(), feedback_.vectors[i].value);
+          // fill command
+          vel_command_.data = feedback_.commands;
+
+          return true;
+        }
+        else 
+          return false;
+      }
+
+      bool start(int nWSR)
+      {
+        return controller_.start(state_, nWSR);
+      }
+
+      void set_joint_state(const sensor_msgs::JointState& msg)
+      {
+        ROS_INFO("Call set_joint_state");
+        // TODO: turn this into a map!
+        // is there a more efficient way?
+        for (size_t i=0; i < get_controller().num_controllables(); ++i)
+          for (size_t j=0; j < msg.name.size(); ++j)
+            if (msg.name[j].compare(get_controller().get_controllable_names()[i]) == 0)
+              state_[i] = msg.position[j];
+        ROS_INFO("Finish set_joint_state");
+      }
+  };
+
+  class WholeBodyControllerParams
   {
-    // switch controller, and inform the outside world
-    // TODO: replace me with something meaningful, once we have joint-control
-    giskard_msgs::WholeBodyCommand watchdog_cmd;
-    size_t watchdog_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(watchdog_cmd);
+    public:
+      std::string frame_id, l_fk_name, r_fk_name;
+      std::vector< std::string > joint_names, l_arm_names, r_arm_names;
+      std::set< std::string > controller_types;
+      int nWSR;
+  };
+
+  enum class WholeBodyControllerState { constructed, started, running };
+
+  class WholeBodyController
+  {
+    public:
+      WholeBodyController(const ros::NodeHandle& nh): 
+        nh_(nh), state_(WholeBodyControllerState::constructed) {}
+      ~WholeBodyController() {}
+
+      void start()
+      {
+        ROS_DEBUG("Calling start.");
+        if (state_ == WholeBodyControllerState::constructed)
+        {
+          init_parameters();
+          watchdog_.setPeriod(ros::Duration(readParam<double>(nh_, "watchdog_period")));
+          init_controller_contexts();
+  
+          feedback_pub_ = nh_.advertise<giskard_msgs::ControllerFeedback>("feedback", 1, true);
+          velocity_pub_ = nh_.advertise<giskard_msgs::SemanticFloat64Array>("velocity_cmd", 1);
+          joint_state_sub_ = nh_.subscribe("joint_states", 0, &WholeBodyController::joint_state_callback, this);
+
+          state_ = WholeBodyControllerState::started;
+        }
+        ROS_DEBUG("Finished start.");
+      }
+
+    private:
+      ros::NodeHandle nh_;
+      ros::Publisher velocity_pub_, feedback_pub_;
+      ros::Subscriber goal_sub_, joint_state_sub_;
+
+      std::map< std::string, ControllerContext > contexts_;
+      Watchdog<ros::Time, ros::Duration> watchdog_;
+      std::string current_controller_;
+      WholeBodyControllerParams parameters_;
+      WholeBodyControllerState state_;
+
+      void joint_state_callback(const sensor_msgs::JointState::ConstPtr& msg)
+      {
+        ROS_DEBUG("Start joint_state_callback.");
+
+        if (state_ == WholeBodyControllerState::started)
+          process_first_joint_state(*msg);
+
+        if (watchdog_.barking(msg->header.stamp))
+          process_watchdog(msg->header);
+        else
+          process_regular_joint_state(*msg);
+
+        ROS_DEBUG("End joint_state_callback.");
+      }
+
+      void command_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
+      {
+        ROS_DEBUG("Start command_callback");
+
+        size_t new_command_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
+      
+        if(get_current_context().get_feedback().current_command_hash == new_command_hash)
+        {
+          watchdog_.kick(ros::Time::now());
+        }
+        else
+          process_new_command(*msg);
+
+        ROS_DEBUG("End command_callback");
+      }
+
+      // INTERNAL HELPER FUNCTIONS
+
+      ControllerContext& get_current_context()
+      {
+        return get_context(current_controller_);
+      }
+
+      ControllerContext& get_context(const std::string& controller)
+      {
+        if(parameters_.controller_types.count(controller) == 0)
+          throw std::runtime_error("Could not retrieve current controller with unknown name + '" + controller + "'.");
+
+        return contexts_[controller];
+      }
+
+      giskard_msgs::WholeBodyCommand complete_command(const giskard_msgs::WholeBodyCommand& new_command,
+          const giskard_msgs::WholeBodyCommand& current_command)
+      {
+        giskard_msgs::WholeBodyCommand completed_command = new_command;
+        if (completed_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+          completed_command.right_ee = current_command.right_ee;
+        if (completed_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+          completed_command.left_ee = current_command.left_ee;
+        return completed_command;
+      }
+
+      std::string infer_controller(const giskard_msgs::WholeBodyCommand& msg)
+      {
+        switch (msg.left_ee.type)
+        {
+          case (giskard_msgs::ArmCommand::JOINT_GOAL):
+            switch (msg.right_ee.type)
+            {
+              case (giskard_msgs::ArmCommand::JOINT_GOAL):
+                return "joint_joint";
+              case (giskard_msgs::ArmCommand::CARTESIAN_GOAL):
+                return "joint_cart";
+              default:
+                throw std::runtime_error("Got unknown controller type for right arm.");
+            }
+            break;
+          case (giskard_msgs::ArmCommand::CARTESIAN_GOAL):
+            switch (msg.right_ee.type)
+            {
+              case (giskard_msgs::ArmCommand::JOINT_GOAL):
+                return "cart_joint";
+              case (giskard_msgs::ArmCommand::CARTESIAN_GOAL):
+                return "cart_cart";
+              default:
+                throw std::runtime_error("Got unknown controller type for right arm.");
+            }
+            break;
+          default:
+            throw std::runtime_error("Got unknown controller type for left arm.");
+        }
+      }
+
+      void process_new_command(const giskard_msgs::WholeBodyCommand& msg)
+      {
+        giskard_msgs::WholeBodyCommand new_command = 
+          complete_command(msg, get_current_context().get_command());
+        current_controller_ = infer_controller(new_command);
+        get_current_context().set_command(new_command);
+        watchdog_.kick(ros::Time::now());
+      }
+
+      void init_parameters()
+      {
+        parameters_.nWSR = readParam<int>(nh_, "nWSR");
+        // TODO: extract joint_names from controller description
+        parameters_.joint_names = readParam< std::vector<std::string> >(nh_, "joint_names");
+        // TODO: harmonize with bodypart notation from other nodes?
+        parameters_.l_arm_names = readParam< std::vector<std::string> >(nh_, "l_arm_names");
+        parameters_.r_arm_names = readParam< std::vector<std::string> >(nh_, "r_arm_names");
+        parameters_.frame_id = readParam< std::string >(nh_, "frame_id");
+        parameters_.l_fk_name = readParam< std::string >(nh_, "l_fk_name");
+        parameters_.r_fk_name = readParam< std::string >(nh_, "r_fk_name");
+        parameters_.controller_types = {"cart_cart", "joint_cart", "cart_joint", "joint_joint"};
+      }
+
+      void init_controller_contexts()
+      {
+        ROS_DEBUG("Entering init_controller_contexts.");
+        std::map<std::string, std::string> controller_descriptions =
+          read_controller_descriptions();
+
+        for(std::set<std::string>::const_iterator it=parameters_.controller_types.begin();
+            it!=parameters_.controller_types.end(); ++it)
+        {
+          YAML::Node node = YAML::Load(controller_descriptions.at(*it));
+          giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
+          giskard::QPController controller = giskard::generate(spec);
+          for (size_t i=0; i<parameters_.joint_names.size(); ++i)
+            if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
+              throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
+                  "' and controllable '" + controller.get_controllable_names()[i] + 
+                  "' did not match.");
+
+          ControllerContext context;
+          ROS_INFO("Init controller %s", it->c_str());
+          context.set_controller(controller);
+          contexts_.insert( std::pair<std::string, ControllerContext>(*it, context));
+        }
+        ROS_DEBUG("Leaving init_controller_contexts.");
+      }
+
+      std::map<std::string, std::string> read_controller_descriptions()
+      {
+        ROS_DEBUG("Start reading controller descriptions.");
+        std::map<std::string, std::string> result = 
+          readParam< std::map<std::string, std::string> >(nh_, "controller_descriptions");
+        for (std::set<std::string>::const_iterator it=parameters_.controller_types.begin();
+             it!=parameters_.controller_types.end(); ++it)
+          if(result.find(*it) == result.end())
+            throw std::runtime_error("Could not find controller description for '" + *it + "'.");
+        ROS_DEBUG("Finished reading controller descriptions.");
+        return result;
+      }
+
+      void process_first_joint_state(const sensor_msgs::JointState& msg)
+      {
+        ROS_INFO("Start process_first_joint_state");
+        start_controller(contexts_.at("joint_joint"), 
+            init_joint_joint_command(msg), msg, "joint_joint");
+        start_controller(contexts_.at("cart_joint"), 
+            init_cart_joint_command(msg), msg, "cart_joint");
+        start_controller(contexts_.at("joint_cart"), 
+            init_joint_cart_command(msg), msg, "joint_cart");
+        start_controller(contexts_.at("cart_cart"), 
+            init_cart_cart_command(msg), msg, "cart_cart");
+        state_ = WholeBodyControllerState::running;
+        current_controller_ = "cart_cart";
+        goal_sub_ = nh_.subscribe("goal", 0, &WholeBodyController::command_callback, this);
+        ROS_INFO("Finish process_first_joint_state");
+      }
+
+      void process_regular_joint_state(const sensor_msgs::JointState& msg)
+      {
+        ControllerContext& context = get_current_context();
+        if (context.update(msg, parameters_.nWSR))
+        {
+          velocity_pub_.publish(context.get_vel_command());
+          feedback_pub_.publish(context.get_feedback());
+        }
+        else
+          throw std::runtime_error("Update of controller '" + current_controller_ + "' failed.");
+      }
+
+      void process_watchdog(const std_msgs::Header& header)
+      {
+        giskard_msgs::ControllerFeedback feedback;
+        giskard_msgs::SemanticFloat64Array command;
+        for (size_t i=0; i<parameters_.joint_names.size(); ++i)
+        {
+          giskard_msgs::SemanticFloat64 msg;
+          msg.value = 0.0;
+          msg.semantics = parameters_.joint_names[i];
+          feedback.commands.push_back(msg);
+        }
+        feedback.header = header;
+        feedback.watchdog_active = true;
+        feedback_pub_.publish(feedback);
+
+        command.data = feedback.commands;
+        velocity_pub_.publish(command);
+      }
+
+      giskard_msgs::ArmCommand init_arm_joint_command(const sensor_msgs::JointState& msg, const std::vector<std::string>& joint_names)
+      {
+        giskard_msgs::ArmCommand result;
+        result.type = giskard_msgs::ArmCommand::JOINT_GOAL;
+        for (size_t i=0; i<joint_names.size(); ++i)
+          for (size_t j=0; j<msg.name.size(); ++j)
+            if (msg.name[j].compare(joint_names[i]) == 0)
+              result.goal_configuration.push_back(msg.position[i]);
+
+        return result;
+      }
+      
+      giskard_msgs::ArmCommand init_arm_cart_command(const sensor_msgs::JointState& msg, 
+          const std::string& frame_id, const std::string& fk_name)
+      {
+        giskard_msgs::ArmCommand result;
+        result.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+        result.goal.header.stamp = msg.header.stamp;
+        result.goal.header.frame_id = frame_id;
+        const giskard::QPController& controller = get_context("cart_cart").get_controller();
+        KDL::Expression<KDL::Frame>::Ptr fk = controller.get_scope().find_frame_expression(fk_name);
+        std::set<int> deps;
+        fk->getDependencies(deps);
+        for (std::set<int>::const_iterator it=deps.begin(); it!=deps.end(); ++it)
+          for (size_t i=0; i<msg.name.size(); ++i)
+            if (controller.get_controllable_names()[*it].find(msg.name[i]) == 0)
+              fk->setInputValue(*it, msg.position[i]);
+        tf::poseKDLToMsg(fk->value(), result.goal.pose);
+        return result;
+      }
+
+      giskard_msgs::WholeBodyCommand init_joint_joint_command (const sensor_msgs::JointState& msg)
+      {
+        giskard_msgs::WholeBodyCommand result;
+        result.right_ee = init_arm_joint_command(msg, parameters_.r_arm_names);
+        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
+        return result;
+      }
+
+      giskard_msgs::WholeBodyCommand init_cart_cart_command (const sensor_msgs::JointState& msg)
+      {
+        giskard_msgs::WholeBodyCommand result;
+        result.left_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.l_fk_name);
+        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
+        return result;
+      }
+
+      giskard_msgs::WholeBodyCommand init_cart_joint_command (const sensor_msgs::JointState& msg)
+      {
+        giskard_msgs::WholeBodyCommand result;
+        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
+        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
+        return result;
+      }
+
+      giskard_msgs::WholeBodyCommand init_joint_cart_command (const sensor_msgs::JointState& msg)
+      {
+        giskard_msgs::WholeBodyCommand result;
+        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
+        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
+        return result;
+      }
+
+      void sanity_check(const std::vector<double>& v, const std::vector<std::string>& joint_names, const std::string& name)
+      {
+        if (v.size() != joint_names.size())
+          throw std::runtime_error("Did not find expected number of values for " + name + " joint goal.");
+      }
+         
+      void sanity_check(const geometry_msgs::PoseStamped& msg, const std::string& name)
+      {
+        if(msg.header.frame_id.compare(parameters_.frame_id) != 0)
+          throw std::runtime_error("frame_id of " + name + " goal did not match '" + 
+              parameters_.frame_id +"'.");
+      }
+
+      void sanity_check(const giskard_msgs::ArmCommand& msg, 
+          const std::vector<std::string>& joint_names, const std::string& name)
+      {
+        switch (msg.type)
+        {
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            sanity_check(msg.goal_configuration, joint_names,name);
+            break;
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+            sanity_check(msg.goal, name);
+            break;
+          default:
+            throw std::runtime_error("Received command of unknown type for " + name + ".");
+            break;
+        }
+      }
  
-    if (feedback_.current_command_hash != watchdog_hash)
-    {
-      feedback_.current_command_hash= watchdog_hash;
-      feedback_.current_command = watchdog_cmd;
-    }
-    for (size_t i=0; i<velocity_cmd_.data.size(); ++i)
-    {
-      velocity_cmd_.data[i].value = 0.0;
-      feedback_.commands[i].value = 0.0;
-    }
+      void sanity_check(const giskard_msgs::WholeBodyCommand& command)
+      {
+        sanity_check(command.right_ee, parameters_.l_arm_names, "right arm");
+        sanity_check(command.left_ee, parameters_.r_arm_names, "left arm");
+      }
 
-    velocity_pub_.publish(velocity_cmd_);
-    feedback_pub_.publish(feedback_);
-  }
-  else
-    if (controller_.update(state_, nWSR_))
-    {
-      // do control
-      for (size_t i=0; i<velocity_cmd_.data.size(); ++i)
-        velocity_cmd_.data[i].value = controller_.get_command()[i];
-      velocity_pub_.publish(velocity_cmd_);
+      void start_controller(ControllerContext& context, 
+          const giskard_msgs::WholeBodyCommand& command,
+          const sensor_msgs::JointState& msg, 
+          const std::string& name)
+      {
+        ROS_INFO("Call start_controller '%s'", name.c_str());
+        sanity_check(command);
+        context.set_command(command);
+        context.set_joint_state(msg);
 
-      // assemble feedback
-      for(size_t i=0; i<feedback_.commands.size(); ++i)
-        feedback_.commands[i].value = controller_.get_command()[i];
-      for(size_t i=0; i<feedback_.slacks.size(); ++i)
-        feedback_.slacks[i].value = controller_.get_slack()[i];
-      for(size_t i=0; i<feedback_.doubles.size(); ++i)
-        try
-        {
-          feedback_.doubles[i].value = controller_.get_scope().find_double_expression(feedback_.doubles[i].semantics)->value();
-        }
-        catch (const std::runtime_error& e)
-        {
-          ROS_WARN("Could not find internal double expression '%s'.", feedback_.doubles[i].semantics.c_str());
-        }
+        ROS_INFO("End start_controller '%s'", name.c_str());
 
-      for(size_t i=0; i<feedback_.vectors.size(); ++i)
-        try
-        {
-          tf::vectorKDLToMsg(controller_.get_scope().find_vector_expression(feedback_.vectors[i].semantics)->value(), feedback_.vectors[i].value);
-        }
-        catch (const std::runtime_error& e)
-        {
-          ROS_WARN("Could not find internal vector expression '%s'.", feedback_.vectors[i].semantics.c_str());
-        }
-
-
-      feedback_pub_.publish(feedback_);
-    }
-    else
-    {
-      ROS_WARN("Update failed.");
-      ROS_DEBUG_STREAM("Update failed. State: " << state_);
-    }
-
-  // TODO: publish diagnostics
-}
-
-void print_eigen(const Eigen::VectorXd& command)
-{
-  std::string cmd_str = " ";
-  for(size_t i=0; i<command.rows(); ++i)
-    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
-  ROS_DEBUG("Command: (%s)", cmd_str.c_str());
-}
-
-Eigen::Matrix<double, 6, 1> process_pose(const geometry_msgs::PoseStamped& pose, 
-    const std::string& frame_id, const std::string& bodypart)
-{
-  Eigen::Matrix<double, 6, 1> result;
-
-  if(pose.header.frame_id.compare(frame_id_) != 0)
-    throw std::runtime_error("frame_id of " + bodypart +
-        "goal did not match expected '" + frame_id +"'. Ignoring goal");
-
-  result[0] = pose.pose.position.x;
-  result[1] = pose.pose.position.y;
-  result[2] = pose.pose.position.z;
-
-  KDL::Rotation rot;
-  tf::quaternionMsgToKDL(pose.pose.orientation, rot);
-  rot.GetEulerZYX(result[3], result[4], result[5]);
-
-  return result;
-}
-
-void goal_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
-{
-  size_t new_command_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
-  if(feedback_.current_command_hash == new_command_hash)
-  {
-    watchdog_.kick(ros::Time::now());
-    return;
-  }
-
-  try
-  {
-    if(msg->left_ee.process)
-      state_.block<6,1>(joint_names_.size(), 0) = process_pose(msg->left_ee.goal, frame_id_, "left EE");
-    if(msg->right_ee.process)
-      state_.block<6,1>(joint_names_.size() + 6, 0) = process_pose(msg->right_ee.goal, frame_id_, "right EE");
-  }
-  catch(const std::exception& e)
-  {
-    ROS_WARN("%s", e.what());
-    return;
-  }
-
-  watchdog_.kick(ros::Time::now());
-
-  if(msg->left_ee.process)
-    feedback_.current_command.left_ee = msg->left_ee;
-  if(msg->right_ee.process)
-    feedback_.current_command.right_ee = msg->right_ee;
-  feedback_.current_command_hash = new_command_hash;
-
-  // TODO: check that joint-state contains all necessary joints
-
-  if (!controller_started_)
-  {
-    if (controller_.start(state_, nWSR_))
-    {
-      ROS_DEBUG("Controller started.");
-      controller_started_ = true;
-    }
-    else
-    {
-      ROS_ERROR("Couldn't start controller.");
-      print_eigen(state_);
-    }
-  }
-}
-
-giskard_msgs::ControllerFeedback initFeedbackMsg(const giskard::QPController& controller)
-{
-  giskard_msgs::ControllerFeedback msg;
-
-  msg.commands.resize(controller.get_controllable_names().size());
-  for(size_t i=0; i<controller.get_controllable_names().size(); ++i)
-    msg.commands[i].semantics = controller.get_controllable_names()[i];
-
-  msg.slacks.resize(controller.get_soft_constraint_names().size());
-  for(size_t i=0; i<controller.get_soft_constraint_names().size(); ++i)
-    msg.slacks[i].semantics = controller.get_soft_constraint_names()[i];
-
-  msg.doubles.resize(double_names_.size());
-  for(size_t i=0; i<double_names_.size(); ++i)
-    msg.doubles[i].semantics = double_names_[i];
-
-  msg.vectors.resize(vector_names_.size());
-  for(size_t i=0; i<vector_names_.size(); ++i)
-    msg.vectors[i].semantics = vector_names_[i];
-
-  return msg;
+        if (!context.start(parameters_.nWSR))
+          throw std::runtime_error("Could not start " + name + " controller.");
+      }
+  };
 }
 
 int main(int argc, char **argv)
@@ -238,59 +575,20 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "whole_body_controller");
   ros::NodeHandle nh("~");
 
-  nh.param("nWSR", nWSR_, 10);
-
-  std::string controller_description;
-  if (!nh.getParam("controller_description", controller_description))
+//  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
+//       ros::console::notifyLoggerLevelsChanged();
+//  }
+  ROS_DEBUG("Starting whole_body_controller.");
+  giskard_examples::WholeBodyController wbc(nh);
+  try
   {
-    ROS_ERROR("Parameter 'controller_description' not found in namespace '%s'.", nh.getNamespace().c_str());
-    return 0;
+    wbc.start();
+    ros::spin();
   }
-
-  // TODO: extract joint_names from controller description
-  if (!nh.getParam("joint_names", joint_names_))
+  catch (const std::exception& e)
   {
-    ROS_ERROR("Parameter 'joint_names' not found in namespace '%s'.", nh.getNamespace().c_str());
-    return 0;
+    ROS_ERROR("%s", e.what());
   }
-
-  nh.getParam("internals/doubles", double_names_);
-  nh.getParam("internals/vectors", vector_names_);
-
-  if (!nh.getParam("frame_id", frame_id_))
-  {
-    ROS_ERROR("Parameter 'frame_id' not found in namespace '%s'.", nh.getNamespace().c_str());
-    return 0;
-  }
-
-  double watchdog_period;
-  if (!nh.getParam("watchdog_period", watchdog_period))
-  {
-    ROS_ERROR("Parameter 'watchdog_period' not found in namespace '%s'.", nh.getNamespace().c_str());
-    return 0;
-  }
-
-  watchdog_.setPeriod(ros::Duration(watchdog_period));
-
-  YAML::Node node = YAML::Load(controller_description);
-  giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
-  controller_ = giskard::generate(spec);
-  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 2*6);
-  controller_started_ = false;
-
-  velocity_pub_ = nh.advertise<giskard_msgs::SemanticFloat64Array>("velocity_cmd", 1);
-
-  velocity_cmd_.data.resize(joint_names_.size());
-  for (size_t i=0; i<joint_names_.size(); ++i)
-    velocity_cmd_.data[i].semantics = joint_names_[i];
-
-  feedback_pub_ = nh.advertise<giskard_msgs::ControllerFeedback>("feedback", 1);
-  feedback_ = initFeedbackMsg(controller_);
-
-  ROS_DEBUG("Waiting for goal.");
-  ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);
-  js_sub_ = nh.subscribe("joint_states", 0, js_callback);
-  ros::spin();
 
   return 0;
 }
