@@ -1,9 +1,9 @@
 thresholds:
-  cartesian:
-    l_trans_error: 0.02
-    l_rot_error: 0.03
-    r_trans_error: 0.02
-    r_rot_error: 0.03
+  #  cartesian:
+  #    l_trans_error: 0.02
+  #    l_rot_error: 0.03
+  #    r_trans_error: 0.02
+  #    r_rot_error: 0.03
   bodypart_moves:
     left_arm: 0.03
     right_arm: 0.03

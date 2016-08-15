@@ -92,7 +92,7 @@ namespace giskard_examples
   {
     public:
       ros::Duration motion_old_;
-      std::map<std::string, double> cartesian_;
+      std::map<std::string, double> convergence_;
       std::map<std::string, double> bodypart_moves_;
   };
 
@@ -106,7 +106,7 @@ namespace giskard_examples
     result.state.running_time = msg.header.stamp - motion_start_time;
 
     std::map<std::string, double> command_index = toIndex(msg.commands);
-    std::map<std::string, giskard_msgs::SemanticFloat64> doubles_index = toIndex2(msg.doubles);
+    std::map<std::string, giskard_msgs::SemanticFloat64> convergence_index = toIndex2(msg.convergence_features);
 
     result.state.left_arm_max_vel = 
       lookupMaxAbsValue(command_index, body_controllables.left_arm);
@@ -123,16 +123,16 @@ namespace giskard_examples
       std::abs(result.state.left_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "left_arm"));
     result.state.right_arm_moving =
       std::abs(result.state.right_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "right_arm"));
-    for (std::map<std::string, double>::const_iterator it=thresholds.cartesian_.begin(); it!=thresholds.cartesian_.end(); ++it)
+    for (std::map<std::string, double>::const_iterator it=thresholds.convergence_.begin(); it!=thresholds.convergence_.end(); ++it)
     {
       giskard_msgs::SemanticFloat64 feature_value = 
-        exception_lookup<giskard_msgs::SemanticFloat64>(doubles_index, it->first);
-      result.state.feature_values.push_back(feature_value);
+        exception_lookup<giskard_msgs::SemanticFloat64>(convergence_index, it->first);
+      result.state.convergence_values.push_back(feature_value);
 
       giskard_msgs::SemanticBool flag;
       flag.semantics = it->first;
       flag.value = (std::abs(feature_value.value) < std::abs(it->second));
-      result.state.feature_flags.push_back(flag);
+      result.state.convergence_flags.push_back(flag);
     }
 
     return result;
@@ -143,9 +143,9 @@ namespace giskard_examples
     bool result = msg.state.motion_started && msg.state.motion_old && 
       !msg.state.torso_moving && !msg.state.left_arm_moving && !msg.state.right_arm_moving;
 
-    for (size_t i=0; i<msg.state.feature_flags.size(); ++i)
+    for (size_t i=0; i<msg.state.convergence_flags.size(); ++i)
       if (result)
-        result &= msg.state.feature_flags[i].value;
+        result &= msg.state.convergence_flags[i].value;
       else
         return false;
 
@@ -235,6 +235,7 @@ namespace giskard_examples
 
         current_command_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(current_command);
         action_feedback_ = giskard_msgs::WholeBodyFeedback();
+        thresholds_.convergence_ = toIndex(goal->command.convergence_thresholds);
 
         do
         {
@@ -309,7 +310,6 @@ int main(int argc, char **argv)
   FeedbackThresholds thresholds;
   thresholds.motion_old_ = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
   thresholds.bodypart_moves_ = readParam< std::map<std::string, double> >(nh, "thresholds/bodypart_moves");
-  thresholds.cartesian_ = readParam< std::map<std::string, double> >(nh, "thresholds/cartesian");
 
   WholeBodyControllables body_controllables;
   body_controllables.left_arm = readParam< std::vector<std::string> >

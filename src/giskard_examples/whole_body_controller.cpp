@@ -93,27 +93,13 @@ namespace giskard_examples
         return controller_;
       }
 
-      void set_double_names(const std::vector<std::string>& names)
-      {
-        feedback_.doubles.resize(names.size());
-        for (size_t i=0; i<names.size(); ++i)
-          feedback_.doubles[i].semantics = names[i];
-      }
-
-      void set_vector_names(const std::vector<std::string>& names)
-      {
-        feedback_.vectors.resize(names.size());
-        for (size_t i=0; i<names.size(); ++i)
-          feedback_.vectors[i].semantics = names[i];
-      }
-
       void set_command(const giskard_msgs::WholeBodyCommand& command)
       {
         feedback_.current_command_hash = 
           giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(command);
         feedback_.current_command = command;
 
-        // FIXME: morph doubles and vectors
+        feedback_.convergence_features = command.convergence_thresholds;
 
         switch (command.left_ee.type)
         {
@@ -172,6 +158,10 @@ namespace giskard_examples
             feedback_.commands[i].value = controller_.get_command()[i];
           for (size_t i=0; i<feedback_.slacks.size(); ++i)
             feedback_.slacks[i].value = controller_.get_slack()[i];
+          for (size_t i=0; i<feedback_.convergence_features.size(); ++i)
+            feedback_.convergence_features[i].value = 
+              controller_.get_scope().find_double_expression(
+                feedback_.convergence_features[i].semantics)->value();
           for (size_t i=0; i<feedback_.doubles.size(); ++i)
             feedback_.doubles[i].value = 
               controller_.get_scope().find_double_expression(
@@ -381,8 +371,6 @@ namespace giskard_examples
                   "' did not match.");
 
           ControllerContext context;
-          context.set_double_names(readParam< std::vector<std::string> >(nh_, "internals/" + *it + "/doubles"));
-          context.set_vector_names(readParam< std::vector<std::string> >(nh_, "internals/" + *it + "/vectors"));
           context.set_controller(controller);
           contexts_.insert( std::pair<std::string, ControllerContext>(*it, context));
         }
