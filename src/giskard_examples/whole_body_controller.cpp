@@ -99,7 +99,18 @@ namespace giskard_examples
           giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(command);
         feedback_.current_command = command;
 
-        feedback_.convergence_features = command.convergence_thresholds;
+        feedback_.convergence_features.clear();
+        feedback_.convergence_features.reserve(
+            command.left_ee.convergence_thresholds.size() +
+            command.right_ee.convergence_thresholds.size());
+        feedback_.convergence_features.insert
+          (feedback_.convergence_features.end(), 
+           command.left_ee.convergence_thresholds.begin(), 
+           command.left_ee.convergence_thresholds.end());
+        feedback_.convergence_features.insert
+          (feedback_.convergence_features.end(), 
+           command.right_ee.convergence_thresholds.begin(), 
+           command.right_ee.convergence_thresholds.end());
 
         switch (command.left_ee.type)
         {

@@ -247,7 +247,17 @@ namespace giskard_examples
 
         current_command_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(current_command);
         action_feedback_ = giskard_msgs::WholeBodyFeedback();
-        thresholds_.convergence_ = toIndex(goal->command.convergence_thresholds);
+
+        thresholds_.convergence_.clear();
+        for (size_t i=0; i<current_command.left_ee.convergence_thresholds.size(); ++i)
+          thresholds_.convergence_.insert(std::pair<std::string, double>(
+                current_command.left_ee.convergence_thresholds[i].semantics, 
+                current_command.left_ee.convergence_thresholds[i].value));
+
+        for (size_t i=0; i<current_command.right_ee.convergence_thresholds.size(); ++i)
+          thresholds_.convergence_.insert(std::pair<std::string, double>(
+                current_command.right_ee.convergence_thresholds[i].semantics, 
+                current_command.right_ee.convergence_thresholds[i].value));
 
         do
         {

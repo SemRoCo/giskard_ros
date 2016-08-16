@@ -121,7 +121,13 @@ scope:
   - r_rot_control: {double-mul: [rot_p_gain, {min: [rot_thresh, r_rot_error]}]}
 
   # definition of joint goals and control laws
-  - l_wrist_roll_control: {double-sub: [l_wrist_roll_joint_goal, l_wrist_roll_joint]}
+  - l_shoulder_pan_error: {double-sub: [l_shoulder_pan_joint_goal, l_shoulder_pan_joint]}
+  - l_shoulder_lift_error: {double-sub: [l_shoulder_lift_joint_goal, l_shoulder_lift_joint]}
+  - l_upper_arm_roll_error: {double-sub: [l_upper_arm_roll_joint_goal, l_upper_arm_roll_joint]}
+  - l_elbow_flex_error: {double-sub: [l_elbow_flex_joint_goal, l_elbow_flex_joint]}
+  - l_forearm_roll_error: {double-sub: [l_forearm_roll_joint_goal, l_forearm_roll_joint]}
+  - l_wrist_flex_error: {double-sub: [l_wrist_flex_joint_goal, l_wrist_flex_joint]}
+  - l_wrist_roll_error: {double-sub: [l_wrist_roll_joint_goal, l_wrist_roll_joint]}
 
   # some constants
   - weight_arm_joints: 1.0
@@ -159,8 +165,13 @@ soft-constraints:
   - soft-constraint: [r_rot_control, r_rot_control, weight_rot_control, r_rot_error, right EE rotation control slack]
   - soft-constraint: [-0.1, -0.1, weight_elbow_control, {y-coord: {origin-of: right_elbow}}, right elbow out control slack]
   - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
-  - soft-constraint: [l_wrist_roll_control, l_wrist_roll_control , weight_pos_control, l_wrist_roll_joint, l_wrist_roll_joint control slack]
-
+  - soft-constraint: [l_shoulder_pan_error, l_shoulder_pan_error , weight_pos_control, l_shoulder_pan_joint, l_shoulder_pan_joint control slack]
+  - soft-constraint: [l_shoulder_lift_error, l_shoulder_lift_error , weight_pos_control, l_shoulder_lift_joint, l_shoulder_lift_joint control slack]
+  - soft-constraint: [l_upper_arm_roll_error, l_upper_arm_roll_error , weight_pos_control, l_upper_arm_roll_joint, l_upper_arm_roll_joint control slack]
+  - soft-constraint: [l_elbow_flex_error, l_elbow_flex_error , weight_pos_control, l_elbow_flex_joint, l_elbow_flex_joint control slack]
+  - soft-constraint: [l_forearm_roll_error, l_forearm_roll_error , weight_pos_control, l_forearm_roll_joint, l_forearm_roll_joint control slack]
+  - soft-constraint: [l_wrist_flex_error, l_wrist_flex_error , weight_pos_control, l_wrist_flex_joint, l_wrist_flex_joint control slack]
+  - soft-constraint: [l_wrist_roll_error, l_wrist_roll_error , weight_pos_control, l_wrist_roll_joint, l_wrist_roll_joint control slack]
 
 hard-constraints:
   - hard-constraint:

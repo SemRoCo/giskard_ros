@@ -1,15 +1,25 @@
-joint_joint_thresholds:
-  l_shoulder_pan_error: 0.01
-  l_shoulder_lift_error: 0.01
-  l_upper_arm_roll_error: 0.01
-  l_elbow_flex_error: 0.01
-  l_forearm_roll_error: 0.01
-  l_wrist_flex_error: 0.01
-  l_wrist_roll_error: 0.01
-  r_shoulder_pan_error: 0.01
-  r_shoulder_lift_error: 0.01
-  r_upper_arm_roll_error: 0.01
-  r_elbow_flex_error: 0.01
-  r_forearm_roll_error: 0.01
-  r_wrist_flex_error: 0.01
-  r_wrist_roll_error: 0.01
+thresholds:
+  left_arm:
+    joint_control:
+      l_shoulder_pan_error: 0.01
+      l_shoulder_lift_error: 0.01
+      l_upper_arm_roll_error: 0.01
+      l_elbow_flex_error: 0.01
+      l_forearm_roll_error: 0.01
+      l_wrist_flex_error: 0.01
+      l_wrist_roll_error: 0.01
+    cartesian_control:
+      l_trans_error: 0.02
+      l_rot_error: 0.03
+  right_arm:
+    joint_control:
+      r_shoulder_pan_error: 0.01
+      r_shoulder_lift_error: 0.01
+      r_upper_arm_roll_error: 0.01
+      r_elbow_flex_error: 0.01
+      r_forearm_roll_error: 0.01
+      r_wrist_flex_error: 0.01
+      r_wrist_roll_error: 0.01
+    cartesian_control:
+      r_trans_error: 0.02
+      r_rot_error: 0.03
