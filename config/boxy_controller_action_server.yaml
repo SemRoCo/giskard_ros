@@ -1,0 +1,29 @@
+thresholds:
+  bodypart_moves:
+    left_arm: 0.03
+    right_arm: 0.03
+    torso: 0.005
+  motion_old: 0.5
+body_controllables:
+  right_arm:
+    - right_arm_0_joint velocity
+    - right_arm_1_joint velocity
+    - right_arm_2_joint velocity
+    - right_arm_3_joint velocity
+    - right_arm_4_joint velocity
+    - right_arm_5_joint velocity
+    - right_arm_6_joint velocity
+  left_arm:
+    - left_arm_0_joint velocity
+    - left_arm_1_joint velocity
+    - left_arm_2_joint velocity
+    - left_arm_3_joint velocity
+    - left_arm_4_joint velocity
+    - left_arm_5_joint velocity
+    - left_arm_6_joint velocity
+  torso: triangle_base_joint velocity
+frame_id: base_footprint
+l_frame_id: left_gripper_tool_frame
+r_frame_id: right_gripper_tool_frame
+update_period: 0.05
+server_timeout: 2.0

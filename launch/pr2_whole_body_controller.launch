@@ -3,26 +3,32 @@
 
   <group if="$(arg sim)" >
     <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
-      <rosparam param="joint_names"
-        file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
-      <param name="controller_description" 
-        textfile="$(find giskard_examples)/controller_specs/pr2_upper_body_qp_position_control.yaml" />
-      <rosparam command="load" file="$(find giskard_examples)/config/pr2_internals.yaml" />
-       <param name="frame_id" value="base_link" />
-      <param name="watchdog_period" value="0.1" />
+      <param name="controller_descriptions/cart_cart" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_cart_cart_control.yaml" />
+      <param name="controller_descriptions/joint_joint" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_joint_joint_control.yaml" />
+      <param name="controller_descriptions/joint_cart" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_joint_cart_control.yaml" />
+      <param name="controller_descriptions/cart_joint" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_cart_joint_control.yaml" />
+      <rosparam command="load"
+        file="$(find giskard_examples)/config/pr2_whole_body_controller.yaml" />
       <remap from="~joint_states" to="/joint_states" />
     </node>
   </group>
 
   <group unless="$(arg sim)" >
     <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
-      <rosparam param="joint_names"
-        file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
-      <param name="controller_description" 
-        textfile="$(find giskard_examples)/controller_specs/iai_pr2_upper_body_qp_position_control.yaml" />
-      <rosparam command="load" file="$(find giskard_examples)/config/pr2_internals.yaml" />
-       <param name="frame_id" value="base_link" />
-      <param name="watchdog_period" value="0.1" />
+      <param name="controller_descriptions/cart_cart" 
+        textfile="$(find giskard_examples)/controller_specs/iai_pr2_cart_cart_control.yaml" />
+      <param name="controller_descriptions/joint_joint" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_joint_joint_control.yaml" />
+      <param name="controller_descriptions/joint_cart" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_joint_cart_control.yaml" />
+      <param name="controller_descriptions/cart_joint" 
+        textfile="$(find giskard_examples)/controller_specs/iai_pr2_cart_joint_control.yaml" />
+      <rosparam command="load"
+        file="$(find giskard_examples)/config/pr2_whole_body_controller.yaml" />
       <remap from="~joint_states" to="/joint_states" />
     </node>
   </group>
@@ -33,18 +39,12 @@
     <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
   </node>
 
+
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
     <remap from="~command" to="whole_body_controller/goal" />
-    <remap from="~current_command_hash" to="whole_body_controller/current_command_hash" />
     <remap from="~feedback" to="whole_body_controller/feedback" />
-    <param name="thresholds/motion_old" value="0.1" />
-    <param name="thresholds/bodypart_moves" value="0.03" />
-    <param name="thresholds/pos_convergence" value="0.02" />
-    <param name="thresholds/rot_convergence" value="0.03" />
-    <rosparam command="load" file="$(find giskard_examples)/config/pr2_controllables.yaml" />
-    <param name="frame_id" value="base_link" />
-    <param name="update_period" value="0.05" />
-    <param name="server_timeout" value="2.0" />
+    <rosparam command="load"
+      file="$(find giskard_examples)/config/pr2_controller_action_server.yaml" />
   </node>
 </launch>

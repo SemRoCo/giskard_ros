@@ -22,7 +22,7 @@
 #include <exception>
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <giskard_msgs/WholeBodyCommand.h>
+#include <giskard_msgs/ControllerFeedback.h>
 #include <kdl_conversions/kdl_msg.h>
 
 std::vector<visualization_msgs::Marker> to_markers(const geometry_msgs::PoseStamped& msg, size_t id, double marker_length, const std::string& ns)
@@ -96,8 +96,9 @@ std::vector<visualization_msgs::Marker> to_markers(const giskard_msgs::WholeBody
 {
 
   std::vector<visualization_msgs::Marker> l_arm_markers, r_arm_markers, result;
-  l_arm_markers = to_markers(msg.left_ee.goal, 0, marker_length, ns);
-  r_arm_markers = to_markers(msg.right_ee.goal, 3, marker_length, ns);
+  // TODO: fix me
+  l_arm_markers = to_markers(msg.left_ee.goal_pose, 0, marker_length, ns);
+  r_arm_markers = to_markers(msg.right_ee.goal_pose, 3, marker_length, ns);
   result.reserve(l_arm_markers.size() + r_arm_markers.size());
   result.insert(result.end(), l_arm_markers.begin(), l_arm_markers.end());
   result.insert(result.end(), r_arm_markers.begin(), r_arm_markers.end());
@@ -114,7 +115,7 @@ namespace giskard_examples
       void start() 
       {
         pub_ = nh_.advertise<visualization_msgs::MarkerArray>("markers", 1);
-        sub_ = nh_.subscribe("goal", 1, &GoalMarkerViz::callback, this);
+        sub_ = nh_.subscribe("feedback", 1, &GoalMarkerViz::callback, this);
       }
 
     private:
@@ -122,12 +123,11 @@ namespace giskard_examples
       ros::Subscriber sub_;
       ros::Publisher pub_;
 
-      void callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
+      void callback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
         visualization_msgs::MarkerArray out_msg;
-        // TODO: get this from the server or a callback?
-        out_msg.markers = to_markers(*msg, 0.1, "command");
-        ROS_INFO("Published marker.");
+        // TODO: get this from the server or a callback
+        out_msg.markers = to_markers(msg->current_command, 0.1, nh_.getNamespace());
         pub_.publish(out_msg);
       }
   };

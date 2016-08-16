@@ -2,14 +2,18 @@
   <arg name="sim" default="true" />
 
   <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
-    <rosparam param="joint_names"
-      file="$(find giskard_examples)/config/boxy_upper_body.yaml" />
-    <param name="controller_description" 
-      textfile="$(find giskard_examples)/controller_specs/boxy_upper_body_qp_position_control.yaml" />
-    <rosparam command="load" file="$(find giskard_examples)/config/boxy_internals.yaml" />
-     <param name="frame_id" value="base_footprint" />
-    <param name="watchdog_period" value="0.1" />
-    <remap from="~joint_states" to="/joint_states" />
+    <rosparam command="load"
+      file="$(find giskard_examples)/config/boxy_whole_body_controller.yaml"/>
+    <param name="controller_descriptions/cart_cart" 
+      textfile="$(find giskard_examples)/controller_specs/boxy_cart_cart_control.yaml" />
+    <param name="controller_descriptions/joint_joint" 
+      textfile="$(find giskard_examples)/controller_specs/boxy_joint_joint_control.yaml" />
+    <param name="controller_descriptions/joint_cart" 
+      textfile="$(find giskard_examples)/controller_specs/boxy_joint_cart_control.yaml" />
+    <param name="controller_descriptions/cart_joint" 
+      textfile="$(find giskard_examples)/controller_specs/boxy_cart_joint_control.yaml" />
+    <remap from="~joint_states" to="/joint_states" if="$(arg sim)" />
+    <remap from="~joint_states" to="/joint_states_ideal" unless="$(arg sim)" />
   </node>
 
   <group if="$(arg sim)" >
@@ -20,19 +24,11 @@
     </node>
   </group>
 
-
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
     <remap from="~command" to="whole_body_controller/goal" />
-    <remap from="~current_command_hash" to="whole_body_controller/current_command_hash" />
     <remap from="~feedback" to="whole_body_controller/feedback" />
-    <param name="thresholds/motion_old" value="0.1" />
-    <param name="thresholds/bodypart_moves" value="0.03" />
-    <param name="thresholds/pos_convergence" value="0.02" />
-    <param name="thresholds/rot_convergence" value="0.03" />
-    <rosparam command="load" file="$(find giskard_examples)/config/boxy_controllables.yaml" />
-    <param name="frame_id" value="base_footprint" />
-    <param name="update_period" value="0.05" />
-    <param name="server_timeout" value="2.0" />
+    <rosparam command="load"
+      file="$(find giskard_examples)/config/boxy_controller_action_server.yaml" />
   </node>
 </launch>

@@ -59,10 +59,10 @@ class BodyPartSemantics
 giskard_msgs::ArmCommand create_identity_goal(const BodyPartSemantics& bodypart)
 {
   giskard_msgs::ArmCommand command;
-  command.goal.header.stamp = ros::Time::now();
-  command.goal.header.frame_id = bodypart.get_frame_id();
-  command.goal.pose.orientation.w = 1.0;
-  command.process = true;
+  command.goal_pose.header.stamp = ros::Time::now();
+  command.goal_pose.header.frame_id = bodypart.get_frame_id();
+  command.goal_pose.pose.orientation.w = 1.0;
+  command.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
   return command;
 }
 
@@ -123,13 +123,17 @@ class WholeBodyInteractiveMarkers
 
         if(feedback->marker_name.compare(left_ee_semantics_.get_name()) == 0)
         {
-          goal_.command.left_ee.goal.header = feedback->header;
-          goal_.command.left_ee.goal.pose = feedback->pose;
+          goal_.command.left_ee.goal_pose.header = feedback->header;
+          goal_.command.left_ee.goal_pose.pose = feedback->pose;
+          goal_.command.left_ee.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+          goal_.command.right_ee = create_identity_goal(right_ee_semantics_);
         }
         else if (feedback->marker_name.compare(right_ee_semantics_.get_name()) == 0)
         {
-          goal_.command.right_ee.goal.header = feedback->header;
-          goal_.command.right_ee.goal.pose = feedback->pose;
+          goal_.command.right_ee.goal_pose.header = feedback->header;
+          goal_.command.right_ee.goal_pose.pose = feedback->pose;
+          goal_.command.right_ee.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+          goal_.command.left_ee = create_identity_goal(left_ee_semantics_);
         }
         else
         {

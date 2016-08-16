@@ -1,0 +1,207 @@
+#
+# Copyright (C) 2015-2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+#
+# This file is part of giskard.
+#
+# giskard is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+
+scope:
+  # definition of some nice short-cuts
+  - unit_x: {vector3: [1, 0, 0]}
+  - unit_y: {vector3: [0, 1, 0]}
+  - unit_z: {vector3: [0, 0, 1]}
+
+
+  # definition of joint input variables
+  - triangle_base_joint_var:
+      input-var: 0
+  - left_arm_0_joint_var:
+      input-var: 1
+  - left_arm_1_joint_var:
+      input-var: 2
+  - left_arm_2_joint_var:
+      input-var: 3
+  - left_arm_3_joint_var:
+      input-var: 4
+  - left_arm_4_joint_var:
+      input-var: 5
+  - left_arm_5_joint_var:
+      input-var: 6
+  - left_arm_6_joint_var:
+      input-var: 7
+  - right_arm_0_joint_var:
+      input-var: 8 
+  - right_arm_1_joint_var:
+      input-var: 9 
+  - right_arm_2_joint_var:
+      input-var: 10
+  - right_arm_3_joint_var:
+      input-var: 11
+  - right_arm_4_joint_var:
+      input-var: 12
+  - right_arm_5_joint_var:
+      input-var: 13
+  - right_arm_6_joint_var:
+      input-var: 14
+
+  # definition goal input variables
+  - left_arm_0_joint_goal:
+      input-var: 15
+  - left_arm_1_joint_goal:
+      input-var: 16
+  - left_arm_2_joint_goal:
+      input-var: 17
+  - left_arm_3_joint_goal:
+      input-var: 18
+  - left_arm_4_joint_goal:
+      input-var: 19
+  - left_arm_5_joint_goal:
+      input-var: 20
+  - left_arm_6_joint_goal:
+      input-var: 21
+  - right_arm_0_joint_goal:
+      input-var: 22
+  - right_arm_1_joint_goal:
+      input-var: 23
+  - right_arm_2_joint_goal:
+      input-var: 24
+  - right_arm_3_joint_goal:
+      input-var: 25
+  - right_arm_4_joint_goal:
+      input-var: 26
+  - right_arm_5_joint_goal:
+      input-var: 27
+  - right_arm_6_joint_goal:
+      input-var: 28
+
+  # control params
+
+  # definition goals and control laws
+  - left_arm_0_error: {double-sub: [left_arm_0_joint_goal, left_arm_0_joint_var]}
+  - left_arm_1_error: {double-sub: [left_arm_1_joint_goal, left_arm_1_joint_var]}
+  - left_arm_2_error: {double-sub: [left_arm_2_joint_goal, left_arm_2_joint_var]}
+  - left_arm_3_error: {double-sub: [left_arm_3_joint_goal, left_arm_3_joint_var]}
+  - left_arm_4_error: {double-sub: [left_arm_4_joint_goal, left_arm_4_joint_var]}
+  - left_arm_5_error: {double-sub: [left_arm_5_joint_goal, left_arm_5_joint_var]}
+  - left_arm_6_error: {double-sub: [left_arm_6_joint_goal, left_arm_6_joint_var]}
+  - right_arm_0_error: {double-sub: [right_arm_0_joint_goal, right_arm_0_joint_var]}
+  - right_arm_1_error: {double-sub: [right_arm_1_joint_goal, right_arm_1_joint_var]}
+  - right_arm_2_error: {double-sub: [right_arm_2_joint_goal, right_arm_2_joint_var]}
+  - right_arm_3_error: {double-sub: [right_arm_3_joint_goal, right_arm_3_joint_var]}
+  - right_arm_4_error: {double-sub: [right_arm_4_joint_goal, right_arm_4_joint_var]}
+  - right_arm_5_error: {double-sub: [right_arm_5_joint_goal, right_arm_5_joint_var]}
+  - right_arm_6_error: {double-sub: [right_arm_6_joint_goal, right_arm_6_joint_var]}
+
+  # some constants
+  - weight_arm_joints: 1.0
+  - weight_pos_control: 10.0
+  - neg_vel_limit_arm_joints: -0.5
+  - pos_vel_limit_arm_joints: 0.5
+
+controllable-constraints:
+  - controllable-constraint: [-0.05, 0.05, 100.0, 0, triangle_base_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, left_arm_0_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, left_arm_1_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 3, left_arm_2_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 4, left_arm_3_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 5, left_arm_4_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 6, left_arm_5_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 7, left_arm_6_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 8, right_arm_0_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 9, right_arm_1_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 10, right_arm_2_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 11, right_arm_3_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 12, right_arm_4_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 13, right_arm_5_joint velocity]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 14, right_arm_6_joint velocity]
+
+soft-constraints:
+  - soft-constraint: [left_arm_0_error, left_arm_0_error, weight_pos_control, left_arm_0_joint_var, left_arm_0_joint control slack]
+  - soft-constraint: [left_arm_1_error, left_arm_1_error, weight_pos_control, left_arm_1_joint_var, left_arm_1_joint control slack]
+  - soft-constraint: [left_arm_2_error, left_arm_2_error, weight_pos_control, left_arm_2_joint_var, left_arm_2_joint control slack]
+  - soft-constraint: [left_arm_3_error, left_arm_3_error, weight_pos_control, left_arm_3_joint_var, left_arm_3_joint control slack]
+  - soft-constraint: [left_arm_4_error, left_arm_4_error, weight_pos_control, left_arm_4_joint_var, left_arm_4_joint control slack]
+  - soft-constraint: [left_arm_5_error, left_arm_5_error, weight_pos_control, left_arm_5_joint_var, left_arm_5_joint control slack]
+  - soft-constraint: [left_arm_6_error, left_arm_6_error, weight_pos_control, left_arm_6_joint_var, left_arm_6_joint control slack]
+  - soft-constraint: [right_arm_0_error, right_arm_0_error, weight_pos_control, right_arm_0_joint_var, right_arm_0_joint control slack]
+  - soft-constraint: [right_arm_1_error, right_arm_1_error, weight_pos_control, right_arm_1_joint_var, right_arm_1_joint control slack]
+  - soft-constraint: [right_arm_2_error, right_arm_2_error, weight_pos_control, right_arm_2_joint_var, right_arm_2_joint control slack]
+  - soft-constraint: [right_arm_3_error, right_arm_3_error, weight_pos_control, right_arm_3_joint_var, right_arm_3_joint control slack]
+  - soft-constraint: [right_arm_4_error, right_arm_4_error, weight_pos_control, right_arm_4_joint_var, right_arm_4_joint control slack]
+  - soft-constraint: [right_arm_5_error, right_arm_5_error, weight_pos_control, right_arm_5_joint_var, right_arm_5_joint control slack]
+  - soft-constraint: [right_arm_6_error, right_arm_6_error, weight_pos_control, right_arm_6_joint_var, right_arm_6_joint control slack]
+
+hard-constraints:
+  - hard-constraint:
+      - {double-sub: [-0.586, triangle_base_joint_var]}
+      - {double-sub: [0.0, triangle_base_joint_var]}
+      - triangle_base_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, left_arm_0_joint_var]}
+      - {double-sub: [2.6, left_arm_0_joint_var]}
+      - left_arm_0_joint_var
+  - hard-constraint:
+      - {double-sub: [-1.86, left_arm_1_joint_var]}
+      - {double-sub: [1.86, left_arm_1_joint_var]}
+      - left_arm_1_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, left_arm_2_joint_var]}
+      - {double-sub: [2.6, left_arm_2_joint_var]}
+      - left_arm_2_joint_var
+  - hard-constraint:
+      - {double-sub: [-1.86, left_arm_3_joint_var]}
+      - {double-sub: [1.86, left_arm_3_joint_var]}
+      - left_arm_3_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, left_arm_4_joint_var]}
+      - {double-sub: [2.6, left_arm_4_joint_var]}
+      - left_arm_4_joint_var
+  - hard-constraint:
+      - {double-sub: [-1.99, left_arm_5_joint_var]}
+      - {double-sub: [1.99, left_arm_5_joint_var]}
+      - left_arm_5_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, left_arm_6_joint_var]}
+      - {double-sub: [2.6, left_arm_6_joint_var]}
+      - left_arm_6_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, right_arm_0_joint_var]}
+      - {double-sub: [2.6, right_arm_0_joint_var]}
+      - right_arm_0_joint_var
+  - hard-constraint:
+      - {double-sub: [-1.86, right_arm_1_joint_var]}
+      - {double-sub: [1.86, right_arm_1_joint_var]}
+      - right_arm_1_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, right_arm_2_joint_var]}
+      - {double-sub: [2.6, right_arm_2_joint_var]}
+      - right_arm_2_joint_var
+  - hard-constraint:
+      - {double-sub: [-1.86, right_arm_3_joint_var]}
+      - {double-sub: [1.86, right_arm_3_joint_var]}
+      - right_arm_3_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, right_arm_4_joint_var]}
+      - {double-sub: [2.6, right_arm_4_joint_var]}
+      - right_arm_4_joint_var
+  - hard-constraint:
+      - {double-sub: [-1.99, right_arm_5_joint_var]}
+      - {double-sub: [1.99, right_arm_5_joint_var]}
+      - right_arm_5_joint_var
+  - hard-constraint:
+      - {double-sub: [-2.6, right_arm_6_joint_var]}
+      - {double-sub: [2.6, right_arm_6_joint_var]}
+      - right_arm_6_joint_var

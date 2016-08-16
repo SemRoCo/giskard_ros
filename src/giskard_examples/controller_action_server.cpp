@@ -29,7 +29,6 @@
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_msgs/ControllerFeedback.h>
-#include <std_msgs/UInt64.h>
 #include <algorithm>
 
 namespace giskard_examples
@@ -43,9 +42,19 @@ namespace giskard_examples
     return index;
   }
 
-  inline double exception_lookup(const std::map<std::string, double>& index, const std::string& name)
+  inline std::map<std::string, giskard_msgs::SemanticFloat64> toIndex2(const std::vector<giskard_msgs::SemanticFloat64>& msgs)
   {
-    std::map<std::string, double>::const_iterator it = index.find(name);
+    std::map<std::string, giskard_msgs::SemanticFloat64> index;
+    for (size_t i=0; i<msgs.size(); ++i)
+      index.insert(std::pair<std::string, giskard_msgs::SemanticFloat64>(msgs[i].semantics, msgs[i]));
+
+    return index;
+  }
+
+  template<class T>
+  inline T exception_lookup(const std::map<std::string, T>& index, const std::string& name)
+  {
+    typename std::map<std::string, T>::const_iterator it = index.find(name);
     if( it == index.end())
       throw std::runtime_error("Could not find element with semantics '" + name +
         "' in feedback message from controller.");
@@ -66,7 +75,7 @@ namespace giskard_examples
   {
     double result = 0.0;
     for (size_t i=0; i<search_names.size(); ++i)
-      result = maxAbsValue(result, exception_lookup(index, search_names[i]));
+      result = maxAbsValue(result, exception_lookup<double>(index, search_names[i]));
     
     return result;
   }
@@ -82,64 +91,69 @@ namespace giskard_examples
   class FeedbackThresholds
   {
     public:
-      ros::Duration motion_old;
-      double bodypart_moves, pos_convergence, rot_convergence;
+      ros::Duration motion_old_;
+      std::map<std::string, double> convergence_;
+      std::map<std::string, double> bodypart_moves_;
   };
 
   inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg,
       const ros::Time& motion_start_time, const WholeBodyControllables& body_controllables,
-      const FeedbackThresholds& thresholds, size_t running_command_hash,
-      size_t current_command_hash)
+      const FeedbackThresholds& thresholds, size_t current_command_hash)
   {
     giskard_msgs::WholeBodyFeedback result;
     result.state.header = msg.header;
     result.state.running_time = msg.header.stamp - motion_start_time;
 
     std::map<std::string, double> command_index = toIndex(msg.commands);
-    std::map<std::string, double> doubles_index = toIndex(msg.doubles);
+    std::map<std::string, giskard_msgs::SemanticFloat64> convergence_index = toIndex2(msg.convergence_features);
 
     result.state.left_arm_max_vel = 
       lookupMaxAbsValue(command_index, body_controllables.left_arm);
     result.state.right_arm_max_vel = 
       lookupMaxAbsValue(command_index, body_controllables.right_arm);
     result.state.torso_vel = 
-      exception_lookup(command_index, body_controllables.torso);
-    result.state.left_arm_pos_error =
-      exception_lookup(doubles_index, "l_trans_error");
-    result.state.left_arm_rot_error =
-      exception_lookup(doubles_index, "l_rot_error");
-    result.state.right_arm_pos_error =
-      exception_lookup(doubles_index, "r_trans_error");
-    result.state.right_arm_rot_error =
-      exception_lookup(doubles_index, "r_rot_error");
+      exception_lookup<double>(command_index, body_controllables.torso);
 
     result.state.motion_started = 
-      running_command_hash == current_command_hash;
-    result.state.motion_old = result.state.running_time > thresholds.motion_old;
+      msg.current_command_hash == current_command_hash;
+    result.state.motion_old = result.state.running_time > thresholds.motion_old_;
     result.state.torso_moving =
-      std::abs(result.state.torso_vel) > std::abs(thresholds.bodypart_moves);
+      std::abs(result.state.torso_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "torso"));
     result.state.left_arm_moving =
-      std::abs(result.state.left_arm_max_vel) > std::abs(thresholds.bodypart_moves);
+      std::abs(result.state.left_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "left_arm"));
     result.state.right_arm_moving =
-      std::abs(result.state.right_arm_max_vel) > std::abs(thresholds.bodypart_moves);
-    result.state.left_arm_pos_converged =
-      std::abs(result.state.left_arm_pos_error) < std::abs(thresholds.pos_convergence);
-    result.state.left_arm_rot_converged =
-      std::abs(result.state.left_arm_rot_error) < std::abs(thresholds.rot_convergence);
-    result.state.right_arm_pos_converged =
-      std::abs(result.state.right_arm_pos_error) < std::abs(thresholds.pos_convergence);
-    result.state.right_arm_rot_converged =
-      std::abs(result.state.right_arm_rot_error) < std::abs(thresholds.rot_convergence);
+      std::abs(result.state.right_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "right_arm"));
+
+    if (result.state.motion_started)
+    {
+      for (std::map<std::string, double>::const_iterator it=thresholds.convergence_.begin(); it!=thresholds.convergence_.end(); ++it)
+      {
+        giskard_msgs::SemanticFloat64 feature_value = 
+          exception_lookup<giskard_msgs::SemanticFloat64>(convergence_index, it->first);
+        result.state.convergence_values.push_back(feature_value);
+  
+        giskard_msgs::SemanticBool flag;
+        flag.semantics = it->first;
+        flag.value = (std::abs(feature_value.value) < std::abs(it->second));
+        result.state.convergence_flags.push_back(flag);
+      }
+    }
 
     return result;
   }
 
   inline bool motionFinished(const giskard_msgs::WholeBodyFeedback& msg)
   {
-    return msg.state.motion_started && msg.state.motion_old && 
-      !msg.state.torso_moving && !msg.state.left_arm_moving && !msg.state.right_arm_moving &&
-      msg.state.left_arm_pos_converged && msg.state.left_arm_rot_converged &&
-      msg.state.right_arm_pos_converged && msg.state.right_arm_rot_converged;
+    bool result = msg.state.motion_started && msg.state.motion_old && 
+      !msg.state.torso_moving && !msg.state.left_arm_moving && !msg.state.right_arm_moving;
+
+    for (size_t i=0; i<msg.state.convergence_flags.size(); ++i)
+      if (result)
+        result &= msg.state.convergence_flags[i].value;
+      else
+        return false;
+
+    return result;
   }
 
   inline giskard_msgs::WholeBodyResult calculateResult(const giskard_msgs::WholeBodyFeedback& msg)
@@ -153,10 +167,12 @@ namespace giskard_examples
   {
     public:
       ControllerActionServer(const ros::NodeHandle& nh, const std::string& name, double period,
-          const std::string& tf_ns, const std::string& frame_id, const WholeBodyControllables& body_controllables,
+          const std::string& tf_ns, const std::string& frame_id, const std::string l_frame_id,
+          const std::string r_frame_id, const WholeBodyControllables& body_controllables,
           const FeedbackThresholds& thresholds) : 
         nh_(nh), server_(nh, name, boost::bind(&ControllerActionServer::execute, this, _1), false),
-        period_(ros::Duration(period)), frame_id_(frame_id), tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns)),
+        period_(ros::Duration(period)), frame_id_(frame_id), l_frame_id_(l_frame_id),
+        r_frame_id_(r_frame_id), tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns)),
         body_controllables_(body_controllables), thresholds_(thresholds)
       {}
 
@@ -167,39 +183,48 @@ namespace giskard_examples
         if(!tf_->waitForServer(timeout))
           throw std::runtime_error("Wait for TF2 BufferServer timed out. Aborting.");
 
+        initLastCommand();
+
         command_pub_ = nh_.advertise<giskard_msgs::WholeBodyCommand>("command", 1);
         feedback_sub_ = nh_.subscribe("feedback", 1, &ControllerActionServer::feedback, this);
-        current_command_sub_ = nh_.subscribe("current_command_hash", 1, &ControllerActionServer::currentCommandHash, this);
+
         server_.start();
       }
 
     private:
       ros::NodeHandle nh_;
-      ros::Subscriber feedback_sub_, current_command_sub_;
+      ros::Subscriber feedback_sub_;
       ros::Publisher command_pub_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> server_;
       std::shared_ptr<tf2_ros::BufferClient> tf_;
       giskard_msgs::ControllerFeedback controller_feedback_;
-      giskard_msgs::WholeBodyFeedback feedback_;
-      size_t running_command_hash_, current_command_hash_;
+      giskard_msgs::WholeBodyFeedback action_feedback_;
+      giskard_msgs::WholeBodyCommand last_command_;
+      size_t current_command_hash_;
       ros::Duration period_;
       ros::Time motion_start_time_;
-      std::string frame_id_;
+      std::string frame_id_, l_frame_id_, r_frame_id_;
       WholeBodyControllables body_controllables_;
       FeedbackThresholds thresholds_;
+      std::map< std::string, double> thresh_map_;
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
-        controller_feedback_ = *msg;
-        // TODO: refactor by getting rid of 'controller_feedback_'
-        feedback_ = calculateFeedback(controller_feedback_, motion_start_time_, 
-            body_controllables_, thresholds_, running_command_hash_,
-            current_command_hash_);
-      }
-
-      void currentCommandHash(const std_msgs::UInt64::ConstPtr& msg)
-      {
-        running_command_hash_ = msg->data;
+        // TODO: compare hashes
+        if (!msg->watchdog_active && server_.isActive())
+        {
+          try
+          {
+            action_feedback_ = calculateFeedback(*msg, motion_start_time_, 
+                body_controllables_, thresholds_, current_command_hash_);
+            server_.publishFeedback(action_feedback_);
+          }
+          catch (const std::exception& e)
+          {
+            ROS_ERROR("%s", e.what());
+            ROS_INFO_STREAM("Choked on this feedback: " << *msg);
+          }
+        }
       }
 
       void execute(const giskard_msgs::WholeBodyGoalConstPtr& goal)
@@ -209,8 +234,7 @@ namespace giskard_examples
         giskard_msgs::WholeBodyCommand current_command;
         try
         {
-          // TODO: this one occasionally throws an error. Uncool!
-          current_command = processCommand(goal->command);
+          current_command = processCommand(goal->command, last_command_);
         }
         catch(tf2::TransformException& ex)
         {
@@ -222,6 +246,18 @@ namespace giskard_examples
         motion_start_time_ = ros::Time::now();
 
         current_command_hash_ = calculateHash<giskard_msgs::WholeBodyCommand>(current_command);
+        action_feedback_ = giskard_msgs::WholeBodyFeedback();
+
+        thresholds_.convergence_.clear();
+        for (size_t i=0; i<current_command.left_ee.convergence_thresholds.size(); ++i)
+          thresholds_.convergence_.insert(std::pair<std::string, double>(
+                current_command.left_ee.convergence_thresholds[i].semantics, 
+                current_command.left_ee.convergence_thresholds[i].value));
+
+        for (size_t i=0; i<current_command.right_ee.convergence_thresholds.size(); ++i)
+          thresholds_.convergence_.insert(std::pair<std::string, double>(
+                current_command.right_ee.convergence_thresholds[i].semantics, 
+                current_command.right_ee.convergence_thresholds[i].value));
 
         do
         {
@@ -233,23 +269,56 @@ namespace giskard_examples
           else
           {
             command_pub_.publish(current_command);
-            server_.publishFeedback(feedback_);
+            last_command_ = current_command;
             period_.sleep();
           }
         }
-        while(!motionFinished(feedback_));
-        server_.setSucceeded(calculateResult(feedback_));
+        while(!motionFinished(action_feedback_));
+
+        server_.setSucceeded(calculateResult(action_feedback_));
       }
 
-      giskard_msgs::WholeBodyCommand processCommand(const giskard_msgs::WholeBodyCommand& in_msg)
+      giskard_msgs::WholeBodyCommand processCommand(const giskard_msgs::WholeBodyCommand& new_command,
+          const giskard_msgs::WholeBodyCommand& old_command)
       {
-        giskard_msgs::WholeBodyCommand out_msg = in_msg;
-        if(in_msg.left_ee.process)
-          tf_->transform(in_msg.left_ee.goal, out_msg.left_ee.goal, frame_id_);
-        if(in_msg.right_ee.process)
-          tf_->transform(in_msg.right_ee.goal, out_msg.right_ee.goal, frame_id_);
+        giskard_msgs::WholeBodyCommand processed_command = new_command;
+        std::string err_string;
+        // FIXME: get this timeout from somewhere
+        if(new_command.left_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
+          tf_->transform(new_command.left_ee.goal_pose, processed_command.left_ee.goal_pose, frame_id_, ros::Duration(0.1));
+        if(new_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+          processed_command.left_ee = old_command.left_ee;
 
-        return out_msg;
+        if(new_command.right_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
+          tf_->transform(new_command.right_ee.goal_pose, processed_command.right_ee.goal_pose, frame_id_, ros::Duration(0.1));
+        if(new_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+          processed_command.right_ee = old_command.right_ee;
+
+        return processed_command;
+      }
+
+      giskard_msgs::ArmCommand initArmCommand(const std::string& ee_frame_id, const ros::Time& stamp)
+      {
+        giskard_msgs::ArmCommand result;
+        result.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+        result.goal_pose.header.stamp = stamp;
+        result.goal_pose.header.frame_id = ee_frame_id;
+        result.goal_pose.pose.orientation.w = 1.0;
+        std::string err_string;
+        if (!tf_->canTransform(ee_frame_id, frame_id_, stamp, ros::Duration(2), &err_string))
+          throw std::runtime_error(err_string);
+
+        tf_->transform(result.goal_pose, result.goal_pose, frame_id_);
+        return result;
+      }
+
+      void initLastCommand()
+      {
+        giskard_msgs::WholeBodyCommand init_command;
+        ros::Time now = ros::Time(0);
+        init_command.left_ee = initArmCommand(l_frame_id_, now);
+        init_command.right_ee = initArmCommand(r_frame_id_, now);
+        last_command_ = init_command;
       }
   };
 }
@@ -261,10 +330,8 @@ int main(int argc, char **argv)
   ros::NodeHandle nh("~");
 
   FeedbackThresholds thresholds;
-  thresholds.motion_old = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
-  thresholds.bodypart_moves = readParam<double>(nh, "thresholds/bodypart_moves");
-  thresholds.pos_convergence = readParam<double>(nh, "thresholds/pos_convergence");
-  thresholds.rot_convergence = readParam<double>(nh, "thresholds/rot_convergence");
+  thresholds.motion_old_ = ros::Duration(readParam<double>(nh, "thresholds/motion_old"));
+  thresholds.bodypart_moves_ = readParam< std::map<std::string, double> >(nh, "thresholds/bodypart_moves");
 
   WholeBodyControllables body_controllables;
   body_controllables.left_arm = readParam< std::vector<std::string> >
@@ -272,12 +339,15 @@ int main(int argc, char **argv)
   body_controllables.right_arm = readParam< std::vector<std::string> >
     (nh, "body_controllables/right_arm");
   body_controllables.torso = readParam<std::string>(nh, "body_controllables/torso");
+  // TODO: refactor this into a container class
   std::string frame_id = readParam<std::string>(nh, "frame_id");
+  std::string l_frame_id = readParam<std::string>(nh, "l_frame_id");
+  std::string r_frame_id = readParam<std::string>(nh, "r_frame_id");
   double update_period = readParam<double>(nh, "update_period");
   double server_timeout = readParam<double>(nh, "server_timeout");
 
   ControllerActionServer server(nh, "move", update_period, "/tf2_buffer_server", 
-      frame_id, body_controllables, thresholds);
+      frame_id, l_frame_id, r_frame_id, body_controllables, thresholds);
   try
   {
     server.start(ros::Duration(server_timeout));
