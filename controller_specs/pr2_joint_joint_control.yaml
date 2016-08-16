@@ -61,7 +61,20 @@ scope:
   # control params
 
   # definition goals and control laws
-  - r_wrist_roll_control: {double-sub: [r_wrist_roll_joint_goal, r_wrist_roll_joint]}
+  - l_shoulder_pan_error: {double-sub: [l_shoulder_pan_joint_goal, l_shoulder_pan_joint]}
+  - l_shoulder_lift_error: {double-sub: [l_shoulder_lift_joint_goal, l_shoulder_lift_joint]}
+  - l_upper_arm_roll_error: {double-sub: [l_upper_arm_roll_joint_goal, l_upper_arm_roll_joint]}
+  - l_elbow_flex_error: {double-sub: [l_elbow_flex_joint_goal, l_elbow_flex_joint]}
+  - l_forearm_roll_error: {double-sub: [l_forearm_roll_joint_goal, l_forearm_roll_joint]}
+  - l_wrist_flex_error: {double-sub: [l_wrist_flex_joint_goal, l_wrist_flex_joint]}
+  - l_wrist_roll_error: {double-sub: [l_wrist_roll_joint_goal, l_wrist_roll_joint]}
+  - r_shoulder_pan_error: {double-sub: [r_shoulder_pan_joint_goal, r_shoulder_pan_joint]}
+  - r_shoulder_lift_error: {double-sub: [r_shoulder_lift_joint_goal, r_shoulder_lift_joint]}
+  - r_upper_arm_roll_error: {double-sub: [r_upper_arm_roll_joint_goal, r_upper_arm_roll_joint]}
+  - r_elbow_flex_error: {double-sub: [r_elbow_flex_joint_goal, r_elbow_flex_joint]}
+  - r_forearm_roll_error: {double-sub: [r_forearm_roll_joint_goal, r_forearm_roll_joint]}
+  - r_wrist_flex_error: {double-sub: [r_wrist_flex_joint_goal, r_wrist_flex_joint]}
+  - r_wrist_roll_error: {double-sub: [r_wrist_roll_joint_goal, r_wrist_roll_joint]}
 
   # some constants
   - weight_arm_joints: 1.0
@@ -93,7 +106,20 @@ controllable-constraints:
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 14, r_wrist_roll_joint velocity]
 
 soft-constraints:
-  - soft-constraint: [r_wrist_roll_control, r_wrist_roll_control , weight_pos_control, r_wrist_roll_joint, r_wrist_roll_joint control slack]
+  - soft-constraint: [l_shoulder_pan_error, l_shoulder_pan_error , weight_pos_control, l_shoulder_pan_joint, l_shoulder_pan_joint control slack]
+  - soft-constraint: [l_shoulder_lift_error, l_shoulder_lift_error , weight_pos_control, l_shoulder_lift_joint, l_shoulder_lift_joint control slack]
+  - soft-constraint: [l_upper_arm_roll_error, l_upper_arm_roll_error , weight_pos_control, l_upper_arm_roll_joint, l_upper_arm_roll_joint control slack]
+  - soft-constraint: [l_elbow_flex_error, l_elbow_flex_error , weight_pos_control, l_elbow_flex_joint, l_elbow_flex_joint control slack]
+  - soft-constraint: [l_forearm_roll_error, l_forearm_roll_error , weight_pos_control, l_forearm_roll_joint, l_forearm_roll_joint control slack]
+  - soft-constraint: [l_wrist_flex_error, l_wrist_flex_error , weight_pos_control, l_wrist_flex_joint, l_wrist_flex_joint control slack]
+  - soft-constraint: [l_wrist_roll_error, l_wrist_roll_error , weight_pos_control, l_wrist_roll_joint, l_wrist_roll_joint control slack]
+  - soft-constraint: [r_shoulder_pan_error, r_shoulder_pan_error , weight_pos_control, r_shoulder_pan_joint, r_shoulder_pan_joint control slack]
+  - soft-constraint: [r_shoulder_lift_error, r_shoulder_lift_error , weight_pos_control, r_shoulder_lift_joint, r_shoulder_lift_joint control slack]
+  - soft-constraint: [r_upper_arm_roll_error, r_upper_arm_roll_error , weight_pos_control, r_upper_arm_roll_joint, r_upper_arm_roll_joint control slack]
+  - soft-constraint: [r_elbow_flex_error, r_elbow_flex_error , weight_pos_control, r_elbow_flex_joint, r_elbow_flex_joint control slack]
+  - soft-constraint: [r_forearm_roll_error, r_forearm_roll_error , weight_pos_control, r_forearm_roll_joint, r_forearm_roll_joint control slack]
+  - soft-constraint: [r_wrist_flex_error, r_wrist_flex_error , weight_pos_control, r_wrist_flex_joint, r_wrist_flex_joint control slack]
+  - soft-constraint: [r_wrist_roll_error, r_wrist_roll_error , weight_pos_control, r_wrist_roll_joint, r_wrist_roll_joint control slack]
 
 hard-constraints:
   - hard-constraint:

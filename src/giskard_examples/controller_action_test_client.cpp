@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <giskard_msgs/WholeBodyAction.h>
+#include <giskard_examples/ros_utils.hpp>
 
 giskard_msgs::ArmCommand make_arm_command(const geometry_msgs::Pose& pose)
 {
@@ -60,25 +61,43 @@ giskard_msgs::WholeBodyGoal make_third_goal()
   return goal;
 }
 
+std::vector<giskard_msgs::SemanticFloat64> to_msg(
+    const std::map<std::string, double> map)
+{
+  std::vector<giskard_msgs::SemanticFloat64> result;
+  for (std::map<std::string, double>::const_iterator it=map.begin();
+       it!=map.end(); ++it)
+  {
+    giskard_msgs::SemanticFloat64 msg;
+    msg.semantics = it->first;
+    msg.value = it->second;
+    result.push_back(msg);
+  }
+  return result;
+}
+
 giskard_msgs::WholeBodyGoal zero_goal()
 {
   giskard_msgs::WholeBodyGoal goal;
   return goal;
 }
 
-giskard_msgs::WholeBodyGoal first_goal()
+giskard_msgs::WholeBodyGoal first_goal(const ros::NodeHandle& nh)
 {
   std::vector<double> right_config = {-0.9, 0.5, -0.9, -1.6, 5.0, -1.4, 1.8};
-  std::vector<double> left_config = {-0.9, 0.5, -0.9, -1.6, 5.0, -1.4, 1.8};
+  std::vector<double> left_config = {0.9, 0.5, 0.9, -1.6, -5.0, -1.4, 1.8};
   giskard_msgs::WholeBodyGoal goal;
   goal.command.left_ee = make_joint_goal(left_config);
   goal.command.right_ee = make_joint_goal(right_config);
+  goal.command.convergence_thresholds = to_msg(giskard_examples::readParam< std::map<std::string, double> >(nh, "joint_joint_thresholds"));
+
   return goal;
 }
 
 int main (int argc, char **argv)
 {
   ros::init(argc, argv, "controller_action_test_client");
+  ros::NodeHandle nh("~");
 
   actionlib::SimpleActionClient<giskard_msgs::WholeBodyAction> client("/controller_action_server/move", true);
   
@@ -92,8 +111,7 @@ int main (int argc, char **argv)
   else
     ROS_INFO("Action timed out.");
 
-  ros::Duration(0.2);
-  client.sendGoal(first_goal());
+  client.sendGoal(first_goal(nh));
   if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else

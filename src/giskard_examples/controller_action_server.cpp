@@ -98,8 +98,7 @@ namespace giskard_examples
 
   inline giskard_msgs::WholeBodyFeedback calculateFeedback(const giskard_msgs::ControllerFeedback& msg,
       const ros::Time& motion_start_time, const WholeBodyControllables& body_controllables,
-      const FeedbackThresholds& thresholds, size_t running_command_hash,
-      size_t current_command_hash)
+      const FeedbackThresholds& thresholds, size_t current_command_hash)
   {
     giskard_msgs::WholeBodyFeedback result;
     result.state.header = msg.header;
@@ -114,8 +113,9 @@ namespace giskard_examples
       lookupMaxAbsValue(command_index, body_controllables.right_arm);
     result.state.torso_vel = 
       exception_lookup<double>(command_index, body_controllables.torso);
+
     result.state.motion_started = 
-      running_command_hash == current_command_hash;
+      msg.current_command_hash == current_command_hash;
     result.state.motion_old = result.state.running_time > thresholds.motion_old_;
     result.state.torso_moving =
       std::abs(result.state.torso_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "torso"));
@@ -123,16 +123,20 @@ namespace giskard_examples
       std::abs(result.state.left_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "left_arm"));
     result.state.right_arm_moving =
       std::abs(result.state.right_arm_max_vel) > std::abs(exception_lookup<double>(thresholds.bodypart_moves_, "right_arm"));
-    for (std::map<std::string, double>::const_iterator it=thresholds.convergence_.begin(); it!=thresholds.convergence_.end(); ++it)
-    {
-      giskard_msgs::SemanticFloat64 feature_value = 
-        exception_lookup<giskard_msgs::SemanticFloat64>(convergence_index, it->first);
-      result.state.convergence_values.push_back(feature_value);
 
-      giskard_msgs::SemanticBool flag;
-      flag.semantics = it->first;
-      flag.value = (std::abs(feature_value.value) < std::abs(it->second));
-      result.state.convergence_flags.push_back(flag);
+    if (result.state.motion_started)
+    {
+      for (std::map<std::string, double>::const_iterator it=thresholds.convergence_.begin(); it!=thresholds.convergence_.end(); ++it)
+      {
+        giskard_msgs::SemanticFloat64 feature_value = 
+          exception_lookup<giskard_msgs::SemanticFloat64>(convergence_index, it->first);
+        result.state.convergence_values.push_back(feature_value);
+  
+        giskard_msgs::SemanticBool flag;
+        flag.semantics = it->first;
+        flag.value = (std::abs(feature_value.value) < std::abs(it->second));
+        result.state.convergence_flags.push_back(flag);
+      }
     }
 
     return result;
@@ -206,12 +210,20 @@ namespace giskard_examples
 
       void feedback(const giskard_msgs::ControllerFeedback::ConstPtr& msg)
       {
+        // TODO: compare hashes
         if (!msg->watchdog_active && server_.isActive())
         {
-          action_feedback_ = calculateFeedback(*msg, motion_start_time_, 
-              body_controllables_, thresholds_, current_command_hash_,
-              current_command_hash_);
-          server_.publishFeedback(action_feedback_);
+          try
+          {
+            action_feedback_ = calculateFeedback(*msg, motion_start_time_, 
+                body_controllables_, thresholds_, current_command_hash_);
+            server_.publishFeedback(action_feedback_);
+          }
+          catch (const std::exception& e)
+          {
+            ROS_ERROR("%s", e.what());
+            ROS_INFO_STREAM("Choked on this feedback: " << *msg);
+          }
         }
       }
 
