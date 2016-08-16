@@ -12,7 +12,8 @@
       textfile="$(find giskard_examples)/controller_specs/boxy_joint_cart_control.yaml" />
     <param name="controller_descriptions/cart_joint" 
       textfile="$(find giskard_examples)/controller_specs/boxy_cart_joint_control.yaml" />
-    <remap from="~joint_states" to="/joint_states" />
+    <remap from="~joint_states" to="/joint_states" if="$(arg sim)" />
+    <remap from="~joint_states" to="/joint_states_ideal" unless="$(arg sim)" />
   </node>
 
   <group if="$(arg sim)" >

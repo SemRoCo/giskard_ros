@@ -107,14 +107,12 @@ scope:
 
   # some constants
   - weight_arm_joints: 1.0
-  - weight_pos_control: 20.0
-  - weight_rot_control: 5.0
-#  - weight_elbow_control: 0.0
-  - neg_vel_limit_arm_joints: -0.6
-  - pos_vel_limit_arm_joints: 0.6
+  - weight_pos_control: 10.0
+  - neg_vel_limit_arm_joints: -0.5
+  - pos_vel_limit_arm_joints: 0.5
 
 controllable-constraints:
-  - controllable-constraint: [-0.02, 0.02, 100.0, 0, triangle_base_joint velocity]
+  - controllable-constraint: [-0.05, 0.05, 100.0, 0, triangle_base_joint velocity]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, left_arm_0_joint velocity]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, left_arm_1_joint velocity]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 3, left_arm_2_joint velocity]
