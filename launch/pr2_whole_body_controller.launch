@@ -43,7 +43,6 @@
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
     <remap from="~command" to="whole_body_controller/goal" />
-    <remap from="~current_command_hash" to="whole_body_controller/current_command_hash" />
     <remap from="~feedback" to="whole_body_controller/feedback" />
     <rosparam command="load"
       file="$(find giskard_examples)/config/pr2_controller_action_server.yaml" />
