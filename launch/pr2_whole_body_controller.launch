@@ -4,7 +4,7 @@
   <group if="$(arg sim)" >
     <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
       <param name="controller_descriptions/cart_cart" 
-        textfile="$(find giskard_examples)/controller_specs/pr2_upper_body_qp_position_control.yaml" />
+        textfile="$(find giskard_examples)/controller_specs/pr2_cart_cart_control.yaml" />
       <param name="controller_descriptions/joint_joint" 
         textfile="$(find giskard_examples)/controller_specs/pr2_joint_joint_control.yaml" />
       <param name="controller_descriptions/joint_cart" 
@@ -19,10 +19,14 @@
 
   <group unless="$(arg sim)" >
     <node pkg="giskard_examples" type="whole_body_controller" name="whole_body_controller" output="screen">
-      <rosparam param="joint_names"
-        file="$(find giskard_examples)/config/pr2_upper_body.yaml" />
-      <param name="controller_description" 
-        textfile="$(find giskard_examples)/controller_specs/iai_pr2_upper_body_qp_position_control.yaml" />
+      <param name="controller_descriptions/cart_cart" 
+        textfile="$(find giskard_examples)/controller_specs/iai_pr2_cart_cart_control.yaml" />
+      <param name="controller_descriptions/joint_joint" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_joint_joint_control.yaml" />
+      <param name="controller_descriptions/joint_cart" 
+        textfile="$(find giskard_examples)/controller_specs/pr2_joint_cart_control.yaml" />
+      <param name="controller_descriptions/cart_joint" 
+        textfile="$(find giskard_examples)/controller_specs/iai_pr2_cart_joint_control.yaml" />
       <rosparam command="load"
         file="$(find giskard_examples)/config/pr2_whole_body_controller.yaml" />
       <remap from="~joint_states" to="/joint_states" />
