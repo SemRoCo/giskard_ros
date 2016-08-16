@@ -18,13 +18,26 @@ std::vector<giskard_msgs::SemanticFloat64> to_msg(
   return result;
 }
 
-giskard_msgs::ArmCommand make_cartesian_command(const geometry_msgs::Pose& pose,
+geometry_msgs::Pose make_pose(const std::vector<double>& values)
+{
+  geometry_msgs::Pose msg;
+  msg.position.x = values[0];
+  msg.position.y = values[1];
+  msg.position.z = values[2];
+  msg.orientation.x = values[3];
+  msg.orientation.y = values[4];
+  msg.orientation.z = values[5];
+  msg.orientation.w = values[6];
+  return msg;
+}
+
+giskard_msgs::ArmCommand make_cartesian_command(const std::vector<double>& pose,
     const std::map< std::string, double>& thresholds)
 {
   giskard_msgs::ArmCommand msg;
   msg.goal_pose.header.stamp = ros::Time::now();
   msg.goal_pose.header.frame_id = "base_link";
-  msg.goal_pose.pose = pose;
+  msg.goal_pose.pose = make_pose(pose);
   msg.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
   msg.convergence_thresholds = to_msg(thresholds);
   return msg;
@@ -40,49 +53,15 @@ giskard_msgs::ArmCommand make_joint_command(const std::vector<double> config,
   return msg;
 }
 
-geometry_msgs::Pose make_pose(double x, double y, double z, 
-    double qx, double qy, double qz, double qw)
-{
-  geometry_msgs::Pose msg;
-  msg.position.x = x;
-  msg.position.y = y;
-  msg.position.z = z;
-  msg.orientation.x = qx;
-  msg.orientation.y = qy;
-  msg.orientation.z = qz;
-  msg.orientation.w = qw;
-  return msg;
-}
-
-geometry_msgs::Pose right_arm_pose()
-{
-  return make_pose(0.381812181883, -0.110539927419, 1.10948410003,
-        -0.193389274, 0.00863179543304, 0.71675563293, 0.669915997326);
-}
-
-geometry_msgs::Pose left_arm_pose()
-{
-  return make_pose(0.508104267942, 0.0457644589442, 0.653605697287,
-        0.461663572793, -0.39932199905, -0.488951012493, 0.623165783731);
-}
-
-std::vector<double> left_arm_joint_config()
-{
-  return {0.9, 0.5, 0.9, -1.6, -5.0, -1.4, -1.8};
-}
-
-std::vector<double> right_arm_joint_config()
-{
-  return {-0.9, 0.5, -0.9, -1.6, 5.0, -1.4, 1.8};
-}
-
 giskard_msgs::WholeBodyGoal all_joint_goal(const ros::NodeHandle& nh)
 {
   giskard_msgs::WholeBodyGoal goal;
-  goal.command.left_ee = make_joint_command(left_arm_joint_config(),
-    giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/left_arm/joint_control"));
-  goal.command.right_ee = make_joint_command(right_arm_joint_config(),
-    giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/right_arm/joint_control"));
+  goal.command.left_ee = make_joint_command(
+    giskard_examples::readParam< std::vector<double> >(nh, "goals/left_arm/joint"),
+    giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/left_arm/joint"));
+  goal.command.right_ee = make_joint_command(
+    giskard_examples::readParam< std::vector<double> >(nh, "goals/right_arm/joint"),
+    giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/right_arm/joint"));
 
   return goal;
 }
@@ -90,18 +69,20 @@ giskard_msgs::WholeBodyGoal all_joint_goal(const ros::NodeHandle& nh)
 giskard_msgs::WholeBodyGoal left_pose_goal(const ros::NodeHandle& nh)
 {
   giskard_msgs::WholeBodyGoal goal;
-  goal.command.left_ee = make_cartesian_command(left_arm_pose(),
+  goal.command.left_ee = make_cartesian_command(
+      giskard_examples::readParam< std::vector<double> >(nh, "goals/left_arm/cartesian"),
       giskard_examples::readParam< std::map<std::string, double> >(nh,
-        "thresholds/left_arm/cartesian_control"));
+        "thresholds/left_arm/cartesian"));
   return goal;
 }
 
 giskard_msgs::WholeBodyGoal right_pose_goal(const ros::NodeHandle& nh)
 {
   giskard_msgs::WholeBodyGoal goal;
-  goal.command.right_ee = make_cartesian_command(right_arm_pose(),
-      giskard_examples::readParam< std::map<std::string, double> >(nh,
-        "thresholds/right_arm/cartesian_control"));
+  goal.command.right_ee = make_cartesian_command(
+    giskard_examples::readParam< std::vector<double> >(nh, "goals/right_arm/cartesian"),
+    giskard_examples::readParam< std::map<std::string, double> >(nh,
+      "thresholds/right_arm/cartesian"));
   return goal;
 }
 

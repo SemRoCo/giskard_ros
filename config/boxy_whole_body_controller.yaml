@@ -1,0 +1,37 @@
+nWSR: 1000
+joint_names:
+  - triangle_base_joint
+  - left_arm_0_joint
+  - left_arm_1_joint
+  - left_arm_2_joint
+  - left_arm_3_joint
+  - left_arm_4_joint
+  - left_arm_5_joint
+  - left_arm_6_joint
+  - right_arm_0_joint
+  - right_arm_1_joint
+  - right_arm_2_joint
+  - right_arm_3_joint
+  - right_arm_4_joint
+  - right_arm_5_joint
+  - right_arm_6_joint  
+l_arm_names:
+  - left_arm_0_joint
+  - left_arm_1_joint
+  - left_arm_2_joint
+  - left_arm_3_joint
+  - left_arm_4_joint
+  - left_arm_5_joint
+  - left_arm_6_joint
+r_arm_names:
+  - right_arm_0_joint
+  - right_arm_1_joint
+  - right_arm_2_joint
+  - right_arm_3_joint
+  - right_arm_4_joint
+  - right_arm_5_joint
+  - right_arm_6_joint  
+frame_id: base_footprint
+l_fk_name: left_ee
+r_fk_name: right_ee
+watchdog_period: 0.1
