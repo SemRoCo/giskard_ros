@@ -23,7 +23,8 @@ scope:
   - unit_x: {vector3: [1, 0, 0]}
   - unit_y: {vector3: [0, 1, 0]}
   - unit_z: {vector3: [0, 0, 1]}
-
+  - pi: 3.14159265359
+  - two_pi: {double-mul: [pi, 2.0]}
 
   # definition of joint input variables
   - torso_lift_joint: {input-var: 0}
@@ -125,9 +126,27 @@ scope:
   - l_shoulder_lift_error: {double-sub: [l_shoulder_lift_joint_goal, l_shoulder_lift_joint]}
   - l_upper_arm_roll_error: {double-sub: [l_upper_arm_roll_joint_goal, l_upper_arm_roll_joint]}
   - l_elbow_flex_error: {double-sub: [l_elbow_flex_joint_goal, l_elbow_flex_joint]}
-  - l_forearm_roll_error: {double-sub: [l_forearm_roll_joint_goal, l_forearm_roll_joint]}
+  - l_forearm_roll_error_unnormalized: {double-sub: [l_forearm_roll_joint_goal, l_forearm_roll_joint]}
+  - l_forearm_roll_error_normalized: 
+      fmod: 
+      - {double-add: [{fmod: [l_forearm_roll_error_unnormalized, two_pi]}, two_pi]}
+      - two_pi
+  - l_forearm_roll_error: 
+      double-if: 
+        - {double-sub: [l_forearm_roll_error_normalized, pi]}
+        - {double-sub: [l_forearm_roll_error_normalized, two_pi]}
+        - l_forearm_roll_error_normalized
   - l_wrist_flex_error: {double-sub: [l_wrist_flex_joint_goal, l_wrist_flex_joint]}
-  - l_wrist_roll_error: {double-sub: [l_wrist_roll_joint_goal, l_wrist_roll_joint]}
+  - l_wrist_roll_error_unnormalized: {double-sub: [l_wrist_roll_joint_goal, l_wrist_roll_joint]}
+  - l_wrist_roll_error_normalized: 
+      fmod: 
+      - {double-add: [{fmod: [l_wrist_roll_error_unnormalized, two_pi]}, two_pi]}
+      - two_pi
+  - l_wrist_roll_error: 
+      double-if: 
+        - {double-sub: [l_wrist_roll_error_normalized, pi]}
+        - {double-sub: [l_wrist_roll_error_normalized, two_pi]}
+        - l_wrist_roll_error_normalized
 
   # some constants
   - weight_arm_joints: 1.0
