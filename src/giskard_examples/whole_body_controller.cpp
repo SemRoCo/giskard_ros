@@ -74,8 +74,6 @@ namespace giskard_examples
       {
         controller_ = controller;
 
-//        feedback_ = giskard_msgs::ControllerFeedback();
-
         feedback_.commands.resize(controller_.num_controllables());
         for (size_t i=0; i<controller_.num_controllables(); ++i)
           feedback_.commands[i].semantics = controller_.get_controllable_names()[i];
@@ -100,45 +98,58 @@ namespace giskard_examples
         feedback_.current_command = command;
 
         feedback_.convergence_features.clear();
-        feedback_.convergence_features.reserve(
-            command.left_ee.convergence_thresholds.size() +
-            command.right_ee.convergence_thresholds.size());
-        feedback_.convergence_features.insert
-          (feedback_.convergence_features.end(), 
-           command.left_ee.convergence_thresholds.begin(), 
-           command.left_ee.convergence_thresholds.end());
-        feedback_.convergence_features.insert
-          (feedback_.convergence_features.end(), 
-           command.right_ee.convergence_thresholds.begin(), 
-           command.right_ee.convergence_thresholds.end());
-
-        switch (command.left_ee.type)
+        switch (command.type)
         {
-          case giskard_msgs::ArmCommand::JOINT_GOAL:
-            state_.block(controller_.num_controllables(), 0, command.left_ee.goal_configuration.size(), 1) =
-              to_eigen(command.left_ee.goal_configuration);
+          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
+            feedback_.convergence_features.reserve(
+                command.left_ee.convergence_thresholds.size() +
+                command.right_ee.convergence_thresholds.size());
+            feedback_.convergence_features.insert
+              (feedback_.convergence_features.end(), 
+               command.left_ee.convergence_thresholds.begin(), 
+               command.left_ee.convergence_thresholds.end());
+            feedback_.convergence_features.insert
+              (feedback_.convergence_features.end(), 
+               command.right_ee.convergence_thresholds.begin(), 
+               command.right_ee.convergence_thresholds.end());
             break;
-          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-             state_.block(controller_.num_controllables(), 0, 6, 1) =
-              to_eigen(command.left_ee.goal_pose.pose);
+          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
+            feedback_.convergence_features = command.convergence_thresholds;
             break;
           default:
-            throw std::runtime_error("Received command of unknown type for left arm.");
+            throw std::runtime_error("Got unknown type of whole-body controller.");
         }
 
-        size_t offset = (command.left_ee.type == giskard_msgs::ArmCommand::JOINT_GOAL ? 7 : 6);
-        switch (command.right_ee.type)
+        if (command.type == giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER)
         {
-          case giskard_msgs::ArmCommand::JOINT_GOAL:
-            state_.block(controller_.num_controllables() + offset, 0, command.right_ee.goal_configuration.size(), 1) =
-              to_eigen(command.right_ee.goal_configuration);
-            break;
-          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-            state_.block(controller_.num_controllables() + offset, 0, 6, 1) =
-              to_eigen(command.right_ee.goal_pose.pose);
-            break;
-          default:
-            throw std::runtime_error("Received command of unknown type for left arm.");
+          switch (command.left_ee.type)
+          {
+            case giskard_msgs::ArmCommand::JOINT_GOAL:
+              state_.block(controller_.num_controllables(), 0, command.left_ee.goal_configuration.size(), 1) =
+                to_eigen(command.left_ee.goal_configuration);
+              break;
+            case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+               state_.block(controller_.num_controllables(), 0, 6, 1) =
+                to_eigen(command.left_ee.goal_pose.pose);
+              break;
+            default:
+              throw std::runtime_error("Received command of unknown type for left arm.");
+          }
+
+          size_t offset = (command.left_ee.type == giskard_msgs::ArmCommand::JOINT_GOAL ? 7 : 6);
+          switch (command.right_ee.type)
+          {
+            case giskard_msgs::ArmCommand::JOINT_GOAL:
+              state_.block(controller_.num_controllables() + offset, 0, command.right_ee.goal_configuration.size(), 1) =
+                to_eigen(command.right_ee.goal_configuration);
+              break;
+            case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+              state_.block(controller_.num_controllables() + offset, 0, 6, 1) =
+                to_eigen(command.right_ee.goal_pose.pose);
+              break;
+            default:
+              throw std::runtime_error("Received command of unknown type for left arm.");
+          }
         }
       }
 
@@ -251,11 +262,10 @@ namespace giskard_examples
       std::string current_controller_;
       WholeBodyControllerParams parameters_;
       WholeBodyControllerState state_;
+      sensor_msgs::JointState last_joint_state_;
 
       void joint_state_callback(const sensor_msgs::JointState::ConstPtr& msg)
       {
-        ROS_DEBUG("Start joint_state_callback.");
-
         if (state_ == WholeBodyControllerState::started)
           process_first_joint_state(*msg);
 
@@ -264,14 +274,13 @@ namespace giskard_examples
         else
           process_regular_joint_state(*msg);
 
-        ROS_DEBUG("End joint_state_callback.");
+        last_joint_state_ = *msg;
       }
 
       void command_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
       {
-        ROS_DEBUG("Start command_callback");
-
-        size_t new_command_hash = giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
+        size_t new_command_hash = 
+          giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
       
         if(get_current_context().get_feedback().current_command_hash == new_command_hash)
         {
@@ -279,8 +288,6 @@ namespace giskard_examples
         }
         else
           process_new_command(*msg);
-
-        ROS_DEBUG("End command_callback");
       }
 
       // INTERNAL HELPER FUNCTIONS
@@ -293,7 +300,8 @@ namespace giskard_examples
       ControllerContext& get_context(const std::string& controller)
       {
         if(parameters_.controller_types.count(controller) == 0)
-          throw std::runtime_error("Could not retrieve current controller with unknown name + '" + controller + "'.");
+          throw std::runtime_error("Could not retrieve current controller with unknown name + '" + 
+              controller + "'.");
 
         return contexts_[controller];
       }
@@ -301,16 +309,32 @@ namespace giskard_examples
       giskard_msgs::WholeBodyCommand complete_command(const giskard_msgs::WholeBodyCommand& new_command,
           const giskard_msgs::WholeBodyCommand& current_command)
       {
-        giskard_msgs::WholeBodyCommand completed_command = new_command;
-        if (completed_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
-          completed_command.right_ee = current_command.right_ee;
-        if (completed_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
-          completed_command.left_ee = current_command.left_ee;
-        return completed_command;
+        if (new_command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
+          return new_command;
+        else
+        {
+          giskard_msgs::WholeBodyCommand completed_command = new_command;
+          if (completed_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+            completed_command.right_ee = current_command.right_ee;
+          if (completed_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+            completed_command.left_ee = current_command.left_ee;
+          return completed_command;
+        }
       }
 
       std::string infer_controller(const giskard_msgs::WholeBodyCommand& msg)
       {
+        switch (msg.type)
+        {
+          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
+            // more detailed selection in next switch-case-statement
+            break;
+          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
+            return "yaml";
+          default:
+            throw std::runtime_error("Got unknown controller type for whole-body.");
+        }
+
         switch (msg.left_ee.type)
         {
           case (giskard_msgs::ArmCommand::JOINT_GOAL):
@@ -345,8 +369,25 @@ namespace giskard_examples
         giskard_msgs::WholeBodyCommand new_command = 
           complete_command(msg, get_current_context().get_command());
         current_controller_ = infer_controller(new_command);
-        get_current_context().set_command(new_command);
+        if (current_controller_.compare("yaml") == 0)
+          init_and_start_yaml_controller(msg);
+        else
+          get_current_context().set_command(new_command);
         watchdog_.kick(ros::Time::now());
+      }
+
+      void init_and_start_yaml_controller(const giskard_msgs::WholeBodyCommand& msg)
+      {
+        YAML::Node node = YAML::Load(msg.yaml_spec);
+        giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
+        giskard::QPController controller = giskard::generate(spec);
+        for (size_t i=0; i<parameters_.joint_names.size(); ++i)
+          if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
+            throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
+                "' and controllable '" + controller.get_controllable_names()[i] + 
+                "' did not match.");
+        get_current_context().set_controller(controller);
+        start_controller(get_current_context(), msg, last_joint_state_, "yaml");
       }
 
       void init_parameters()
@@ -360,44 +401,43 @@ namespace giskard_examples
         parameters_.frame_id = readParam< std::string >(nh_, "frame_id");
         parameters_.l_fk_name = readParam< std::string >(nh_, "l_fk_name");
         parameters_.r_fk_name = readParam< std::string >(nh_, "r_fk_name");
-        parameters_.controller_types = {"cart_cart", "joint_cart", "cart_joint", "joint_joint"};
+        parameters_.controller_types = {"cart_cart", "joint_cart", "cart_joint", "joint_joint", "yaml"};
       }
 
       void init_controller_contexts()
       {
-        ROS_DEBUG("Entering init_controller_contexts.");
         std::map<std::string, std::string> controller_descriptions =
           read_controller_descriptions();
 
         for(std::set<std::string>::const_iterator it=parameters_.controller_types.begin();
             it!=parameters_.controller_types.end(); ++it)
         {
-          YAML::Node node = YAML::Load(controller_descriptions.at(*it));
-          giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
-          giskard::QPController controller = giskard::generate(spec);
-          for (size_t i=0; i<parameters_.joint_names.size(); ++i)
-            if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
-              throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
-                  "' and controllable '" + controller.get_controllable_names()[i] + 
-                  "' did not match.");
-
-          ControllerContext context;
-          context.set_controller(controller);
-          contexts_.insert( std::pair<std::string, ControllerContext>(*it, context));
+          if (it->compare("yaml") != 0)
+          {
+            YAML::Node node = YAML::Load(controller_descriptions.at(*it));
+            giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
+            giskard::QPController controller = giskard::generate(spec);
+            for (size_t i=0; i<parameters_.joint_names.size(); ++i)
+              if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
+                throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
+                    "' and controllable '" + controller.get_controllable_names()[i] + 
+                    "' did not match.");
+  
+            ControllerContext context;
+            context.set_controller(controller);
+            contexts_.insert( std::pair<std::string, ControllerContext>(*it, context));
+          }
         }
-        ROS_DEBUG("Leaving init_controller_contexts.");
       }
 
       std::map<std::string, std::string> read_controller_descriptions()
       {
-        ROS_DEBUG("Start reading controller descriptions.");
         std::map<std::string, std::string> result = 
           readParam< std::map<std::string, std::string> >(nh_, "controller_descriptions");
         for (std::set<std::string>::const_iterator it=parameters_.controller_types.begin();
              it!=parameters_.controller_types.end(); ++it)
-          if(result.find(*it) == result.end())
+          if(it->compare("yaml") != 0 && result.find(*it) == result.end())
             throw std::runtime_error("Could not find controller description for '" + *it + "'.");
-        ROS_DEBUG("Finished reading controller descriptions.");
         return result;
       }
 
@@ -542,8 +582,17 @@ namespace giskard_examples
  
       void sanity_check(const giskard_msgs::WholeBodyCommand& command)
       {
-        sanity_check(command.right_ee, parameters_.l_arm_names, "right arm");
-        sanity_check(command.left_ee, parameters_.r_arm_names, "left arm");
+        switch (command.type)
+        {
+          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
+            sanity_check(command.right_ee, parameters_.l_arm_names, "right arm");
+            sanity_check(command.left_ee, parameters_.r_arm_names, "left arm");
+            break;
+          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
+            break;
+          default:
+            throw std::runtime_error("Received unknown type for whole-body controller.");
+        }
       }
 
       void start_controller(ControllerContext& context, 
@@ -566,10 +615,6 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "whole_body_controller");
   ros::NodeHandle nh("~");
 
-//  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug) ) {
-//       ros::console::notifyLoggerLevelsChanged();
-//  }
-  ROS_DEBUG("Starting whole_body_controller.");
   giskard_examples::WholeBodyController wbc(nh);
   try
   {
