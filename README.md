@@ -22,6 +22,8 @@ Note, the above instructions have been tested to also work under ```ROS Kinetic`
 ## Playthings
 ### PR2 + Interactive Markers + Upper-Body Cartesian Position Control
 
+![rviz view](https://raw.githubusercontent.com/SemRoCo/giskard_examples/master/docs/pr2_interactive_markers.png)
+
 * For a trial using on the real robot, run this command:
 
 ```
@@ -35,14 +37,6 @@ roslaunch giskard_examples pr2_interactive_markers.launch sim:=false   # on your
 roslaunch giskard_examples pr2_interactive_markers.launch
 ```
 
-Now, wait until you see the message:
-
-```Controller started.```
-
-in the console.
-
-Note: Shall you move the rviz markers before this message is printed, TF extrapolation into the past errors will be printed in the console.
-
 * For a trial in ```gazebo simulator```, run these commands:
 
 ```
@@ -51,7 +45,13 @@ roslaunch giskard_examples pr2_interactive_markers.launch sim:=false
 ```
 
 Use the interactive markers to give commands to controller controlling the both arms and the torso.
-![rviz view](https://raw.githubusercontent.com/SemRoCo/giskard_examples/master/docs/pr2_interactive_markers.png)
+
+Additionally, there is a test-client which sends a sequence of goals to the upper-body-controller. You can start it by typing:
+
+```
+roslaunch giskard_examples pr2_test_action_server.launch
+```
+The test-client alternates joint goals and Cartesian goals for each of the arms. So, it is a great reference to see which type of command can be send to the action interface.
 
 ## API of nodes
 ### ```controller_action_server```
@@ -68,7 +68,6 @@ Acts as a convenience interface in front of the ```whole_body_controller```. Add
 
 #### Subscribed topics
 * ```~feedback``` (giskard_msgs/ControllerFeedback): Low-level feedback from ```whole_body_controller```; used to determine when a movement goal succeeded.
-* ```~current_command_hash``` (std_msgs/UInt64): Hash of command currently pursued by ```whole_body_controller```; acts as a safe-guard to synchronize ```whole_body_controller``` and ```controller_action_server```.
 
 #### Published topics
 * ```~command``` (giskard_msgs/WholeBodyCommand): Command to ```whole_body_controller```, repeated published at high frequency to kick watchdog in ```whole_body_controller```.
@@ -76,9 +75,9 @@ Acts as a convenience interface in front of the ```whole_body_controller```. Add
 #### Parameters
 Several threshold parameters determine when a motion succeeded:
 * ```~thresholds/motion_old``` (Double): Duration (in seconds) required after which a motion goal is considered old.
-* ```~thresholds/bodypart_moves``` (Double): Speed threshold (in rad/s) for the fast joint of a body part to consider that body part moving.
-* ```~thresholds/pos_convergence``` (Double) Error threshold (in m) for a position controller to have reached its goal.
-* ```~thresholds/rot_convergence``` (Double): Error threshold (in rad) for an orientation controller to have reached its goal.
+* ```~thresholds/bodypart_moves/left_arm``` (Double): Speed threshold (in rad/s) for the fastest joint of the left arm to consider it moving.
+* ```~thresholds/bodypart_moves/right_arm``` (Double): Speed threshold (in rad/s) for the fastest joint of the right arm to consider it moving.
+* ```~thresholds/bodypart_moves/torso``` (Double): Speed threshold (in rad/s) for the torso joint to consider it moving.
 
 A set of identifiers are used to associated the feedback from the ```whole_body_controller``` with the respective body parts.
 * ```~body_controllables/left_arm``` (List of Strings): Names of controllable variables that form the left arm of the robot.
@@ -87,6 +86,8 @@ A set of identifiers are used to associated the feedback from the ```whole_body_
 
 Finally, there are a couple of parameters which influence the behavior of the node:
 * ```~frame_id``` (String): Reference frame (known to ```TF```) into which all Cartesian goal poses shall be transformed.
+* ```~l_frame_id``` (String): Reference frame (known to ```TF```) of the left end-effector for Cartesian commands.
+* ```~r_frame_id``` (String): Reference frame (known to ```TF```) of the right end-effector for Cartesian commands.
 * ```~update_period``` (Double) Time (in seconds) between updates, i.e. feedback publishes to client and commands publishes to ```whole_body_controller```.
 * ```~server_timeout``` (Double): Time (in seconds) after which the server aborts in case it fails to initialize its action interface.
 
