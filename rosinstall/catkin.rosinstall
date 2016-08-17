@@ -5,7 +5,7 @@
 - git: 
     local-name: expressiongraph
     uri: https://github.com/SemRoCo/expressiongraph.git
-    version: catkin-lib-export-bug-fix
+    version: fmod-new-feature
 - git: 
     local-name: giskard
     uri: https://github.com/SemRoCo/giskard.git
