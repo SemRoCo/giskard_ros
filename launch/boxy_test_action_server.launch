@@ -3,5 +3,7 @@
         name="controller_action_test_client" output="screen" >
     <rosparam command="load"
       file="$(find giskard_examples)/config/boxy_controller_action_test.yaml" />
+    <param name="goals/yaml" 
+      textfile="$(find giskard_examples)/controller_specs/boxy_yaml_control.yaml" />
   </node>
 </launch>
