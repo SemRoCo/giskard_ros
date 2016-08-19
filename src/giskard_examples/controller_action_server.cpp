@@ -249,15 +249,28 @@ namespace giskard_examples
         action_feedback_ = giskard_msgs::WholeBodyFeedback();
 
         thresholds_.convergence_.clear();
-        for (size_t i=0; i<current_command.left_ee.convergence_thresholds.size(); ++i)
-          thresholds_.convergence_.insert(std::pair<std::string, double>(
-                current_command.left_ee.convergence_thresholds[i].semantics, 
-                current_command.left_ee.convergence_thresholds[i].value));
-
-        for (size_t i=0; i<current_command.right_ee.convergence_thresholds.size(); ++i)
-          thresholds_.convergence_.insert(std::pair<std::string, double>(
-                current_command.right_ee.convergence_thresholds[i].semantics, 
-                current_command.right_ee.convergence_thresholds[i].value));
+        switch (current_command.type)
+        {
+          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
+            for (size_t i=0; i<current_command.left_ee.convergence_thresholds.size(); ++i)
+              thresholds_.convergence_.insert(std::pair<std::string, double>(
+                    current_command.left_ee.convergence_thresholds[i].semantics, 
+                    current_command.left_ee.convergence_thresholds[i].value));
+  
+            for (size_t i=0; i<current_command.right_ee.convergence_thresholds.size(); ++i)
+              thresholds_.convergence_.insert(std::pair<std::string, double>(
+                    current_command.right_ee.convergence_thresholds[i].semantics, 
+                    current_command.right_ee.convergence_thresholds[i].value));
+            break;
+          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
+            for (size_t i=0; i<current_command.convergence_thresholds.size(); ++i)
+              thresholds_.convergence_.insert(std::pair<std::string, double>(
+                    current_command.convergence_thresholds[i].semantics, 
+                    current_command.convergence_thresholds[i].value));
+            break;
+          default:
+            throw std::runtime_error("Received unknown type for whole-body-controller.");
+        }
 
         do
         {
@@ -283,16 +296,25 @@ namespace giskard_examples
       {
         giskard_msgs::WholeBodyCommand processed_command = new_command;
         std::string err_string;
-        // FIXME: get this timeout from somewhere
-        if(new_command.left_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
-          tf_->transform(new_command.left_ee.goal_pose, processed_command.left_ee.goal_pose, frame_id_, ros::Duration(0.1));
-        if(new_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
-          processed_command.left_ee = old_command.left_ee;
-
-        if(new_command.right_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
-          tf_->transform(new_command.right_ee.goal_pose, processed_command.right_ee.goal_pose, frame_id_, ros::Duration(0.1));
-        if(new_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
-          processed_command.right_ee = old_command.right_ee;
+        switch (new_command.type)
+        {
+          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
+            if(new_command.left_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
+              // FIXME: get this timeout from somewhere
+              tf_->transform(new_command.left_ee.goal_pose, processed_command.left_ee.goal_pose, frame_id_, ros::Duration(0.1));
+            if(new_command.left_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+              processed_command.left_ee = old_command.left_ee;
+    
+            if(new_command.right_ee.type == giskard_msgs::ArmCommand::CARTESIAN_GOAL)
+              tf_->transform(new_command.right_ee.goal_pose, processed_command.right_ee.goal_pose, frame_id_, ros::Duration(0.1));
+            if(new_command.right_ee.type == giskard_msgs::ArmCommand::IGNORE_GOAL)
+              processed_command.right_ee = old_command.right_ee;
+            break;
+          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
+            break;
+          default:
+            throw std::runtime_error("Received unknown command-type for whole-body-controller.");
+        }
 
         return processed_command;
       }

@@ -53,6 +53,16 @@ giskard_msgs::ArmCommand make_joint_command(const std::vector<double> config,
   return msg;
 }
 
+giskard_msgs::WholeBodyCommand make_yaml_command(const std::string& yaml,
+    const std::map<std::string, double> thresholds)
+{
+  giskard_msgs::WholeBodyCommand msg;
+  msg.type = giskard_msgs::WholeBodyCommand::YAML_CONTROLLER;
+  msg.yaml_spec = yaml;
+  msg.convergence_thresholds = to_msg(thresholds);
+  return msg;
+}
+
 giskard_msgs::WholeBodyGoal all_joint_goal(const ros::NodeHandle& nh)
 {
   giskard_msgs::WholeBodyGoal goal;
@@ -86,63 +96,66 @@ giskard_msgs::WholeBodyGoal right_pose_goal(const ros::NodeHandle& nh)
   return goal;
 }
 
+giskard_msgs::WholeBodyGoal yaml_goal(const ros::NodeHandle& nh)
+{
+  std::map< std::string, double > left_thresh =
+    giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/left_arm/joint");
+  std::map< std::string, double > right_thresh =
+    giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/right_arm/joint");
+  for (std::map< std::string, double>::const_iterator it=right_thresh.begin();
+       it!=right_thresh.end(); ++it)
+    left_thresh.insert(*it);
+
+  giskard_msgs::WholeBodyGoal goal;
+  goal.command = make_yaml_command(
+      giskard_examples::readParam<std::string>(nh, "goals/yaml"), left_thresh);
+  return goal;
+}
 int main (int argc, char **argv)
 {
   ros::init(argc, argv, "controller_action_test_client");
   ros::NodeHandle nh("~");
 
   actionlib::SimpleActionClient<giskard_msgs::WholeBodyAction> client("/controller_action_server/move", true);
-  
+
   ROS_INFO("Waiting for action server to start.");
   client.waitForServer();
   ROS_INFO("Action server started, sending goal.");
 
+  ROS_INFO("Sending goal: YAML with left: joint, right:joint.");
+  client.sendGoal(yaml_goal(nh));
+  if (client.waitForResult(ros::Duration(10)))
+    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
+  else
+    ROS_INFO("Action timed out.");
+ 
+  ROS_INFO("Sending goal. Left: joint, right: joint.");
   client.sendGoal(all_joint_goal(nh));
   if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
     ROS_INFO("Action timed out.");
 
+  ROS_INFO("Sending goal. Left: pose, right: ignore.");
   client.sendGoal(left_pose_goal(nh));
   if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
     ROS_INFO("Action timed out.");
 
+  ROS_INFO("Sending goal. Left: joint, right: joint.");
   client.sendGoal(all_joint_goal(nh));
   if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
     ROS_INFO("Action timed out.");
 
+  ROS_INFO("Sending goal. Left: ignore, right: pose.");
   client.sendGoal(right_pose_goal(nh));
   if (client.waitForResult(ros::Duration(10)))
     ROS_INFO("Action finished: %s", client.getState().toString().c_str());
   else
     ROS_INFO("Action timed out.");
-
-//  // SEND FIRST GOAL FOR ENTIRE BODY WHICH TIMES OUT AFTER 10s
-//  client.sendGoal(make_first_goal());
-//
-//  if (client.waitForResult(ros::Duration(10)))
-//    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
-//  else
-//    ROS_INFO("Action timed out.");
-//
-//  // SEND SECOND GOAL FOR LEFT ARM ONLY WITHOUT WAITING FOR IT TO FINISH
-//  ROS_INFO("Sending second goal.");
-//  client.sendGoal(make_second_goal());
-//  ros::Duration(1.0).sleep();
-//
-//
-//  // SEND THIRD GOAL FOR LEFT ARM ONLY, SHOULD AUTOMATICALLY PREEMPT SECOND GOAL
-//  ROS_INFO("Sent final goal to abort second one.");
-//  client.sendGoal(make_third_goal());
-//
-//  if (client.waitForResult(ros::Duration(10)))
-//    ROS_INFO("Action finished: %s", client.getState().toString().c_str());
-//  else
-//    ROS_INFO("Action timed out.");
 
   return 0;
 }
