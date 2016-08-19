@@ -1,0 +1,12 @@
+left_ee_frame_id: l_gripper_tool_frame
+left_ee_name: LEFT GRIPPER
+right_ee_frame_id: r_gripper_tool_frame
+right_ee_name: RIGHT GRIPPER
+action_name: controller_action_server/move
+thresholds:
+  left_arm:
+    l_trans_error: 0.02
+    l_rot_error: 0.03
+  right_arm:
+    r_trans_error: 0.02
+    r_rot_error: 0.03

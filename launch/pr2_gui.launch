@@ -4,11 +4,8 @@
 
   <node pkg="giskard_examples" type="whole_body_interactive_markers"
         name="whole_body_interactive_markers" output="screen">
-    <param name="left_ee_frame_id" value="l_gripper_tool_frame" />
-    <param name="left_ee_name" value="LEFT GRIPPER" />
-    <param name="right_ee_frame_id" value="r_gripper_tool_frame" />
-    <param name="right_ee_name" value="RIGHT GRIPPER" />
-    <param name="action_name" value="/controller_action_server/move" />
+    <rosparam command="load"
+      file="$(find giskard_examples)/config/pr2_interactive_markers.yaml" />
   </node>
 
   <node pkg="giskard_examples" type="goal_marker_viz" name="command_viz" >

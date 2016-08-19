@@ -3,43 +3,15 @@
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_examples/ros_utils.hpp>
 
-std::vector<giskard_msgs::SemanticFloat64> to_msg(
-    const std::map<std::string, double> map)
-{
-  std::vector<giskard_msgs::SemanticFloat64> result;
-  for (std::map<std::string, double>::const_iterator it=map.begin();
-       it!=map.end(); ++it)
-  {
-    giskard_msgs::SemanticFloat64 msg;
-    msg.semantics = it->first;
-    msg.value = it->second;
-    result.push_back(msg);
-  }
-  return result;
-}
-
-geometry_msgs::Pose make_pose(const std::vector<double>& values)
-{
-  geometry_msgs::Pose msg;
-  msg.position.x = values[0];
-  msg.position.y = values[1];
-  msg.position.z = values[2];
-  msg.orientation.x = values[3];
-  msg.orientation.y = values[4];
-  msg.orientation.z = values[5];
-  msg.orientation.w = values[6];
-  return msg;
-}
-
 giskard_msgs::ArmCommand make_cartesian_command(const std::vector<double>& pose,
     const std::map< std::string, double>& thresholds)
 {
   giskard_msgs::ArmCommand msg;
   msg.goal_pose.header.stamp = ros::Time::now();
   msg.goal_pose.header.frame_id = "base_link";
-  msg.goal_pose.pose = make_pose(pose);
+  msg.goal_pose.pose = giskard_examples::make_pose(pose);
   msg.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
-  msg.convergence_thresholds = to_msg(thresholds);
+  msg.convergence_thresholds = giskard_examples::to_msg(thresholds);
   return msg;
 }
 
@@ -49,7 +21,7 @@ giskard_msgs::ArmCommand make_joint_command(const std::vector<double> config,
   giskard_msgs::ArmCommand msg;
   msg.goal_configuration = config;
   msg.type = giskard_msgs::ArmCommand::JOINT_GOAL;
-  msg.convergence_thresholds = to_msg(thresholds);
+  msg.convergence_thresholds = giskard_examples::to_msg(thresholds);
   return msg;
 }
 
