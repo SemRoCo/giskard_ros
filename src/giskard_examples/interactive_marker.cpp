@@ -6,9 +6,10 @@
 *
 * giskard_examples is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
-* as published by the Free Software Foundation; either version 2 * of the License, or (at your option) any later version.
+* as published by the Free Software Foundation; either version 2 
+* of the License, or (at your option) any later version.
 *
-* This program is distributed in the hope that it will be useful,
+* This program is distributed in the hope that it will be useful, 
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
@@ -21,6 +22,7 @@
 #include <ros/ros.h>
 #include <interactive_markers/interactive_marker_server.h>
 #include <actionlib/client/simple_action_client.h>
+#include <giskard_examples/ros_utils.hpp>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <memory>
 #include <boost/bind.hpp>
@@ -28,8 +30,9 @@
 class BodyPartSemantics
 {
   public:
-    BodyPartSemantics(const std::string& name, const std::string& frame_id) :
-      name_( name ), frame_id_( frame_id ) {}
+    BodyPartSemantics(const std::string& name, const std::string& frame_id,
+        const std::vector<giskard_msgs::SemanticFloat64>& thresholds) :
+      name_( name ), frame_id_( frame_id ), thresholds_( thresholds ) {}
     ~BodyPartSemantics() {}
 
     const std::string& get_name() const
@@ -52,8 +55,19 @@ class BodyPartSemantics
       frame_id_ = frame_id;
     }
 
+    const std::vector<giskard_msgs::SemanticFloat64>& get_thresholds() const
+    {
+      return thresholds_;
+    }
+
+    void set_thresholds(const std::vector<giskard_msgs::SemanticFloat64>& thresholds)
+    {
+      thresholds_ = thresholds;
+    }
+
   private:
     std::string name_, frame_id_;
+    std::vector<giskard_msgs::SemanticFloat64> thresholds_;
 };
 
 giskard_msgs::ArmCommand create_identity_goal(const BodyPartSemantics& bodypart)
@@ -71,8 +85,8 @@ class WholeBodyInteractiveMarkers
   public:
     WholeBodyInteractiveMarkers(const ros::NodeHandle& nh, const BodyPartSemantics& left_ee_semantics,
         const BodyPartSemantics& right_ee_semantics, const std::string& action_name) :
-        nh_( nh ), left_ee_semantics_( left_ee_semantics ), right_ee_semantics_( right_ee_semantics ),
-        client_(action_name, true)
+      nh_( nh ), left_ee_semantics_( left_ee_semantics ), right_ee_semantics_( right_ee_semantics ),
+      client_(action_name, true)
 
     {
       goal_.command.left_ee = create_identity_goal(left_ee_semantics_);
@@ -123,16 +137,20 @@ class WholeBodyInteractiveMarkers
 
         if(feedback->marker_name.compare(left_ee_semantics_.get_name()) == 0)
         {
+          // TODO: turn this into a separate function, too
           goal_.command.left_ee.goal_pose.header = feedback->header;
           goal_.command.left_ee.goal_pose.pose = feedback->pose;
           goal_.command.left_ee.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+          goal_.command.left_ee.convergence_thresholds = left_ee_semantics_.get_thresholds();
           goal_.command.right_ee = create_identity_goal(right_ee_semantics_);
         }
         else if (feedback->marker_name.compare(right_ee_semantics_.get_name()) == 0)
         {
+          // TODO: turn this into a separate function, too
           goal_.command.right_ee.goal_pose.header = feedback->header;
           goal_.command.right_ee.goal_pose.pose = feedback->pose;
           goal_.command.right_ee.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
+          goal_.command.right_ee.convergence_thresholds = right_ee_semantics_.get_thresholds();
           goal_.command.left_ee = create_identity_goal(left_ee_semantics_);
         }
         else
@@ -233,9 +251,24 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  WholeBodyInteractiveMarkers wbim(nh, BodyPartSemantics(left_ee_name, left_ee_frame_id),
-      BodyPartSemantics(right_ee_name, right_ee_frame_id), action_name);
-  wbim.start();
+  try
+  {
+    std::map< std::string, double > left_thresholds = 
+      giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/left_arm");
+  
+    std::map< std::string, double > right_thresholds = 
+      giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/right_arm");
+  
+    WholeBodyInteractiveMarkers wbim(nh, 
+        BodyPartSemantics(left_ee_name, left_ee_frame_id, giskard_examples::to_msg(left_thresholds)),
+        BodyPartSemantics(right_ee_name, right_ee_frame_id, giskard_examples::to_msg(right_thresholds)), 
+        action_name);
+    wbim.start();
+    ros::spin();
+  }
+  catch (const std::exception& e)
+  {
+    ROS_ERROR("%s", e.what());
+  }
 
-  ros::spin();
 }
