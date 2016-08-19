@@ -31,7 +31,7 @@ giskard_msgs::WholeBodyCommand make_yaml_command(const std::string& yaml,
   giskard_msgs::WholeBodyCommand msg;
   msg.type = giskard_msgs::WholeBodyCommand::YAML_CONTROLLER;
   msg.yaml_spec = yaml;
-  msg.convergence_thresholds = to_msg(thresholds);
+  msg.convergence_thresholds = giskard_examples::to_msg(thresholds);
   return msg;
 }
 
