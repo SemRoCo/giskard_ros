@@ -73,3 +73,7 @@ add_dependencies(goal_transformer ${catkin_EXPORTED_TARGETS})
 add_executable(goal_marker_viz src/${PROJECT_NAME}/goal_marker_viz.cpp)
 target_link_libraries(goal_marker_viz ${catkin_LIBRARIES})
 add_dependencies(goal_marker_viz ${catkin_EXPORTED_TARGETS})
+
+add_executable(joint_state_pretty_printer src/${PROJECT_NAME}/joint_state_pretty_printer.cpp)
+target_link_libraries(joint_state_pretty_printer ${catkin_LIBRARIES})
+add_dependencies(joint_state_pretty_printer ${catkin_EXPORTED_TARGETS})
