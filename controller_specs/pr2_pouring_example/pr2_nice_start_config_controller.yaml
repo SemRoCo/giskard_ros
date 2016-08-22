@@ -63,7 +63,7 @@ scope:
   # control params
 
   # definition goals and control laws
-  - torso_error: {double-sub: [torso_lift_goal, torso_lift_joint]}
+  - torso_lift_error: {double-sub: [torso_lift_goal, torso_lift_joint]}
   - l_shoulder_pan_error: {double-sub: [l_shoulder_pan_joint_goal, l_shoulder_pan_joint]}
   - l_shoulder_lift_error: {double-sub: [l_shoulder_lift_joint_goal, l_shoulder_lift_joint]}
   - l_upper_arm_roll_error: {double-sub: [l_upper_arm_roll_joint_goal, l_upper_arm_roll_joint]}
