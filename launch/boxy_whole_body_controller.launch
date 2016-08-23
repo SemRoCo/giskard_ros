@@ -16,13 +16,12 @@
     <remap from="~joint_states" to="/joint_states_ideal" unless="$(arg sim)" />
   </node>
 
-  <group if="$(arg sim)" >
-    <node pkg="giskard_examples" type="float_array_separator" name="velocity_cmd_separator" output="screen" >
-      <rosparam param="joint_names"
-        file="$(find giskard_examples)/config/boxy_upper_body.yaml" />
-      <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
-    </node>
-  </group>
+  <node pkg="giskard_examples" type="float_array_separator" name="velocity_cmd_separator" 
+        output="screen" if="$(arg sim)" >
+    <rosparam param="joint_names"
+      file="$(find giskard_examples)/config/boxy_upper_body.yaml" />
+    <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
+  </node>
 
   <node pkg="giskard_examples" type="controller_action_server" name="controller_action_server" 
         output="screen">
