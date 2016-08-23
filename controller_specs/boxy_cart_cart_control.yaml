@@ -706,7 +706,8 @@ scope:
   - r_rot_control: {double-mul: [rot_p_gain, {min: [rot_thresh, r_rot_error]}]}
 
   # some constants
-  - weight_arm_joints: 1.0
+  - weight_left_arm_joints: 1.0
+  - weight_right_arm_joints: 1.0
   - weight_pos_control: 10.0
   - weight_rot_control: 3.0
   - neg_vel_limit_arm_joints: -0.5
@@ -714,20 +715,20 @@ scope:
 
 controllable-constraints:
   - controllable-constraint: [-0.05, 0.05, 100.0, 0, triangle_base_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, left_arm_0_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, left_arm_1_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 3, left_arm_2_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 4, left_arm_3_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 5, left_arm_4_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 6, left_arm_5_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 7, left_arm_6_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 8, right_arm_0_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 9, right_arm_1_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 10, right_arm_2_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 11, right_arm_3_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 12, right_arm_4_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 13, right_arm_5_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 14, right_arm_6_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 1, left_arm_0_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 2, left_arm_1_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 3, left_arm_2_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 4, left_arm_3_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 5, left_arm_4_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 6, left_arm_5_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 7, left_arm_6_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 8, right_arm_0_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 9, right_arm_1_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 10, right_arm_2_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 11, right_arm_3_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 12, right_arm_4_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 13, right_arm_5_joint]
+  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_right_arm_joints, 14, right_arm_6_joint]
 
 soft-constraints:
   - soft-constraint: [{x-coord: l_trans_control}, {x-coord: l_trans_control}, weight_pos_control, {x-coord: l_trans}, left EE x-pos control slack]
