@@ -253,11 +253,13 @@ int main(int argc, char** argv)
 
   try
   {
-    std::map< std::string, double > left_thresholds = 
-      giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/left_arm");
-  
-    std::map< std::string, double > right_thresholds = 
-      giskard_examples::readParam< std::map<std::string, double> >(nh, "thresholds/right_arm");
+    std::map< std::string, double > left_thresholds, right_thresholds;
+    if (!nh.getParam("thresholds/left_arm", left_thresholds))
+      ROS_WARN("Could not find parameter 'thresholds/left_arm' in namespace '%s'.",
+          nh.getNamespace().c_str());
+    if (!nh.getParam("thresholds/right_arm", right_thresholds))
+      ROS_WARN("Could not find parameter 'thresholds/right_arm' in namespace '%s'.",
+          nh.getNamespace().c_str());
   
     WholeBodyInteractiveMarkers wbim(nh, 
         BodyPartSemantics(left_ee_name, left_ee_frame_id, giskard_examples::to_msg(left_thresholds)),
