@@ -1,5 +1,7 @@
 <launch>
   <arg name="plot" default="false" />
+  <arg name="sim" default="true" />
+  <arg name="rviz" default="true" />
 
   <node pkg="giskard_examples" type="goal_marker_viz" name="command_viz" >
     <remap from="~goal" to="/whole_body_controller/current_command" />
@@ -7,11 +9,14 @@
 
   <node pkg="giskard_examples" type="whole_body_interactive_markers" 
         name="whole_body_interactive_markers" output="screen">
-    <rosparam command="load"
+    <rosparam if="$(arg sim)" command="load"
       file="$(find giskard_examples)/config/boxy_interactive_markers.yaml" />
+    <rosparam unless="$(arg sim)" command="load"
+      file="$(find giskard_examples)/config/real_boxy_interactive_markers.yaml" />
   </node>
 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find giskard_examples)/config/pr2_interactive.rviz" />
+  <node pkg="rviz" type="rviz" name="rviz" if="$(arg rviz)"
+        args="-d $(find giskard_examples)/config/pr2_interactive.rviz" />
 
   <group if="$(arg plot)" >
     <node pkg="giskard_examples" type="whole_body_plot.py" name="whole_body_plot" output="screen" />
