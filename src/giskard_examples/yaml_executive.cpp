@@ -83,11 +83,19 @@ namespace giskard_examples
           goal.command.type = giskard_msgs::WholeBodyCommand::YAML_CONTROLLER;
           goal.command.yaml_spec = controller_specs_[i];
           goal.command.convergence_thresholds = to_msg(convergence_thresholds_[i]);
+          ros::Time start_time = ros::Time::now();
           client_.sendGoal(goal);
           if (client_.waitForResult(ros::Duration(10)))
-            ROS_INFO("Action finished: %s", client_.getState().toString().c_str());
+          {
+            ros::Duration exec_time = ros::Time::now() - start_time;
+
+            ROS_INFO("Action finished after %fs: %s", exec_time.toSec(), client_.getState().toString().c_str());
+          }
           else
+          {
+            client_.cancelGoal();
             ROS_INFO("Action timed out.");
+          }
         }
 
       }
