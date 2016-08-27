@@ -55,6 +55,7 @@ int main(int argc, char **argv)
   try
   {
     checker.run();
+    ROS_INFO("Successfully parsed and generated controller.");
   }
   catch (const std::exception& e)
   {
