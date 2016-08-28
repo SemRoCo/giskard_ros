@@ -52,6 +52,13 @@ scope:
   - l_forearm_roll_joint_goal: -6.01118
   - l_wrist_flex_joint_goal: -1.41351
   - l_wrist_roll_joint_goal: 4.70187
+#  - l_shoulder_pan_joint_goal: 0.543886
+#  - l_shoulder_lift_joint_goal: 0.156374
+#  - l_upper_arm_roll_joint_goal: 1.54255
+#  - l_elbow_flex_joint_goal: -1.51628
+#  - l_forearm_roll_joint_goal: 0.237611
+#  - l_wrist_flex_joint_goal: -1.32027
+#  - l_wrist_roll_joint_goal: 4.69513
   - r_shoulder_pan_joint_goal: -0.556869
   - r_shoulder_lift_joint_goal: 0.240943
   - r_upper_arm_roll_joint_goal: -1.57977
