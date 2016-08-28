@@ -43,8 +43,8 @@ scope:
   - r_wrist_roll_joint: {input-var: 14}
 
   # definition of constraint ranges and centers
-  - bottle_top_to_cup_top_goal_lower: {vector3: [-0.1, -0.4, -0.1]}
-  - bottle_top_to_cup_top_goal_upper: {vector3: [0.1, -0.1, 0.1]}
+  - bottle_top_to_cup_top_goal_lower: {vector3: [-0.1, -0.1, -0.1]}
+  - bottle_top_to_cup_top_goal_upper: {vector3: [0.1, -0.08, 0.1]}
   - bottle_top_to_cup_top_goal_center: 
       vector-add: 
         - bottle_top_to_cup_top_goal_lower
@@ -202,7 +202,7 @@ scope:
   - pos_vel_limit_left_arm_joints: 0.6
   - neg_vel_limit_right_arm_joints: -0.6
   - pos_vel_limit_right_arm_joints: 0.6
-  - range_gain: 2.5
+  - range_gain: 2
 
   # definition of control laws
   # bottle relative to cup

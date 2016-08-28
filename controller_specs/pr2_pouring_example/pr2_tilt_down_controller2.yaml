@@ -43,14 +43,14 @@ scope:
   - r_wrist_roll_joint: {input-var: 14}
 
   # definition of constraint ranges and centers
-  - bottle_top_to_cup_top_goal_lower: {vector3: [-0.005, -0.03, 0.06]}
-  - bottle_top_to_cup_top_goal_upper: {vector3: [0.005, -0.02, 0.12]}
+  - bottle_top_to_cup_top_goal_lower: {vector3: [-0.005, -0.02, 0.06]}
+  - bottle_top_to_cup_top_goal_upper: {vector3: [0.005, -0.01, 0.08]}
   - bottle_top_to_cup_top_goal_center: 
       vector-add: 
         - bottle_top_to_cup_top_goal_lower
         - {scale-vector: [0.5, {vector-sub: [bottle_top_to_cup_top_goal_upper, bottle_top_to_cup_top_goal_lower]}]}
-  - bottle_to_itself_goal_lower: {vector3: [-0.01, 0.17, -0.06]}
-  - bottle_to_itself_goal_upper: {vector3: [0.01, 0.2, -0.03]}
+  - bottle_to_itself_goal_lower: {vector3: [-0.01, 0.1, -0.16]}
+  - bottle_to_itself_goal_upper: {vector3: [0.01, 0.2, -0.12]}
   - bottle_to_itself_goal_center: 
       vector-add: 
         - bottle_to_itself_goal_lower
@@ -143,11 +143,11 @@ scope:
   - cup_frame: 
       frame-mul:
         - left_ee
-        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [0, 0, -0.07]}]
+        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [-0.02, 0, -0.07]}]
   - bottle_frame:
       frame-mul:
         - right_ee
-        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [0.0, 0.0, -0.095]}]
+        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [-0.02, 0.0, -0.095]}]
 
   # definition of points on bottle
   - bottle_bottom: {origin-of: bottle_frame}
@@ -202,7 +202,7 @@ scope:
   - pos_vel_limit_left_arm_joints: 0.6
   - neg_vel_limit_right_arm_joints: -0.6
   - pos_vel_limit_right_arm_joints: 0.6
-  - range_gain: 2.5
+  - range_gain: 2
 
   # definition of control laws
   # bottle relative to cup

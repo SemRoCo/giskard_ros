@@ -1,6 +1,6 @@
 # bottle top relative to cup top
 bottle_top_behind_cup_top_error: 0.11
-bottle_top_left_cup_top_error: 0.16
+bottle_top_left_cup_top_error: 0.03
 bottle_top_above_cup_top_error: 0.11
 # bottle relative to itself
 bottle_behind_itself_error: 0.015

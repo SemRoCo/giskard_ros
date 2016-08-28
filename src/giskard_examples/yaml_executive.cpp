@@ -85,7 +85,7 @@ namespace giskard_examples
           goal.command.convergence_thresholds = to_msg(convergence_thresholds_[i]);
           ros::Time start_time = ros::Time::now();
           client_.sendGoal(goal);
-          if (client_.waitForResult(ros::Duration(10)))
+          if (client_.waitForResult(ros::Duration(8)))
           {
             ros::Duration exec_time = ros::Time::now() - start_time;
 

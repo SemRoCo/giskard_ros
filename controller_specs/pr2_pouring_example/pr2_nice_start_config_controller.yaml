@@ -45,6 +45,7 @@ scope:
 
   # definition goal input variables
   - torso_lift_goal: 0.30
+  # left arm out
   - l_shoulder_pan_joint_goal: 0.962039
   - l_shoulder_lift_joint_goal: 0.150617
   - l_upper_arm_roll_joint_goal: 1.56769
@@ -52,6 +53,7 @@ scope:
   - l_forearm_roll_joint_goal: -6.01118
   - l_wrist_flex_joint_goal: -1.41351
   - l_wrist_roll_joint_goal: 4.70187
+  # left arm center
 #  - l_shoulder_pan_joint_goal: 0.543886
 #  - l_shoulder_lift_joint_goal: 0.156374
 #  - l_upper_arm_roll_joint_goal: 1.54255

@@ -143,11 +143,11 @@ scope:
   - cup_frame: 
       frame-mul:
         - left_ee
-        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [0, 0, -0.07]}]
+        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [-0.02, 0, -0.07]}]
   - bottle_frame:
       frame-mul:
         - right_ee
-        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [0.0, 0.0, -0.095]}]
+        - frame: [{quaternion: [0, 0, 0, 1]}, {vector3: [-0.02, 0.0, -0.095]}]
 
   # definition of points on bottle
   - bottle_bottom: {origin-of: bottle_frame}
@@ -202,7 +202,7 @@ scope:
   - pos_vel_limit_left_arm_joints: 0.6
   - neg_vel_limit_right_arm_joints: -0.6
   - pos_vel_limit_right_arm_joints: 0.6
-  - range_gain: 2.5
+  - range_gain: 2
 
   # definition of control laws
   # bottle relative to cup
