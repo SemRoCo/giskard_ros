@@ -1,0 +1,24 @@
+<launch>
+  <arg name="v1" default="false" />
+  <arg name="v2" default="false" />
+
+  <node pkg="giskard_examples" type="yaml_executive" name="yaml_executive" 
+        output="screen" >
+    <rosparam if="$(arg v1)" command="load" 
+              file="$(find giskard_examples)/config/pr2_pouring_executive.yaml" />
+    <rosparam if="$(arg v2)" command="load" 
+              file="$(find giskard_examples)/config/pr2_pouring_executive2.yaml" />
+
+  </node>
+
+  <!--node pkg="giskard_examples" type="yaml_controller" name="yaml_controller"
+        output="screen" >
+    <rosparam param="joint_names"
+      file="$(find giskard_examples)/config/pr2_left_upper_body.yaml" />
+    <remap from="~joint_states" to="/joint_states" />
+  </node-->
+
+  <node pkg="giskard_examples" type="pub_pouring_markers.py" name="marker_publisher" />
+
+  <!--include file="$(find giskard_examples)/launch/pouring_visualization.launch" /-->
+</launch>

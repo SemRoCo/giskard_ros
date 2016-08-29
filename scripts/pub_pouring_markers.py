@@ -13,6 +13,12 @@ def dark_gray():
 def opaque():
     return ColorRGBA(0.0, 0.0, 0.0, 1.0)
 
+def transparent():
+    return ColorRGBA(1.0, 1.0, 1.0, 0.0)
+
+def white():
+    return ColorRGBA(1.0, 1.0, 1.0, 1.0)
+
 def transparent_red():
     return ColorRGBA(1.0, 0.0, 0.0, 0.7)
 
@@ -63,9 +69,10 @@ def table_marker_publisher():
     rospy.sleep(.3)
     if not rospy.is_shutdown():
         msg = MarkerArray()
-        msg.markers = make_table_markers()
-        msg.markers.append(make_mesh_marker("maker_frame", len(msg.markers) + 1, Pose(Point(z=0.04), Quaternion(z=1.0)), Vector3(1, 1, 1), opaque(), "package://giskard_examples/models/electrical-devices/pancake-maker.dae"))
-        msg.markers.append(make_cylinder_marker("cup_bottom_frame", len(msg.markers) +1, Pose(position=Point(z=0.07)), Vector3(0.085, 0.085, 0.14), transparent_red(), True))
+        # msg.markers = make_table_markers()
+        msg.markers.append(make_mesh_marker("l_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(z=-0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/cup_eco_orange.dae", frame_locked=True))
+        msg.markers.append(make_mesh_marker("r_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(z=0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/sigg_bottle.dae", frame_locked=True))
+#        msg.markers.append(make_cylinder_marker("cup_bottom_frame", len(msg.markers) +1, Pose(position=Point(z=0.07)), Vector3(0.085, 0.085, 0.14), transparent_red(), True))
         pub.publish(msg)
 
 if __name__ == '__main__':

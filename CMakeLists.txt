@@ -77,3 +77,11 @@ add_dependencies(goal_marker_viz ${catkin_EXPORTED_TARGETS})
 add_executable(joint_state_pretty_printer src/${PROJECT_NAME}/joint_state_pretty_printer.cpp)
 target_link_libraries(joint_state_pretty_printer ${catkin_LIBRARIES})
 add_dependencies(joint_state_pretty_printer ${catkin_EXPORTED_TARGETS})
+
+add_executable(yaml_executive src/${PROJECT_NAME}/yaml_executive.cpp)
+target_link_libraries(yaml_executive ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(yaml_executive ${catkin_EXPORTED_TARGETS})
+
+add_executable(check_controller_yaml src/${PROJECT_NAME}/check_controller_yaml.cpp)
+target_link_libraries(check_controller_yaml ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(check_controller_yaml ${catkin_EXPORTED_TARGETS})

@@ -514,7 +514,15 @@ Visualization Manager:
       Marker Topic: /command_viz/markers
       Name: MarkerArray
       Namespaces:
-        command: true
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: visualization_marker_array
+      Name: MarkerArray
+      Namespaces:
+        pouring_visualization: true
       Queue Size: 100
       Value: true
   Enabled: true
