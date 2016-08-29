@@ -42,31 +42,33 @@ scope:
   - r_wrist_flex_joint: {input-var: 13}
   - r_wrist_roll_joint: {input-var: 14}
 
-  # definition of constraint ranges
-  - bottle_top_behind_cup_lower: -0.1
-  - bottle_top_behind_cup_upper: 0.1
-  - bottle_top_left_cup_lower: -0.4
-  - bottle_top_left_cup_upper: -0.1
-  - bottle_top_above_cup_lower: -0.1
-  - bottle_top_above_cup_upper: 0.1
-  - bottle_above_itself_lower: 0.18
-  - bottle_above_itself_upper: 0.2
-  - bottle_left_itself_lower: -0.005
-  - bottle_left_itself_upper: 0.005
-  - bottle_behind_itself_lower: -0.005
-  - bottle_behind_itself_upper: 0.005
-  - cup_above_itself_lower: 0.08
-  - cup_above_itself_upper: 0.09
-  - cup_left_itself_lower: -0.001
-  - cup_left_itself_upper: 0.001
-  - cup_behind_itself_lower: -0.001
-  - cup_behind_itself_upper: 0.001
-  - cup_top_above_world_lower: 1.1
-  - cup_top_above_world_upper: 1.3
-  - cup_top_left_world_lower: -0.25
-  - cup_top_left_world_upper: 0.25
-  - cup_top_behind_world_lower: 0.35
-  - cup_top_behind_world_upper: 0.45
+  # definition of constraint ranges and centers
+  - bottle_top_to_cup_top_goal_lower: {vector3: [-0.0, -0.02, -0.039]}
+  - bottle_top_to_cup_top_goal_upper: {vector3: [0.07, -0.016, 0.49]}
+  - bottle_top_to_cup_top_goal_center: 
+      vector-add: 
+        - bottle_top_to_cup_top_goal_lower
+        - {scale-vector: [0.5, {vector-sub: [bottle_top_to_cup_top_goal_upper, bottle_top_to_cup_top_goal_lower]}]}
+  - bottle_to_itself_goal_lower: {vector3: [-0.025, 0.17, -0.05]}
+  - bottle_to_itself_goal_upper: {vector3: [-0.011, 0.174, -0.037]}
+  - bottle_to_itself_goal_center: 
+      vector-add: 
+        - bottle_to_itself_goal_lower
+        - {scale-vector: [0.5, {vector-sub: [bottle_to_itself_goal_upper, bottle_to_itself_goal_lower]}]}
+#  - cup_top_to_base_goal_lower: {vector3: [0.35, -0.25, 1.0]}
+#  - cup_top_to_base_goal_upper: {vector3: [0.45, 0.25, 1.2]}
+  - cup_top_to_base_goal_lower: {vector3: [0.4, 0.0, 1.05]}
+  - cup_top_to_base_goal_upper: {vector3: [0.4, 0.0, 1.05]}
+  - cup_top_to_base_goal_center: 
+      vector-add: 
+        - cup_top_to_base_goal_lower
+        - {scale-vector: [0.5, {vector-sub: [cup_top_to_base_goal_upper, cup_top_to_base_goal_lower]}]}
+  - cup_to_itself_goal_lower: {vector3: [-0.005, -0.005, 0.08]}
+  - cup_to_itself_goal_upper: {vector3: [0.005, 0.005, 0.09]}
+  - cup_to_itself_goal_center: 
+      vector-add: 
+        - cup_to_itself_goal_lower
+        - {scale-vector: [0.5, {vector-sub: [cup_to_itself_goal_upper, cup_to_itself_goal_lower]}]}
 
   # definition of joint transforms
   - torso_lift:
@@ -158,51 +160,147 @@ scope:
   # definition of features
   - bottle_top_to_cup_top:
       cached-vector: {vector-sub: [bottle_top, cup_top]}
-  - bottle_top_to_bottle_bottom:
+  - bottle_to_itself:
       cached-vector: {vector-sub: [bottle_top, bottle_bottom]}
-  - cup_top_to_cup_bottom:
+  - cup_to_itself:
       cached-vector: {vector-sub: [cup_top, cup_bottom]}
-  - bottle_behind_itself: {x-coord: bottle_top_to_bottle_bottom}
-  - bottle_left_itself: {y-coord: bottle_top_to_bottle_bottom}
-  - bottle_above_itself: {z-coord: bottle_top_to_bottle_bottom}
-  - cup_behind_itself: {x-coord: cup_top_to_cup_bottom}
-  - cup_left_itself: {y-coord: cup_top_to_cup_bottom}
-  - cup_above_itself: {z-coord: cup_top_to_cup_bottom}
-  - bottle_top_behind_cup: {x-coord: bottle_top_to_cup_top}
-  - bottle_top_left_cup: {y-coord: bottle_top_to_cup_top}
-  - bottle_top_above_cup: {z-coord: bottle_top_to_cup_top}
-  - cup_top_behind_world: {x-coord: cup_top}
-  - cup_top_left_world: {y-coord: cup_top}
-  - cup_top_above_world: {z-coord: cup_top}
+
+  # definition of error vectors
+  - bottle_top_to_cup_top_lower_error_vector: {vector-sub: [bottle_top_to_cup_top_goal_lower, bottle_top_to_cup_top]}
+  - bottle_top_to_cup_top_upper_error_vector: {vector-sub: [bottle_top_to_cup_top_goal_upper, bottle_top_to_cup_top]}
+  - bottle_top_to_cup_top_center_error_vector: {vector-sub: [bottle_top_to_cup_top_goal_center, bottle_top_to_cup_top]}
+  - bottle_to_itself_lower_error_vector: {vector-sub: [bottle_to_itself_goal_lower, bottle_to_itself]}
+  - bottle_to_itself_upper_error_vector: {vector-sub: [bottle_to_itself_goal_upper, bottle_to_itself]}
+  - bottle_to_itself_center_error_vector: {vector-sub: [bottle_to_itself_goal_center, bottle_to_itself]}
+  - cup_top_to_base_lower_error_vector: {vector-sub: [cup_top_to_base_goal_lower, cup_top]}
+  - cup_top_to_base_upper_error_vector: {vector-sub: [cup_top_to_base_goal_upper, cup_top]}
+  - cup_top_to_base_center_error_vector: {vector-sub: [cup_top_to_base_goal_center, cup_top]}
+  - cup_to_itself_lower_error_vector: {vector-sub: [cup_to_itself_goal_lower, cup_to_itself]}
+  - cup_to_itself_upper_error_vector: {vector-sub: [cup_to_itself_goal_upper, cup_to_itself]}
+  - cup_to_itself_center_error_vector: {vector-sub: [cup_to_itself_goal_center, cup_to_itself]}
+  # definition of double errors
+  - bottle_top_behind_cup_top_error: {abs: {x-coord: bottle_top_to_cup_top_center_error_vector}}
+  - bottle_top_left_cup_top_error: {abs: {y-coord: bottle_top_to_cup_top_center_error_vector}} 
+  - bottle_top_above_cup_top_error: {abs: {z-coord: bottle_top_to_cup_top_center_error_vector}}  
+  - bottle_behind_itself_error: {abs: {x-coord: bottle_to_itself_center_error_vector}} 
+  - bottle_left_itself_error: {abs: {y-coord: bottle_to_itself_center_error_vector}}  
+  - bottle_above_itself_error: {abs: {z-coord: bottle_to_itself_center_error_vector}}  
+  - cup_top_behind_base_error: {abs: {x-coord: cup_top_to_base_center_error_vector}}  
+  - cup_top_left_base_error: {abs: {y-coord: cup_top_to_base_center_error_vector}}  
+  - cup_top_above_base_error: {abs: {z-coord: cup_top_to_base_center_error_vector}}  
+  - cup_behind_itself_error: {abs: {x-coord: cup_to_itself_center_error_vector}}  
+  - cup_left_itself_error: {abs: {y-coord: cup_to_itself_center_error_vector}}  
+  - cup_above_left_error: {abs: {z-coord: cup_to_itself_center_error_vector}}  
 
   # some constants
   - weight_arm_joints: 1.0
   - weight_pos_control: 20.0
-  - weight_rot_control: 5.0
+  - weight_range_control: 20.0
+  - weight_center_control: 2.0
   - weight_elbow_control: 0.1
-  - neg_vel_limit_arm_joints: -0.6
-  - pos_vel_limit_arm_joints: 0.6
+  - neg_vel_limit_left_arm_joints: -0.6
+  - pos_vel_limit_left_arm_joints: 0.6
+  - neg_vel_limit_right_arm_joints: -0.6
+  - pos_vel_limit_right_arm_joints: 0.6
+  - range_gain: 2
 
+  # definition of control laws
+  # bottle relative to cup
+  - bottle_behind_cup_lower_control:
+      {double-mul: [range_gain, x-coord: bottle_top_to_cup_top_lower_error_vector]}
+  - bottle_behind_cup_upper_control:
+      {double-mul: [range_gain, x-coord: bottle_top_to_cup_top_upper_error_vector]}
+  - bottle_behind_cup_center_control:
+      x-coord: bottle_top_to_cup_top_center_error_vector
+  - bottle_left_cup_lower_control:
+      {double-mul: [range_gain, y-coord: bottle_top_to_cup_top_lower_error_vector]}
+  - bottle_left_cup_upper_control:
+      {double-mul: [range_gain, y-coord: bottle_top_to_cup_top_upper_error_vector]}
+  - bottle_left_cup_center_control:
+      y-coord: bottle_top_to_cup_top_center_error_vector
+  - bottle_above_cup_lower_control:
+      {double-mul: [range_gain, z-coord: bottle_top_to_cup_top_lower_error_vector]}
+  - bottle_above_cup_upper_control:
+      {double-mul: [range_gain, z-coord: bottle_top_to_cup_top_upper_error_vector]}
+  - bottle_above_cup_center_control:
+      z-coord: bottle_top_to_cup_top_center_error_vector
+  # bottle relative to itself
+  - bottle_behind_itself_lower_control:
+      {double-mul: [range_gain, x-coord: bottle_to_itself_lower_error_vector]}
+  - bottle_behind_itself_upper_control:
+      {double-mul: [range_gain, x-coord: bottle_to_itself_upper_error_vector]}
+  - bottle_behind_itself_center_control:
+      x-coord: bottle_to_itself_center_error_vector
+  - bottle_left_itself_lower_control:
+      {double-mul: [range_gain, y-coord: bottle_to_itself_lower_error_vector]}
+  - bottle_left_itself_upper_control:
+      {double-mul: [range_gain, y-coord: bottle_to_itself_upper_error_vector]}
+  - bottle_left_itself_center_control:
+      y-coord: bottle_to_itself_center_error_vector
+  - bottle_above_itself_lower_control:
+      {double-mul: [range_gain, z-coord: bottle_to_itself_lower_error_vector]}
+  - bottle_above_itself_upper_control:
+      {double-mul: [range_gain, z-coord: bottle_to_itself_upper_error_vector]}
+  - bottle_above_itself_center_control:
+      z-coord: bottle_to_itself_center_error_vector
+  # cup relative to base
+  - cup_behind_base_lower_control:
+      {double-mul: [range_gain, x-coord: cup_top_to_base_lower_error_vector]}
+  - cup_behind_base_upper_control:
+      {double-mul: [range_gain, x-coord: cup_top_to_base_upper_error_vector]}
+  - cup_behind_base_center_control:
+      x-coord: cup_top_to_base_center_error_vector
+  - cup_left_base_lower_control:
+      {double-mul: [range_gain, y-coord: cup_top_to_base_lower_error_vector]}
+  - cup_left_base_upper_control:
+      {double-mul: [range_gain, y-coord: cup_top_to_base_upper_error_vector]}
+  - cup_left_base_center_control:
+      y-coord: cup_top_to_base_center_error_vector
+  - cup_above_base_lower_control:
+      {double-mul: [range_gain, z-coord: cup_top_to_base_lower_error_vector]}
+  - cup_above_base_upper_control:
+      {double-mul: [range_gain, z-coord: cup_top_to_base_upper_error_vector]}
+  - cup_above_base_center_control:
+      z-coord: cup_top_to_base_center_error_vector
+  # cup relative to itself
+  - cup_behind_itself_lower_control:
+      {double-mul: [range_gain, x-coord: cup_to_itself_lower_error_vector]}
+  - cup_behind_itself_upper_control:
+      {double-mul: [range_gain, x-coord: cup_to_itself_upper_error_vector]}
+  - cup_behind_itself_center_control:
+      x-coord: cup_to_itself_center_error_vector
+  - cup_left_itself_lower_control:
+      {double-mul: [range_gain, y-coord: cup_to_itself_lower_error_vector]}
+  - cup_left_itself_upper_control:
+      {double-mul: [range_gain, y-coord: cup_to_itself_upper_error_vector]}
+  - cup_left_itself_center_control:
+      y-coord: cup_to_itself_center_error_vector
+  - cup_above_itself_lower_control:
+      {double-mul: [range_gain, z-coord: cup_to_itself_lower_error_vector]}
+  - cup_above_itself_upper_control:
+      {double-mul: [range_gain, z-coord: cup_to_itself_upper_error_vector]}
+  - cup_above_itself_center_control:
+      z-coord: cup_to_itself_center_error_vector
 
 controllable-constraints:
   # torso joint
   - controllable-constraint: [-0.02, 0.02, 100.0, 0, torso_lift_joint]
   # left arm joints
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, l_shoulder_pan_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, l_shoulder_lift_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 3, l_upper_arm_roll_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 4, l_elbow_flex_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 5, l_forearm_roll_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 6, l_wrist_flex_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 7, l_wrist_roll_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 1, l_shoulder_pan_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 2, l_shoulder_lift_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 3, l_upper_arm_roll_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 4, l_elbow_flex_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 5, l_forearm_roll_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 6, l_wrist_flex_joint]
+  - controllable-constraint: [neg_vel_limit_left_arm_joints, pos_vel_limit_left_arm_joints, weight_arm_joints, 7, l_wrist_roll_joint]
   # right arm joints
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 8, r_shoulder_pan_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 9, r_shoulder_lift_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 10, r_upper_arm_roll_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 11, r_elbow_flex_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 12, r_forearm_roll_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 13, r_wrist_flex_joint]
-  - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 14, r_wrist_roll_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 8, r_shoulder_pan_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 9, r_shoulder_lift_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 10, r_upper_arm_roll_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 11, r_elbow_flex_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 12, r_forearm_roll_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 13, r_wrist_flex_joint]
+  - controllable-constraint: [neg_vel_limit_right_arm_joints, pos_vel_limit_right_arm_joints, weight_arm_joints, 14, r_wrist_roll_joint]
 
 soft-constraints:
   # PR2-specific constraints
@@ -213,19 +311,153 @@ soft-constraints:
   - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
   # task-specific constraints
   # bottle relative to cup
-  - soft-constraint: [{double-sub: [bottle_top_behind_cup_lower, bottle_top_behind_cup]}, {double-sub: [bottle_top_behind_cup_upper, bottle_top_behind_cup]}, weight_pos_control, bottle_top_behind_cup, bottle_top_behind_cup control slack]
-  - soft-constraint: [{double-sub: [bottle_top_left_cup_lower, bottle_top_left_cup]}, {double-sub: [bottle_top_left_cup_upper, bottle_top_left_cup]}, weight_pos_control, bottle_top_left_cup, bottle_top_left_cup control slack]
-  - soft-constraint: [{double-sub: [bottle_top_above_cup_lower, bottle_top_above_cup]}, {double-sub: [bottle_top_above_cup_upper, bottle_top_above_cup]}, weight_pos_control, bottle_top_above_cup, bottle_top_above_cup control slack]
-  - soft-constraint: [{double-sub: [bottle_above_itself_lower, bottle_above_itself]}, {double-sub: [bottle_above_itself_upper, bottle_above_itself]}, weight_pos_control, bottle_above_itself, bottle_above_itself control slack]
-  - soft-constraint: [{double-sub: [bottle_left_itself_lower, bottle_left_itself]}, {double-sub: [bottle_left_itself_upper, bottle_left_itself]}, weight_pos_control, bottle_left_itself, bottle_left_itself control slack]
-  - soft-constraint: [{double-sub: [bottle_behind_itself_lower, bottle_behind_itself]}, {double-sub: [bottle_behind_itself_upper, bottle_behind_itself]}, weight_pos_control, bottle_behind_itself, bottle_behind_itself control slack]
+  - soft-constraint:
+    - bottle_behind_cup_lower_control
+    - bottle_behind_cup_upper_control
+    - weight_range_control
+    - {x-coord: bottle_top_to_cup_top}
+    - bottle_behind_cup_range control slack
+  - soft-constraint:
+    - bottle_behind_cup_center_control
+    - bottle_behind_cup_center_control
+    - weight_center_control
+    - {x-coord: bottle_top_to_cup_top}
+    - bottle_behind_cup_center control slack
+  - soft-constraint:
+    - bottle_left_cup_lower_control
+    - bottle_left_cup_upper_control
+    - weight_range_control
+    - {y-coord: bottle_top_to_cup_top}
+    - bottle_left_cup_range control slack
+  - soft-constraint:
+    - bottle_left_cup_center_control
+    - bottle_left_cup_center_control
+    - weight_center_control
+    - {y-coord: bottle_top_to_cup_top}
+    - bottle_left_cup_center control slack
+  - soft-constraint:
+    - bottle_above_cup_lower_control
+    - bottle_above_cup_upper_control
+    - weight_range_control
+    - {z-coord: bottle_top_to_cup_top}
+    - bottle_above_cup_range control slack
+  - soft-constraint:
+    - bottle_above_cup_center_control
+    - bottle_above_cup_center_control
+    - weight_center_control
+    - {z-coord: bottle_top_to_cup_top}
+    - bottle_above_cup_center control slack
+  # bottle relative to itself
+  - soft-constraint:
+    - bottle_behind_itself_lower_control
+    - bottle_behind_itself_upper_control
+    - weight_range_control
+    - {x-coord: bottle_to_itself}
+    - bottle_behind_itself_range control slack
+  - soft-constraint:
+    - bottle_behind_itself_center_control
+    - bottle_behind_itself_center_control
+    - weight_center_control
+    - {x-coord: bottle_to_itself}
+    - bottle_behind_itself_center control slack
+  - soft-constraint:
+    - bottle_left_itself_lower_control
+    - bottle_left_itself_upper_control
+    - weight_range_control
+    - {y-coord: bottle_to_itself}
+    - bottle_left_itself_range control slack
+  - soft-constraint:
+    - bottle_left_itself_center_control
+    - bottle_left_itself_center_control
+    - weight_center_control
+    - {y-coord: bottle_to_itself}
+    - bottle_left_itself_center control slack
+  - soft-constraint:
+    - bottle_above_itself_lower_control
+    - bottle_above_itself_upper_control
+    - weight_range_control
+    - {z-coord: bottle_to_itself}
+    - bottle_above_itself_range control slack
+  - soft-constraint:
+    - bottle_above_itself_center_control
+    - bottle_above_itself_center_control
+    - weight_center_control
+    - {z-coord: bottle_to_itself}
+    - bottle_above_itself_center control slack
+  # cup relative to itself
+  - soft-constraint:
+    - cup_behind_itself_lower_control
+    - cup_behind_itself_upper_control
+    - weight_range_control
+    - {x-coord: cup_to_itself}
+    - cup_behind_itself_range control slack
+  - soft-constraint:
+    - cup_behind_itself_center_control
+    - cup_behind_itself_center_control
+    - weight_center_control
+    - {x-coord: cup_to_itself}
+    - cup_behind_itself_center control slack
+  - soft-constraint:
+    - cup_left_itself_lower_control
+    - cup_left_itself_upper_control
+    - weight_range_control
+    - {y-coord: cup_to_itself}
+    - cup_left_itself_range control slack
+  - soft-constraint:
+    - cup_left_itself_center_control
+    - cup_left_itself_center_control
+    - weight_center_control
+    - {y-coord: cup_to_itself}
+    - cup_left_itself_center control slack
+  - soft-constraint:
+    - cup_above_itself_lower_control
+    - cup_above_itself_upper_control
+    - weight_range_control
+    - {z-coord: cup_to_itself}
+    - cup_above_itself_range control slack
+  - soft-constraint:
+    - cup_above_itself_center_control
+    - cup_above_itself_center_control
+    - weight_center_control
+    - {z-coord: cup_to_itself}
+    - cup_above_itself_center control slack
   # cup relative to world
-  - soft-constraint: [{double-sub: [cup_above_itself_lower, cup_above_itself]}, {double-sub: [cup_above_itself_upper, cup_above_itself]}, weight_pos_control, cup_above_itself, cup_above_itself control slack]
-  - soft-constraint: [{double-sub: [cup_left_itself_lower, cup_left_itself]}, {double-sub: [cup_left_itself_upper, cup_left_itself]}, weight_pos_control, cup_left_itself, cup_left_itself control slack]
-  - soft-constraint: [{double-sub: [cup_behind_itself_lower, cup_behind_itself]}, {double-sub: [cup_behind_itself_upper, cup_behind_itself]}, weight_pos_control, cup_behind_itself, cup_behind_itself control slack]
-  - soft-constraint: [{double-sub: [cup_top_above_world_lower, cup_top_above_world]}, {double-sub: [cup_top_above_world_upper, cup_top_above_world]}, weight_pos_control, cup_top_above_world, cup_top_above_world control slack]
-  - soft-constraint: [{double-sub: [cup_top_left_world_lower, cup_top_left_world]}, {double-sub: [cup_top_left_world_upper, cup_top_left_world]}, weight_pos_control, cup_top_left_world, cup_top_left_world control slack]
-  - soft-constraint: [{double-sub: [cup_top_behind_world_lower, cup_top_behind_world]}, {double-sub: [cup_top_behind_world_upper, cup_top_behind_world]}, weight_pos_control, cup_top_behind_world, cup_top_behind_world control slack]
+  - soft-constraint:
+    - cup_behind_base_lower_control
+    - cup_behind_base_upper_control
+    - weight_range_control
+    - {x-coord: cup_top}
+    - cup_behind_base_range control slack
+  - soft-constraint:
+    - cup_behind_base_center_control
+    - cup_behind_base_center_control
+    - weight_center_control
+    - {x-coord: cup_top}
+    - cup_behind_base_center control slack
+  - soft-constraint:
+    - cup_left_base_lower_control
+    - cup_left_base_upper_control
+    - weight_range_control
+    - {y-coord: cup_top}
+    - cup_left_base_range control slack
+  - soft-constraint:
+    - cup_left_base_center_control
+    - cup_left_base_center_control
+    - weight_center_control
+    - {y-coord: cup_top}
+    - cup_left_base_center control slack
+  - soft-constraint:
+    - cup_above_base_lower_control
+    - cup_above_base_upper_control
+    - weight_range_control
+    - {z-coord: cup_top}
+    - cup_above_base_range control slack
+  - soft-constraint:
+    - cup_above_base_center_control
+    - cup_above_base_center_control
+    - weight_center_control
+    - {z-coord: cup_top}
+    - cup_above_base_center control slack
 
 
 hard-constraints:
