@@ -1,16 +1,16 @@
 # bottle top relative to cup top
 bottle_top_behind_cup_top_error: 0.015
-bottle_top_left_cup_top_error: 0.015
-bottle_top_above_cup_top_error: 0.025
+bottle_top_left_cup_top_error: 0.01
+bottle_top_above_cup_top_error: 0.015
 # bottle relative to itself
 bottle_behind_itself_error: 0.015
-bottle_left_itself_error: 0.02
-bottle_above_itself_error: 0.03
+bottle_left_itself_error: 0.01
+bottle_above_itself_error: 0.01
 # cup relative to base
-cup_top_behind_base_error: 0.055
-cup_top_left_base_error: 0.255
-cup_top_above_base_error: 0.105
+cup_top_behind_base_error: 0.01
+cup_top_left_base_error: 0.01
+cup_top_above_base_error: 0.01
 # # cup top relative to cup bottom
-cup_behind_itself_error: 0.015
-cup_left_itself_error: 0.015
-cup_above_left_error: 0.015
+cup_behind_itself_error: 0.01
+cup_left_itself_error: 0.01
+cup_above_left_error: 0.01

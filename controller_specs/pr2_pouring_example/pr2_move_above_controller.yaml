@@ -193,11 +193,11 @@ scope:
   - cup_above_left_error: {abs: {z-coord: cup_to_itself_center_error_vector}}  
 
   # some constants
-  - weight_arm_joints: 1.0
-  - weight_pos_control: 20.0
-  - weight_range_control: 20.0
-  - weight_center_control: 2.0
-  - weight_elbow_control: 0.1
+  - weight_arm_joints: 0.00001
+  - weight_pos_control: 1.0
+  - weight_range_control: 1.0
+  - weight_center_control: 0
+  - weight_elbow_control: 0
   - neg_vel_limit_left_arm_joints: -0.6
   - pos_vel_limit_left_arm_joints: 0.6
   - neg_vel_limit_right_arm_joints: -0.6
@@ -206,7 +206,7 @@ scope:
   - center_gain: 1
   - pos_gain: 1
   - rot_gain: 1
-  - pos_thresh: 0.05
+  - pos_thresh: 0.03
   - rot_thresh: 0.05
 
   # definition of control laws
