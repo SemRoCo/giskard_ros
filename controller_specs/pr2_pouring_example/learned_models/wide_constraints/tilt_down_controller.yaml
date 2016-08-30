@@ -55,10 +55,8 @@ scope:
       vector-add: 
         - bottle_to_itself_goal_lower
         - {scale-vector: [0.5, {vector-sub: [bottle_to_itself_goal_upper, bottle_to_itself_goal_lower]}]}
-#  - cup_top_to_base_goal_lower: {vector3: [0.35, -0.25, 1.0]}
-#  - cup_top_to_base_goal_upper: {vector3: [0.45, 0.25, 1.2]}
-  - cup_top_to_base_goal_lower: {vector3: [0.4, 0.0, 1.05]}
-  - cup_top_to_base_goal_upper: {vector3: [0.4, 0.0, 1.05]}
+  - cup_top_to_base_goal_lower: {vector3: [0.35, -0.25, 1.0]}
+  - cup_top_to_base_goal_upper: {vector3: [0.45, 0.25, 1.2]}
   - cup_top_to_base_goal_center: 
       vector-add: 
         - cup_top_to_base_goal_lower

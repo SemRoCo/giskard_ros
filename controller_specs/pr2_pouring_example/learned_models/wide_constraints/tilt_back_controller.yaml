@@ -43,22 +43,20 @@ scope:
   - r_wrist_roll_joint: {input-var: 14}
 
   # definition of constraint ranges and centers
-  - bottle_top_to_cup_top_goal_lower: {vector3: [-0.006, -0.016, 0.034]}
-  - bottle_top_to_cup_top_goal_upper: {vector3: [0.002, -0.013, 0.042]}
+  - bottle_top_to_cup_top_goal_lower: {vector3: [0.0, -0.02, 0.039]}
+  - bottle_top_to_cup_top_goal_upper: {vector3: [0.007, -0.016, 0.049]}
   - bottle_top_to_cup_top_goal_center: 
       vector-add: 
         - bottle_top_to_cup_top_goal_lower
         - {scale-vector: [0.5, {vector-sub: [bottle_top_to_cup_top_goal_upper, bottle_top_to_cup_top_goal_lower]}]}
-  - bottle_to_itself_goal_lower: {vector3: [-0.03, 0.159, -0.076]}
-  - bottle_to_itself_goal_upper: {vector3: [-0.017, 0.163, -0.07]}
+  - bottle_to_itself_goal_lower: {vector3: [-0.025, 0.17, -0.05]}
+  - bottle_to_itself_goal_upper: {vector3: [-0.011, 0.174, -0.037]}
   - bottle_to_itself_goal_center: 
       vector-add: 
         - bottle_to_itself_goal_lower
         - {scale-vector: [0.5, {vector-sub: [bottle_to_itself_goal_upper, bottle_to_itself_goal_lower]}]}
-#  - cup_top_to_base_goal_lower: {vector3: [0.35, -0.25, 1.0]}
-#  - cup_top_to_base_goal_upper: {vector3: [0.45, 0.25, 1.2]}
-  - cup_top_to_base_goal_lower: {vector3: [0.4, 0.0, 1.05]}
-  - cup_top_to_base_goal_upper: {vector3: [0.4, 0.0, 1.05]}
+  - cup_top_to_base_goal_lower: {vector3: [0.35, -0.25, 1.0]}
+  - cup_top_to_base_goal_upper: {vector3: [0.45, 0.25, 1.2]}
   - cup_top_to_base_goal_center: 
       vector-add: 
         - cup_top_to_base_goal_lower
@@ -372,9 +370,9 @@ soft-constraints:
   # PR2-specific constraints
   - soft-constraint: [{double-sub: [0.2, torso_lift_joint]}, {double-sub: [0.3, torso_lift_joint]} , weight_pos_control, torso_lift_joint, torso_lift_joint control slack]
   - soft-constraint: [0.1, 0.1, weight_elbow_control, {y-coord: {origin-of: left_elbow}}, left elbow out control slack]
-  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: left_elbow}}, left elbow up control slack]
+#  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: left_elbow}}, left elbow up control slack]
   - soft-constraint: [-0.1, -0.1, weight_elbow_control, {y-coord: {origin-of: right_elbow}}, right elbow out control slack]
-  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
+#  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
   # task-specific constraints
   # bottle relative to cup
   - soft-constraint:
