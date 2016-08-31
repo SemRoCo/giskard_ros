@@ -56,22 +56,26 @@ def make_mesh_marker(frame_id, id, pose, scale, color, path, frame_locked=False)
 
 def make_table_markers():
     markers = []
-    markers.append(make_cube_marker("table_frame", 1, Pose(Point(z=0.72 - 0.05/2), Quaternion(w=1.0)), Vector3(0.8, 0.8, 0.05), gray()))
-    markers.append(make_cube_marker("table_frame", 2, Pose(Point(leg_xy_offset(), leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
-    markers.append(make_cube_marker("table_frame", 3, Pose(Point(leg_xy_offset(), -leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
-    markers.append(make_cube_marker("table_frame", 4, Pose(Point(-leg_xy_offset(), leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
-    markers.append(make_cube_marker("table_frame", 5, Pose(Point(-leg_xy_offset(), -leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
+    markers.append(make_cube_marker("base_footprint", 1, Pose(Point(x=0.6, z=0.72 - 0.05/2), Quaternion(w=1.0)), Vector3(0.8, 0.8, 0.05), gray()))
+    markers.append(make_cube_marker("base_footprint", 2, Pose(Point(0.6+leg_xy_offset(), leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
+    markers.append(make_cube_marker("base_footprint", 3, Pose(Point(0.6+leg_xy_offset(), -leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
+    markers.append(make_cube_marker("base_footprint", 4, Pose(Point(0.6-leg_xy_offset(), leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
+    markers.append(make_cube_marker("base_footprint", 5, Pose(Point(0.6-leg_xy_offset(), -leg_xy_offset(), 0.67/2), Quaternion(w=1.0)), Vector3(0.03, 0.03, 0.67), dark_gray()))
     return markers
 
 def table_marker_publisher():
-    rospy.init_node('table_marker_publisher', anonymous=True)
+    rospy.init_node('table_marker_publisher')
+    cup_on_table = rospy.get_param("~cup_on_table")
     pub = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=1)
     rospy.sleep(.3)
     if not rospy.is_shutdown():
         msg = MarkerArray()
-        # msg.markers = make_table_markers()
-        msg.markers.append(make_mesh_marker("l_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(z=-0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/cup_eco_orange.dae", frame_locked=True))
-        msg.markers.append(make_mesh_marker("r_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(z=0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/sigg_bottle.dae", frame_locked=True))
+        msg.markers = make_table_markers()
+        if cup_on_table:
+            msg.markers.append(make_mesh_marker("base_link", len(msg.markers) + 1, Pose(Point(x=0.4, z=0.71), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/cup_eco_orange.dae", frame_locked=True))
+        else:
+            msg.markers.append(make_mesh_marker("l_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(x=-0.01, z=-0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/cup_eco_orange.dae", frame_locked=True))
+        msg.markers.append(make_mesh_marker("r_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(x=-0.01, z=0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/sigg_bottle.dae", frame_locked=True))
 #        msg.markers.append(make_cylinder_marker("cup_bottom_frame", len(msg.markers) +1, Pose(position=Point(z=0.07)), Vector3(0.085, 0.085, 0.14), transparent_red(), True))
         pub.publish(msg)
 
