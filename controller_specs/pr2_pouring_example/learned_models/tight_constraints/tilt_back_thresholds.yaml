@@ -13,4 +13,4 @@ cup_top_above_base_error: 0.01
 # # cup top relative to cup bottom
 cup_behind_itself_error: 0.01
 cup_left_itself_error: 0.01
-cup_above_left_error: 0.01
+cup_above_left_error: 0.015

@@ -195,8 +195,6 @@ scope:
   - weight_torso_joint: 0.001
   - weight_pos_control: 1.0
   - weight_range_control: 1.0
-  - weight_center_control: 0
-  - weight_elbow_control: 0
   - neg_vel_limit_left_arm_joints: -0.6
   - pos_vel_limit_left_arm_joints: 0.6
   - neg_vel_limit_right_arm_joints: -0.6
@@ -210,141 +208,323 @@ scope:
 
   # definition of control laws
   # bottle relative to cup
-  - bottle_top_to_cup_top_lower_error_vector_len:
-      {vector-norm: bottle_top_to_cup_top_lower_error_vector}
-  - bottle_top_to_cup_top_lower_scaling:
+  - bottle_top_to_cup_top_lower_error_x_abs:
+      abs: {x-coord: bottle_top_to_cup_top_lower_error_vector}
+  - bottle_top_to_cup_top_lower_x_scaling:
       double-if:
-        - {double-sub: [pos_thresh, bottle_top_to_cup_top_lower_error_vector_len]}
+        - {double-sub: [pos_thresh, bottle_top_to_cup_top_lower_error_x_abs]}
         - 1
-        - {double-div: [pos_thresh, bottle_top_to_cup_top_lower_error_vector_len]}
-  - bottle_top_to_cup_top_lower_control:
-      scale-vector: 
-        - double-mul: [bottle_top_to_cup_top_lower_scaling, range_gain, pos_gain]
-        - bottle_top_to_cup_top_lower_error_vector
-  - bottle_top_to_cup_top_upper_error_vector_len:
-      {vector-norm: bottle_top_to_cup_top_upper_error_vector}
-  - bottle_top_to_cup_top_upper_scaling:
+        - {double-div: [pos_thresh, bottle_top_to_cup_top_lower_error_x_abs]}
+  - bottle_top_to_cup_top_lower_x_control:
+      double-mul: 
+        - bottle_top_to_cup_top_lower_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: bottle_top_to_cup_top_lower_error_vector}
+  - bottle_top_to_cup_top_upper_error_x_abs:
+      abs: {x-coord: bottle_top_to_cup_top_upper_error_vector}
+  - bottle_top_to_cup_top_upper_x_scaling:
       double-if:
-        - {double-sub: [pos_thresh, bottle_top_to_cup_top_upper_error_vector_len]}
+        - {double-sub: [pos_thresh, bottle_top_to_cup_top_upper_error_x_abs]}
         - 1
-        - {double-div: [pos_thresh, bottle_top_to_cup_top_upper_error_vector_len]}
-  - bottle_top_to_cup_top_upper_control:
-      scale-vector: 
-        - double-mul: [bottle_top_to_cup_top_upper_scaling, range_gain, pos_gain]
-        - bottle_top_to_cup_top_upper_error_vector
-  - bottle_top_to_cup_top_center_error_vector_len:
-      {vector-norm: bottle_top_to_cup_top_center_error_vector}
-  - bottle_top_to_cup_top_center_scaling:
+        - {double-div: [pos_thresh, bottle_top_to_cup_top_upper_error_x_abs]}
+  - bottle_top_to_cup_top_upper_x_control:
+      double-mul: 
+        - bottle_top_to_cup_top_upper_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: bottle_top_to_cup_top_upper_error_vector}
+  - bottle_top_to_cup_top_lower_error_y_abs:
+      abs: {y-coord: bottle_top_to_cup_top_lower_error_vector}
+  - bottle_top_to_cup_top_lower_y_scaling:
       double-if:
-        - {double-sub: [pos_thresh, bottle_top_to_cup_top_center_error_vector_len]}
+        - {double-sub: [pos_thresh, bottle_top_to_cup_top_lower_error_y_abs]}
         - 1
-        - {double-div: [pos_thresh, bottle_top_to_cup_top_center_error_vector_len]}
-  - bottle_top_to_cup_top_center_control:
-      scale-vector: 
-        - double-mul: [bottle_top_to_cup_top_center_scaling, center_gain, pos_gain]
-        - bottle_top_to_cup_top_center_error_vector
+        - {double-div: [pos_thresh, bottle_top_to_cup_top_lower_error_y_abs]}
+  - bottle_top_to_cup_top_lower_y_control:
+      double-mul: 
+        - bottle_top_to_cup_top_lower_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: bottle_top_to_cup_top_lower_error_vector}
+  - bottle_top_to_cup_top_upper_error_y_abs:
+      abs: {y-coord: bottle_top_to_cup_top_upper_error_vector}
+  - bottle_top_to_cup_top_upper_y_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, bottle_top_to_cup_top_upper_error_y_abs]}
+        - 1
+        - {double-div: [pos_thresh, bottle_top_to_cup_top_upper_error_y_abs]}
+  - bottle_top_to_cup_top_upper_y_control:
+      double-mul: 
+        - bottle_top_to_cup_top_upper_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: bottle_top_to_cup_top_upper_error_vector}
+  - bottle_top_to_cup_top_lower_error_z_abs:
+      abs: {z-coord: bottle_top_to_cup_top_lower_error_vector}
+  - bottle_top_to_cup_top_lower_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, bottle_top_to_cup_top_lower_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, bottle_top_to_cup_top_lower_error_z_abs]}
+  - bottle_top_to_cup_top_lower_z_control:
+      double-mul: 
+        - bottle_top_to_cup_top_lower_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: bottle_top_to_cup_top_lower_error_vector}
+  - bottle_top_to_cup_top_upper_error_z_abs:
+      abs: {z-coord: bottle_top_to_cup_top_upper_error_vector}
+  - bottle_top_to_cup_top_upper_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, bottle_top_to_cup_top_upper_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, bottle_top_to_cup_top_upper_error_z_abs]}
+  - bottle_top_to_cup_top_upper_z_control:
+      double-mul: 
+        - bottle_top_to_cup_top_upper_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: bottle_top_to_cup_top_upper_error_vector}
+
   # bottle relative to itself
-  - bottle_to_itself_lower_error_vector_len:
-      {vector-norm: bottle_to_itself_lower_error_vector}
-  - bottle_to_itself_lower_scaling:
+  - bottle_to_itself_lower_error_x_abs:
+      abs: {x-coord: bottle_to_itself_lower_error_vector}
+  - bottle_to_itself_lower_x_scaling:
       double-if:
-        - {double-sub: [rot_thresh, bottle_to_itself_lower_error_vector_len]}
+        - {double-sub: [pos_thresh, bottle_to_itself_lower_error_x_abs]}
         - 1
-        - {double-div: [rot_thresh, bottle_to_itself_lower_error_vector_len]}
-  - bottle_to_itself_lower_control:
-      scale-vector: 
-        - double-mul: [bottle_to_itself_lower_scaling, range_gain, rot_gain]
-        - bottle_to_itself_lower_error_vector
-  - bottle_to_itself_upper_error_vector_len:
-      {vector-norm: bottle_to_itself_upper_error_vector}
-  - bottle_to_itself_upper_scaling:
+        - {double-div: [pos_thresh, bottle_to_itself_lower_error_x_abs]}
+  - bottle_to_itself_lower_x_control:
+      double-mul: 
+        - bottle_to_itself_lower_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: bottle_to_itself_lower_error_vector}
+  - bottle_to_itself_upper_error_x_abs:
+      abs: {x-coord: bottle_to_itself_upper_error_vector}
+  - bottle_to_itself_upper_x_scaling:
       double-if:
-        - {double-sub: [rot_thresh, bottle_to_itself_upper_error_vector_len]}
+        - {double-sub: [pos_thresh, bottle_to_itself_upper_error_x_abs]}
         - 1
-        - {double-div: [rot_thresh, bottle_to_itself_upper_error_vector_len]}
-  - bottle_to_itself_upper_control:
-      scale-vector: 
-        - double-mul: [bottle_to_itself_upper_scaling, range_gain, rot_gain]
-        - bottle_to_itself_upper_error_vector
-  - bottle_to_itself_center_error_vector_len:
-      {vector-norm: bottle_to_itself_center_error_vector}
-  - bottle_to_itself_center_scaling:
+        - {double-div: [pos_thresh, bottle_to_itself_upper_error_x_abs]}
+  - bottle_to_itself_upper_x_control:
+      double-mul: 
+        - bottle_to_itself_upper_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: bottle_to_itself_upper_error_vector}
+  - bottle_to_itself_lower_error_y_abs:
+      abs: {y-coord: bottle_to_itself_lower_error_vector}
+  - bottle_to_itself_lower_y_scaling:
       double-if:
-        - {double-sub: [rot_thresh, bottle_to_itself_center_error_vector_len]}
+        - {double-sub: [pos_thresh, bottle_to_itself_lower_error_y_abs]}
         - 1
-        - {double-div: [rot_thresh, bottle_to_itself_center_error_vector_len]}
-  - bottle_to_itself_center_control:
-      scale-vector: 
-        - double-mul: [bottle_to_itself_center_scaling, center_gain, rot_gain]
-        - bottle_to_itself_center_error_vector
+        - {double-div: [pos_thresh, bottle_to_itself_lower_error_y_abs]}
+  - bottle_to_itself_lower_y_control:
+      double-mul: 
+        - bottle_to_itself_lower_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: bottle_to_itself_lower_error_vector}
+  - bottle_to_itself_upper_error_y_abs:
+      abs: {y-coord: bottle_to_itself_upper_error_vector}
+  - bottle_to_itself_upper_y_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, bottle_to_itself_upper_error_y_abs]}
+        - 1
+        - {double-div: [pos_thresh, bottle_to_itself_upper_error_y_abs]}
+  - bottle_to_itself_upper_y_control:
+      double-mul: 
+        - bottle_to_itself_upper_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: bottle_to_itself_upper_error_vector}
+  - bottle_to_itself_lower_error_z_abs:
+      abs: {z-coord: bottle_to_itself_lower_error_vector}
+  - bottle_to_itself_lower_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, bottle_to_itself_lower_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, bottle_to_itself_lower_error_z_abs]}
+  - bottle_to_itself_lower_z_control:
+      double-mul: 
+        - bottle_to_itself_lower_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: bottle_to_itself_lower_error_vector}
+  - bottle_to_itself_upper_error_z_abs:
+      abs: {z-coord: bottle_to_itself_upper_error_vector}
+  - bottle_to_itself_upper_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, bottle_to_itself_upper_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, bottle_to_itself_upper_error_z_abs]}
+  - bottle_to_itself_upper_z_control:
+      double-mul: 
+        - bottle_to_itself_upper_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: bottle_to_itself_upper_error_vector}
   # cup relative to base
-  - cup_top_to_base_lower_error_vector_len:
-      {vector-norm: cup_top_to_base_lower_error_vector}
-  - cup_top_to_base_lower_scaling:
+  - cup_top_to_base_lower_error_x_abs:
+      abs: {x-coord: cup_top_to_base_lower_error_vector}
+  - cup_top_to_base_lower_x_scaling:
       double-if:
-        - {double-sub: [pos_thresh, cup_top_to_base_lower_error_vector_len]}
+        - {double-sub: [pos_thresh, cup_top_to_base_lower_error_x_abs]}
         - 1
-        - {double-div: [pos_thresh, cup_top_to_base_lower_error_vector_len]}
-  - cup_top_to_base_lower_control:
-      scale-vector: 
-        - double-mul: [cup_top_to_base_lower_scaling, range_gain, pos_gain]
-        - cup_top_to_base_lower_error_vector
-  - cup_top_to_base_upper_error_vector_len:
-      {vector-norm: cup_top_to_base_upper_error_vector}
-  - cup_top_to_base_upper_scaling:
+        - {double-div: [pos_thresh, cup_top_to_base_lower_error_x_abs]}
+  - cup_top_to_base_lower_x_control:
+      double-mul: 
+        - cup_top_to_base_lower_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: cup_top_to_base_lower_error_vector}
+  - cup_top_to_base_upper_error_x_abs:
+      abs: {x-coord: cup_top_to_base_upper_error_vector}
+  - cup_top_to_base_upper_x_scaling:
       double-if:
-        - {double-sub: [pos_thresh, cup_top_to_base_upper_error_vector_len]}
+        - {double-sub: [pos_thresh, cup_top_to_base_upper_error_x_abs]}
         - 1
-        - {double-div: [pos_thresh, cup_top_to_base_upper_error_vector_len]}
-  - cup_top_to_base_upper_control:
-      scale-vector: 
-        - double-mul: [cup_top_to_base_upper_scaling, range_gain, pos_gain]
-        - cup_top_to_base_upper_error_vector
-  - cup_top_to_base_center_error_vector_len:
-      {vector-norm: cup_top_to_base_center_error_vector}
-  - cup_top_to_base_center_scaling:
+        - {double-div: [pos_thresh, cup_top_to_base_upper_error_x_abs]}
+  - cup_top_to_base_upper_x_control:
+      double-mul: 
+        - cup_top_to_base_upper_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: cup_top_to_base_upper_error_vector}
+  - cup_top_to_base_lower_error_y_abs:
+      abs: {y-coord: cup_top_to_base_lower_error_vector}
+  - cup_top_to_base_lower_y_scaling:
       double-if:
-        - {double-sub: [pos_thresh, cup_top_to_base_center_error_vector_len]}
+        - {double-sub: [pos_thresh, cup_top_to_base_lower_error_y_abs]}
         - 1
-        - {double-div: [pos_thresh, cup_top_to_base_center_error_vector_len]}
-  - cup_top_to_base_center_control:
-      scale-vector: 
-        - double-mul: [cup_top_to_base_center_scaling, center_gain, pos_gain]
-        - cup_top_to_base_center_error_vector
+        - {double-div: [pos_thresh, cup_top_to_base_lower_error_y_abs]}
+  - cup_top_to_base_lower_y_control:
+      double-mul: 
+        - cup_top_to_base_lower_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: cup_top_to_base_lower_error_vector}
+  - cup_top_to_base_upper_error_y_abs:
+      abs: {y-coord: cup_top_to_base_upper_error_vector}
+  - cup_top_to_base_upper_y_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, cup_top_to_base_upper_error_y_abs]}
+        - 1
+        - {double-div: [pos_thresh, cup_top_to_base_upper_error_y_abs]}
+  - cup_top_to_base_upper_y_control:
+      double-mul: 
+        - cup_top_to_base_upper_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: cup_top_to_base_upper_error_vector}
+  - cup_top_to_base_lower_error_z_abs:
+      abs: {z-coord: cup_top_to_base_lower_error_vector}
+  - cup_top_to_base_lower_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, cup_top_to_base_lower_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, cup_top_to_base_lower_error_z_abs]}
+  - cup_top_to_base_lower_z_control:
+      double-mul: 
+        - cup_top_to_base_lower_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: cup_top_to_base_lower_error_vector}
+  - cup_top_to_base_upper_error_z_abs:
+      abs: {z-coord: cup_top_to_base_upper_error_vector}
+  - cup_top_to_base_upper_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, cup_top_to_base_upper_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, cup_top_to_base_upper_error_z_abs]}
+  - cup_top_to_base_upper_z_control:
+      double-mul: 
+        - cup_top_to_base_upper_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: cup_top_to_base_upper_error_vector}
+
   # cup relative to itself
-  - cup_to_itself_lower_error_vector_len:
-      {vector-norm: cup_to_itself_lower_error_vector}
-  - cup_to_itself_lower_scaling:
+  - cup_to_itself_lower_error_x_abs:
+      abs: {x-coord: cup_to_itself_lower_error_vector}
+  - cup_to_itself_lower_x_scaling:
       double-if:
-        - {double-sub: [rot_thresh, cup_to_itself_lower_error_vector_len]}
+        - {double-sub: [pos_thresh, cup_to_itself_lower_error_x_abs]}
         - 1
-        - {double-div: [rot_thresh, cup_to_itself_lower_error_vector_len]}
-  - cup_to_itself_lower_control:
-      scale-vector: 
-        - double-mul: [cup_to_itself_lower_scaling, range_gain, rot_gain]
-        - cup_to_itself_lower_error_vector
-  - cup_to_itself_upper_error_vector_len:
-      {vector-norm: cup_to_itself_upper_error_vector}
-  - cup_to_itself_upper_scaling:
+        - {double-div: [pos_thresh, cup_to_itself_lower_error_x_abs]}
+  - cup_to_itself_lower_x_control:
+      double-mul: 
+        - cup_to_itself_lower_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: cup_to_itself_lower_error_vector}
+  - cup_to_itself_upper_error_x_abs:
+      abs: {x-coord: cup_to_itself_upper_error_vector}
+  - cup_to_itself_upper_x_scaling:
       double-if:
-        - {double-sub: [rot_thresh, cup_to_itself_upper_error_vector_len]}
+        - {double-sub: [pos_thresh, cup_to_itself_upper_error_x_abs]}
         - 1
-        - {double-div: [rot_thresh, cup_to_itself_upper_error_vector_len]}
-  - cup_to_itself_upper_control:
-      scale-vector: 
-        - double-mul: [cup_to_itself_upper_scaling, range_gain, rot_gain]
-        - cup_to_itself_upper_error_vector
-  - cup_to_itself_center_error_vector_len:
-      {vector-norm: cup_to_itself_center_error_vector}
-  - cup_to_itself_center_scaling:
+        - {double-div: [pos_thresh, cup_to_itself_upper_error_x_abs]}
+  - cup_to_itself_upper_x_control:
+      double-mul: 
+        - cup_to_itself_upper_x_scaling
+        - range_gain
+        - pos_gain
+        - {x-coord: cup_to_itself_upper_error_vector}
+  - cup_to_itself_lower_error_y_abs:
+      abs: {y-coord: cup_to_itself_lower_error_vector}
+  - cup_to_itself_lower_y_scaling:
       double-if:
-        - {double-sub: [rot_thresh, cup_to_itself_center_error_vector_len]}
+        - {double-sub: [pos_thresh, cup_to_itself_lower_error_y_abs]}
         - 1
-        - {double-div: [rot_thresh, cup_to_itself_center_error_vector_len]}
-  - cup_to_itself_center_control:
-      scale-vector: 
-        - double-mul: [cup_to_itself_center_scaling, center_gain, rot_gain]
-        - cup_to_itself_center_error_vector
+        - {double-div: [pos_thresh, cup_to_itself_lower_error_y_abs]}
+  - cup_to_itself_lower_y_control:
+      double-mul: 
+        - cup_to_itself_lower_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: cup_to_itself_lower_error_vector}
+  - cup_to_itself_upper_error_y_abs:
+      abs: {y-coord: cup_to_itself_upper_error_vector}
+  - cup_to_itself_upper_y_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, cup_to_itself_upper_error_y_abs]}
+        - 1
+        - {double-div: [pos_thresh, cup_to_itself_upper_error_y_abs]}
+  - cup_to_itself_upper_y_control:
+      double-mul: 
+        - cup_to_itself_upper_y_scaling
+        - range_gain
+        - pos_gain
+        - {y-coord: cup_to_itself_upper_error_vector}
+  - cup_to_itself_lower_error_z_abs:
+      abs: {z-coord: cup_to_itself_lower_error_vector}
+  - cup_to_itself_lower_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, cup_to_itself_lower_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, cup_to_itself_lower_error_z_abs]}
+  - cup_to_itself_lower_z_control:
+      double-mul: 
+        - cup_to_itself_lower_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: cup_to_itself_lower_error_vector}
+  - cup_to_itself_upper_error_z_abs:
+      abs: {z-coord: cup_to_itself_upper_error_vector}
+  - cup_to_itself_upper_z_scaling:
+      double-if:
+        - {double-sub: [pos_thresh, cup_to_itself_upper_error_z_abs]}
+        - 1
+        - {double-div: [pos_thresh, cup_to_itself_upper_error_z_abs]}
+  - cup_to_itself_upper_z_control:
+      double-mul: 
+        - cup_to_itself_upper_z_scaling
+        - range_gain
+        - pos_gain
+        - {z-coord: cup_to_itself_upper_error_vector}
 
 controllable-constraints:
   # torso joint
@@ -369,160 +549,83 @@ controllable-constraints:
 soft-constraints:
   # PR2-specific constraints
   - soft-constraint: [{double-sub: [0.2, torso_lift_joint]}, {double-sub: [0.3, torso_lift_joint]} , weight_pos_control, torso_lift_joint, torso_lift_joint control slack]
-  - soft-constraint: [0.1, 0.1, weight_elbow_control, {y-coord: {origin-of: left_elbow}}, left elbow out control slack]
-#  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: left_elbow}}, left elbow up control slack]
-  - soft-constraint: [-0.1, -0.1, weight_elbow_control, {y-coord: {origin-of: right_elbow}}, right elbow out control slack]
-#  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
   # task-specific constraints
   # bottle relative to cup
   - soft-constraint:
-    - {x-coord: bottle_top_to_cup_top_lower_control}
-    - {x-coord: bottle_top_to_cup_top_upper_control}
+    - bottle_top_to_cup_top_lower_x_control
+    - bottle_top_to_cup_top_upper_x_control
     - weight_range_control
     - {x-coord: bottle_top_to_cup_top}
     - bottle_behind_cup_range control slack
   - soft-constraint:
-    - {x-coord: bottle_top_to_cup_top_center_control}
-    - {x-coord: bottle_top_to_cup_top_center_control}
-    - weight_center_control
-    - {x-coord: bottle_top_to_cup_top}
-    - bottle_behind_cup_center control slack
-  - soft-constraint:
-    - {y-coord: bottle_top_to_cup_top_lower_control}
-    - {y-coord: bottle_top_to_cup_top_upper_control}
+    - bottle_top_to_cup_top_lower_y_control
+    - bottle_top_to_cup_top_upper_y_control
     - weight_range_control
     - {y-coord: bottle_top_to_cup_top}
     - bottle_left_cup_range control slack
   - soft-constraint:
-    - {y-coord: bottle_top_to_cup_top_center_control}
-    - {y-coord: bottle_top_to_cup_top_center_control}
-    - weight_center_control
-    - {y-coord: bottle_top_to_cup_top}
-    - bottle_left_cup_center control slack
-  - soft-constraint:
-    - {z-coord: bottle_top_to_cup_top_lower_control}
-    - {z-coord: bottle_top_to_cup_top_upper_control}
+    - bottle_top_to_cup_top_lower_z_control
+    - bottle_top_to_cup_top_upper_z_control
     - weight_range_control
     - {z-coord: bottle_top_to_cup_top}
     - bottle_above_cup_range control slack
-  - soft-constraint:
-    - {z-coord: bottle_top_to_cup_top_center_control}
-    - {z-coord: bottle_top_to_cup_top_center_control}
-    - weight_center_control
-    - {z-coord: bottle_top_to_cup_top}
-    - bottle_above_cup_center control slack
   # bottle relative to itself
   - soft-constraint:
-    - {x-coord: bottle_to_itself_lower_control}
-    - {x-coord: bottle_to_itself_upper_control}
+    - bottle_to_itself_lower_x_control
+    - bottle_to_itself_upper_x_control
     - weight_range_control
     - {x-coord: bottle_to_itself}
     - bottle_behind_itself_range control slack
   - soft-constraint:
-    - {x-coord: bottle_to_itself_center_control}
-    - {x-coord: bottle_to_itself_center_control}
-    - weight_center_control
-    - {x-coord: bottle_to_itself}
-    - bottle_behind_itself_center control slack
-  - soft-constraint:
-    - {y-coord: bottle_to_itself_lower_control}
-    - {y-coord: bottle_to_itself_upper_control}
+    - bottle_to_itself_lower_y_control
+    - bottle_to_itself_upper_y_control
     - weight_range_control
     - {y-coord: bottle_to_itself}
     - bottle_left_itself_range control slack
   - soft-constraint:
-    - {y-coord: bottle_to_itself_center_control}
-    - {y-coord: bottle_to_itself_center_control}
-    - weight_center_control
-    - {y-coord: bottle_to_itself}
-    - bottle_left_itself_center control slack
-  - soft-constraint:
-    - {z-coord: bottle_to_itself_lower_control}
-    - {z-coord: bottle_to_itself_upper_control}
+    - bottle_to_itself_lower_z_control
+    - bottle_to_itself_upper_z_control
     - weight_range_control
     - {z-coord: bottle_to_itself}
     - bottle_above_itself_range control slack
-  - soft-constraint:
-    - {z-coord: bottle_to_itself_center_control}
-    - {z-coord: bottle_to_itself_center_control}
-    - weight_center_control
-    - {z-coord: bottle_to_itself}
-    - bottle_above_itself_center control slack
   # cup relative to itself
   - soft-constraint:
-    - {x-coord: cup_to_itself_lower_control}
-    - {x-coord: cup_to_itself_upper_control}
+    - cup_to_itself_lower_x_control
+    - cup_to_itself_upper_x_control
     - weight_range_control
     - {x-coord: cup_to_itself}
     - cup_behind_itself_range control slack
   - soft-constraint:
-    - {x-coord: cup_to_itself_center_control}
-    - {x-coord: cup_to_itself_center_control}
-    - weight_center_control
-    - {x-coord: cup_to_itself}
-    - cup_behind_itself_center control slack
-  - soft-constraint:
-    - {y-coord: cup_to_itself_lower_control}
-    - {y-coord: cup_to_itself_upper_control}
+    - cup_to_itself_lower_y_control
+    - cup_to_itself_upper_y_control
     - weight_range_control
     - {y-coord: cup_to_itself}
     - cup_left_itself_range control slack
   - soft-constraint:
-    - {y-coord: cup_to_itself_center_control}
-    - {y-coord: cup_to_itself_center_control}
-    - weight_center_control
-    - {y-coord: cup_to_itself}
-    - cup_left_itself_center control slack
-  - soft-constraint:
-    - {z-coord: cup_to_itself_lower_control}
-    - {z-coord: cup_to_itself_upper_control}
+    - cup_to_itself_lower_z_control
+    - cup_to_itself_upper_z_control
     - weight_range_control
     - {z-coord: cup_to_itself}
     - cup_above_itself_range control slack
-  - soft-constraint:
-    - {z-coord: cup_to_itself_center_control}
-    - {z-coord: cup_to_itself_center_control}
-    - weight_center_control
-    - {z-coord: cup_to_itself}
-    - cup_above_itself_center control slack
   # cup relative to world
   - soft-constraint:
-    - {x-coord: cup_top_to_base_lower_control}
-    - {x-coord: cup_top_to_base_upper_control}
+    - cup_top_to_base_lower_x_control
+    - cup_top_to_base_upper_x_control
     - weight_range_control
     - {x-coord: cup_top}
     - cup_behind_base_range control slack
   - soft-constraint:
-    - {x-coord: cup_top_to_base_center_control}
-    - {x-coord: cup_top_to_base_center_control}
-    - weight_center_control
-    - {x-coord: cup_top}
-    - cup_behind_base_center control slack
-  - soft-constraint:
-    - {y-coord: cup_top_to_base_lower_control}
-    - {y-coord: cup_top_to_base_upper_control}
+    - cup_top_to_base_lower_y_control
+    - cup_top_to_base_upper_y_control
     - weight_range_control
     - {y-coord: cup_top}
     - cup_left_base_range control slack
   - soft-constraint:
-    - {y-coord: cup_top_to_base_center_control}
-    - {y-coord: cup_top_to_base_center_control}
-    - weight_center_control
-    - {y-coord: cup_top}
-    - cup_left_base_center control slack
-  - soft-constraint:
-    - {z-coord: cup_top_to_base_lower_control}
-    - {z-coord: cup_top_to_base_upper_control}
+    - cup_top_to_base_lower_z_control
+    - cup_top_to_base_upper_z_control
     - weight_range_control
     - {z-coord: cup_top}
     - cup_above_base_range control slack
-  - soft-constraint:
-    - {z-coord: cup_top_to_base_center_control}
-    - {z-coord: cup_top_to_base_center_control}
-    - weight_center_control
-    - {z-coord: cup_top}
-    - cup_above_base_center control slack
-
 
 hard-constraints:
   - hard-constraint:
