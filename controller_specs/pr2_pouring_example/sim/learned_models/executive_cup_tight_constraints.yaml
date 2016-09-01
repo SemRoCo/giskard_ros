@@ -1,12 +1,12 @@
 controller_filenames:
   - controller_specs/pr2_pouring_example/pr2_nice_start_config_controller.yaml
-  - controller_specs/pr2_pouring_example/learned_models/tight_constraints/move_above_controller.yaml
-  - controller_specs/pr2_pouring_example/learned_models/tight_constraints/tilt_down_controller.yaml
-  - controller_specs/pr2_pouring_example/learned_models/tight_constraints/tilt_back_controller.yaml
+  - controller_specs/pr2_pouring_example/sim/learned_models/tight_constraints/move_above_controller.yaml
+  - controller_specs/pr2_pouring_example/sim/learned_models/tight_constraints/tilt_down_controller.yaml
+  - controller_specs/pr2_pouring_example/sim/learned_models/tight_constraints/tilt_back_controller.yaml
   - controller_specs/pr2_pouring_example/pr2_nice_start_config_controller2.yaml
 threshold_filenames:
   - controller_specs/pr2_pouring_example/pr2_nice_start_config_thresholds.yaml
-  - controller_specs/pr2_pouring_example/learned_models/tight_constraints/move_above_thresholds.yaml
-  - controller_specs/pr2_pouring_example/learned_models/tight_constraints/tilt_down_thresholds.yaml
-  - controller_specs/pr2_pouring_example/learned_models/tight_constraints/tilt_back_thresholds.yaml
+  - controller_specs/pr2_pouring_example/sim/learned_models/tight_constraints/move_above_thresholds.yaml
+  - controller_specs/pr2_pouring_example/sim/learned_models/tight_constraints/tilt_down_thresholds.yaml
+  - controller_specs/pr2_pouring_example/sim/learned_models/tight_constraints/tilt_back_thresholds.yaml
   - controller_specs/pr2_pouring_example/pr2_nice_start_config_thresholds.yaml

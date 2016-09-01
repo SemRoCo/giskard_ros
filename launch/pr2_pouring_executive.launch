@@ -1,16 +1,20 @@
 <launch>
   <arg name="learned" default="False" />
   <arg name="hand_tuned" default="False" />
+  <arg name="sim" default="True" />
 
   <arg name="cup_tight_constraints" default="False" />
   <arg name="cup_wide_constraints" default="False" />
   <arg name="left_arm_disabled" default="False" />
   <arg name="cup_on_table" default="False" />
 
+  <arg name="sim-path" if="$(arg sim)" default="sim" />
+  <arg name="sim-path" unless="$(arg sim)" default="real" />
+
   <arg name="models_path" if="$(arg learned)"
-       default="controller_specs/pr2_pouring_example/learned_models" />
+       default="controller_specs/pr2_pouring_example/$(arg sim-path)/learned_models" />
   <arg name="models_path" if="$(arg hand_tuned)"
-       default="controller_specs/pr2_pouring_example/hand_tuned_models" />
+       default="controller_specs/pr2_pouring_example/$(arg sim-path)/hand_tuned_models" />
 
   <arg name="models_name" if="$(arg cup_tight_constraints)"
        default="executive_cup_tight_constraints.yaml" />
