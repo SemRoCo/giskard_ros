@@ -69,69 +69,75 @@ scope:
   - r_forearm_roll_joint_goal: -94.3445
   - r_wrist_flex_joint_goal: -1.18356
   - r_wrist_roll_joint_goal: 1.377
-
-  # control params
+    
+  # some constants
+  - weight_arm_joints: 0.00001
+  - weight_torso_joint: 0.001
+  - weight_pos_control: 1.0
+  - arm_gain: 4.0
+  - neg_vel_limit_arm_joints: -0.6
+  - pos_vel_limit_arm_joints: 0.6
 
   # definition goals and control laws
   - torso_lift_error: {double-sub: [torso_lift_goal, torso_lift_joint]}
-  - l_shoulder_pan_error: {double-sub: [l_shoulder_pan_joint_goal, l_shoulder_pan_joint]}
-  - l_shoulder_lift_error: {double-sub: [l_shoulder_lift_joint_goal, l_shoulder_lift_joint]}
-  - l_upper_arm_roll_error: {double-sub: [l_upper_arm_roll_joint_goal, l_upper_arm_roll_joint]}
-  - l_elbow_flex_error: {double-sub: [l_elbow_flex_joint_goal, l_elbow_flex_joint]}
+  - l_shoulder_pan_error: {double-mul: [arm_gain, {double-sub: [l_shoulder_pan_joint_goal, l_shoulder_pan_joint]}]}
+  - l_shoulder_lift_error: {double-mul: [arm_gain, {double-sub: [l_shoulder_lift_joint_goal, l_shoulder_lift_joint]}]}
+  - l_upper_arm_roll_error: {double-mul: [arm_gain, {double-sub: [l_upper_arm_roll_joint_goal, l_upper_arm_roll_joint]}]}
+  - l_elbow_flex_error: {double-mul: [arm_gain, {double-sub: [l_elbow_flex_joint_goal, l_elbow_flex_joint]}]}
   - l_forearm_roll_error_unnormalized: {double-sub: [l_forearm_roll_joint_goal, l_forearm_roll_joint]}
   - l_forearm_roll_error_normalized: 
       fmod: 
       - {double-add: [{fmod: [l_forearm_roll_error_unnormalized, two_pi]}, two_pi]}
       - two_pi
   - l_forearm_roll_error: 
-      double-if: 
+      double-mul:
+      - arm_gain
+      - double-if: 
         - {double-sub: [l_forearm_roll_error_normalized, pi]}
         - {double-sub: [l_forearm_roll_error_normalized, two_pi]}
         - l_forearm_roll_error_normalized
-  - l_wrist_flex_error: {double-sub: [l_wrist_flex_joint_goal, l_wrist_flex_joint]}
+  - l_wrist_flex_error: {double-mul: [arm_gain, {double-sub: [l_wrist_flex_joint_goal, l_wrist_flex_joint]}]}
   - l_wrist_roll_error_unnormalized: {double-sub: [l_wrist_roll_joint_goal, l_wrist_roll_joint]}
   - l_wrist_roll_error_normalized: 
       fmod: 
       - {double-add: [{fmod: [l_wrist_roll_error_unnormalized, two_pi]}, two_pi]}
       - two_pi
   - l_wrist_roll_error: 
-      double-if: 
+      double-mul:
+      - arm_gain
+      - double-if: 
         - {double-sub: [l_wrist_roll_error_normalized, pi]}
         - {double-sub: [l_wrist_roll_error_normalized, two_pi]}
         - l_wrist_roll_error_normalized
-  - r_shoulder_pan_error: {double-sub: [r_shoulder_pan_joint_goal, r_shoulder_pan_joint]}
-  - r_shoulder_lift_error: {double-sub: [r_shoulder_lift_joint_goal, r_shoulder_lift_joint]}
-  - r_upper_arm_roll_error: {double-sub: [r_upper_arm_roll_joint_goal, r_upper_arm_roll_joint]}
-  - r_elbow_flex_error: {double-sub: [r_elbow_flex_joint_goal, r_elbow_flex_joint]}
+  - r_shoulder_pan_error: {double-mul: [arm_gain, {double-sub: [r_shoulder_pan_joint_goal, r_shoulder_pan_joint]}]}
+  - r_shoulder_lift_error: {double-mul: [arm_gain, {double-sub: [r_shoulder_lift_joint_goal, r_shoulder_lift_joint]}]}
+  - r_upper_arm_roll_error: {double-mul: [arm_gain, {double-sub: [r_upper_arm_roll_joint_goal, r_upper_arm_roll_joint]}]}
+  - r_elbow_flex_error: {double-mul: [arm_gain, {double-sub: [r_elbow_flex_joint_goal, r_elbow_flex_joint]}]}
   - r_forearm_roll_error_unnormalized: {double-sub: [r_forearm_roll_joint_goal, r_forearm_roll_joint]}
   - r_forearm_roll_error_normalized: 
       fmod: 
       - {double-add: [{fmod: [r_forearm_roll_error_unnormalized, two_pi]}, two_pi]}
       - two_pi
   - r_forearm_roll_error: 
-      double-if: 
+      double-mul:
+      - arm_gain
+      - double-if: 
         - {double-sub: [r_forearm_roll_error_normalized, pi]}
         - {double-sub: [r_forearm_roll_error_normalized, two_pi]}
         - r_forearm_roll_error_normalized
-  - r_wrist_flex_error: {double-sub: [r_wrist_flex_joint_goal, r_wrist_flex_joint]}
+  - r_wrist_flex_error: {double-mul: [arm_gain, {double-sub: [r_wrist_flex_joint_goal, r_wrist_flex_joint]}]}
   - r_wrist_roll_error_unnormalized: {double-sub: [r_wrist_roll_joint_goal, r_wrist_roll_joint]}
   - r_wrist_roll_error_normalized: 
       fmod: 
       - {double-add: [{fmod: [r_wrist_roll_error_unnormalized, two_pi]}, two_pi]}
       - two_pi
   - r_wrist_roll_error: 
-      double-if: 
+      double-mul:
+      - arm_gain
+      - double-if: 
         - {double-sub: [r_wrist_roll_error_normalized, pi]}
         - {double-sub: [r_wrist_roll_error_normalized, two_pi]}
         - r_wrist_roll_error_normalized
-
-  # some constants
-  - weight_arm_joints: 0.00001
-  - weight_torso_joint: 0.001
-  - weight_pos_control: 1.0
-  - neg_vel_limit_arm_joints: -0.6
-  - pos_vel_limit_arm_joints: 0.6
-
 
 controllable-constraints:
   # torso joint

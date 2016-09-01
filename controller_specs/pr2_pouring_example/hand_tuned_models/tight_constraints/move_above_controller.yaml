@@ -199,7 +199,7 @@ scope:
   - pos_vel_limit_left_arm_joints: 0.6
   - neg_vel_limit_right_arm_joints: -0.6
   - pos_vel_limit_right_arm_joints: 0.6
-  - range_gain: 8
+  - range_gain: 4
   - center_gain: 1
   - pos_gain: 1
   - rot_gain: 1
