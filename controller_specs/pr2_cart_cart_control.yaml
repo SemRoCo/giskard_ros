@@ -198,7 +198,7 @@ scope:
 
 controllable-constraints:
   # torso joint
-  - controllable-constraint: [-0.02, 0.02, 100.0, 0, torso_lift_joint]
+  - controllable-constraint: [neg_vel_limit_torso_joint, pos_vel_limit_torso_joint, weight_torso_joint, 0, torso_lift_joint]
   # left arm joints
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, l_shoulder_pan_joint]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, l_shoulder_lift_joint]

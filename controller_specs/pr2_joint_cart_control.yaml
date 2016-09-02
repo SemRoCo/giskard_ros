@@ -98,16 +98,19 @@ scope:
       - r_gripper_offset
 
   # control params
-  - pos_p_gain: 1.0
-  - rot_p_gain: 1.0
+  - pos_p_gain: 3.0
+  - rot_p_gain: 3.0
   - pos_thresh: 0.05
   - rot_thresh: 0.1
   - weight_arm_joints: 0.001
+  - weight_torso_joint: 0.01
   - weight_pos_control: 1
   - weight_rot_control: 1
   - weight_elbow_control: 0
   - neg_vel_limit_arm_joints: -0.6
   - pos_vel_limit_arm_joints: 0.6
+  - neg_vel_limit_torso_joint: -0.02
+  - pos_vel_limit_torso_joint: 0.02
 
   # definition EE goals and control laws
   # right arm position
@@ -168,7 +171,7 @@ scope:
 
 controllable-constraints:
   # torso joint
-  - controllable-constraint: [-0.02, 0.02, 100.0, 0, torso_lift_joint]
+  - controllable-constraint: [neg_vel_limit_torso_joint, pos_vel_limit_torso_joint, weight_torso_joint, 0, torso_lift_joint]
   # left arm joints
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 1, l_shoulder_pan_joint]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_arm_joints, 2, l_shoulder_lift_joint]
