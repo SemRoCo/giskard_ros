@@ -395,10 +395,19 @@ scope:
         - left_gripper_tool_frame_joint_frame
 
   # control params
-  - pos_p_gain: 6.0
-  - rot_p_gain: -2.0
+  - pos_p_gain: 1.0
+  - rot_p_gain: 1.0
   - pos_thresh: 0.05
-  - rot_thresh: 0.2
+  - rot_thresh: 0.1
+  - weight_left_arm_joints: 0.001
+  - weight_right_arm_joints: 0.001
+  - weight_torso_joint: 0.01
+  - weight_pos_control: 1
+  - weight_rot_control: 1
+  - neg_vel_limit_arm_joints: -0.6
+  - pos_vel_limit_arm_joints: 0.6
+  - neg_vel_limit_torso_joint: -0.05
+  - pos_vel_limit_torso_joint: 0.05
 
   # definition EE goals and control laws
   # left arm position
@@ -415,8 +424,20 @@ scope:
         - {axis-angle: [unit_z, l_goal_rot_z]}
         - {axis-angle: [unit_y, l_goal_rot_y]}
         - {axis-angle: [unit_x, l_goal_rot_x]}
-  - l_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: left_ee}}, l_goal_rot]}}}
-  - l_rot_control: {double-mul: [rot_p_gain, {min: [rot_thresh, l_rot_error]}]}
+  - l_rot: {orientation-of: left_ee}
+  - l_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: l_rot}, l_goal_rot]}}}
+  - l_rot_scaling: 
+      double-if:
+      - {double-sub: [rot_thresh, l_rot_error]}
+      - 1
+      - {double-div: [rot_thresh, l_rot_error]}
+  - l_intermediate_goal_rot:
+      slerp:
+      - l_rot
+      - l_goal_rot
+      - l_rot_scaling
+  - l_rot_control:
+      scale-vector: [rot_p_gain, {rotate-vector: [l_rot, {rot-vector: {rotation-mul: [{inverse-rotation: l_rot}, l_intermediate_goal_rot]}}]}]
 
   # definition of joint control laws
   - right_arm_0_error: {double-sub: [right_arm_0_joint_goal, right_arm_0_joint_var]}
@@ -427,16 +448,8 @@ scope:
   - right_arm_5_error: {double-sub: [right_arm_5_joint_goal, right_arm_5_joint_var]}
   - right_arm_6_error: {double-sub: [right_arm_6_joint_goal, right_arm_6_joint_var]}
 
-  # some constants
-  - weight_left_arm_joints: 1.0
-  - weight_right_arm_joints: 1.0
-  - weight_pos_control: 10.0
-  - weight_rot_control: 3.0
-  - neg_vel_limit_arm_joints: -0.5
-  - pos_vel_limit_arm_joints: 0.5
-
 controllable-constraints:
-  - controllable-constraint: [-0.05, 0.05, 100.0, 0, triangle_base_joint]
+  - controllable-constraint: [neg_vel_limit_torso_joint, pos_vel_limit_torso_joint, weight_torso_joint, 0, triangle_base_joint]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 1, left_arm_0_joint]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 2, left_arm_1_joint]
   - controllable-constraint: [neg_vel_limit_arm_joints, pos_vel_limit_arm_joints, weight_left_arm_joints, 3, left_arm_2_joint]
@@ -456,7 +469,9 @@ soft-constraints:
   - soft-constraint: [{x-coord: l_trans_control}, {x-coord: l_trans_control}, weight_pos_control, {x-coord: l_trans}, left EE x-pos control slack]
   - soft-constraint: [{y-coord: l_trans_control}, {y-coord: l_trans_control}, weight_pos_control, {y-coord: l_trans}, left EE y-pos control slack]
   - soft-constraint: [{z-coord: l_trans_control}, {z-coord: l_trans_control}, weight_pos_control, {z-coord: l_trans}, left EE z-pos control slack]
-  - soft-constraint: [l_rot_control, l_rot_control, weight_rot_control, l_rot_error, left EE rotation control slack]
+  - soft-constraint: [{x-coord: l_rot_control}, {x-coord: l_rot_control}, weight_rot_control, {x-coord: {rot-vector: l_rot}}, left EE x-rot control slack]
+  - soft-constraint: [{y-coord: l_rot_control}, {y-coord: l_rot_control}, weight_rot_control, {y-coord: {rot-vector: l_rot}}, left EE y-rot control slack]
+  - soft-constraint: [{z-coord: l_rot_control}, {z-coord: l_rot_control}, weight_rot_control, {z-coord: {rot-vector: l_rot}}, left EE z-rot control slack]
   - soft-constraint: [right_arm_0_error, right_arm_0_error, weight_pos_control, right_arm_0_joint_var, right_arm_0_joint control slack]
   - soft-constraint: [right_arm_1_error, right_arm_1_error, weight_pos_control, right_arm_1_joint_var, right_arm_1_joint control slack]
   - soft-constraint: [right_arm_2_error, right_arm_2_error, weight_pos_control, right_arm_2_joint_var, right_arm_2_joint control slack]
