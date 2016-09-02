@@ -666,10 +666,10 @@ scope:
         - right_gripper_tool_frame_joint_frame     
 
   # control params
-  - pos_p_gain: 1.0
-  - rot_p_gain: 1.0
+  - pos_p_gain: 3.0
+  - rot_p_gain: 3.0
   - pos_thresh: 0.05
-  - rot_thresh: 0.1
+  - rot_thresh: 0.2
   - weight_left_arm_joints: 0.001
   - weight_right_arm_joints: 0.001
   - weight_torso_joint: 0.01
