@@ -245,7 +245,8 @@ namespace giskard_examples
   
           feedback_pub_ = nh_.advertise<giskard_msgs::ControllerFeedback>("feedback", 1, true);
           velocity_pub_ = nh_.advertise<giskard_msgs::SemanticFloat64Array>("velocity_cmd", 1);
-          joint_state_sub_ = nh_.subscribe("joint_states", 0, &WholeBodyController::joint_state_callback, this);
+          joint_state_sub_ = nh_.subscribe("joint_states", 1, &WholeBodyController::joint_state_callback, this,
+            ros::TransportHints().tcpNoDelay());
 
           state_ = WholeBodyControllerState::started;
         }
@@ -453,7 +454,7 @@ namespace giskard_examples
             init_cart_cart_command(msg), msg, "cart_cart");
         state_ = WholeBodyControllerState::running;
         current_controller_ = "cart_cart";
-        goal_sub_ = nh_.subscribe("goal", 0, &WholeBodyController::command_callback, this);
+        goal_sub_ = nh_.subscribe("goal", 1, &WholeBodyController::command_callback, this);
       }
 
       void process_regular_joint_state(const sensor_msgs::JointState& msg)

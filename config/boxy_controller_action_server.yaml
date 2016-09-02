@@ -1,8 +1,8 @@
 thresholds:
   bodypart_moves:
-    left_arm: 0.03
-    right_arm: 0.03
-    torso: 0.005
+    left_arm: 0.008
+    right_arm: 0.008
+    torso: 0.001
   motion_old: 0.5
 body_controllables:
   right_arm:

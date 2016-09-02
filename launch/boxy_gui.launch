@@ -4,7 +4,7 @@
   <arg name="rviz" default="true" />
 
   <node pkg="giskard_examples" type="goal_marker_viz" name="command_viz" >
-    <remap from="~goal" to="/whole_body_controller/current_command" />
+    <remap from="~feedback" to="/whole_body_controller/feedback" />
   </node>
 
   <node pkg="giskard_examples" type="whole_body_interactive_markers" 
