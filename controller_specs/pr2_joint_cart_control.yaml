@@ -98,10 +98,16 @@ scope:
       - r_gripper_offset
 
   # control params
-  - pos_p_gain: 6.0
-  - rot_p_gain: -2.0
+  - pos_p_gain: 1.0
+  - rot_p_gain: 1.0
   - pos_thresh: 0.05
-  - rot_thresh: 0.2
+  - rot_thresh: 0.1
+  - weight_arm_joints: 0.001
+  - weight_pos_control: 1
+  - weight_rot_control: 1
+  - weight_elbow_control: 0
+  - neg_vel_limit_arm_joints: -0.6
+  - pos_vel_limit_arm_joints: 0.6
 
   # definition EE goals and control laws
   # right arm position
@@ -118,8 +124,20 @@ scope:
         - {axis-angle: [unit_z, r_goal_rot_z]}
         - {axis-angle: [unit_y, r_goal_rot_y]}
         - {axis-angle: [unit_x, r_goal_rot_x]}
-  - r_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: {orientation-of: right_ee}}, r_goal_rot]}}}
-  - r_rot_control: {double-mul: [rot_p_gain, {min: [rot_thresh, r_rot_error]}]}
+  - r_rot: {orientation-of: right_ee}
+  - r_rot_error: {vector-norm: {rot-vector: {rotation-mul: [{inverse-rotation: r_rot}, r_goal_rot]}}}
+  - r_rot_scaling: 
+      double-if:
+      - {double-sub: [rot_thresh, r_rot_error]}
+      - 1
+      - {double-div: [rot_thresh, r_rot_error]}
+  - r_intermediate_goal_rot:
+      slerp:
+      - r_rot
+      - r_goal_rot
+      - r_rot_scaling
+  - r_rot_control:
+      scale-vector: [rot_p_gain, {rotate-vector: [r_rot, {rot-vector: {rotation-mul: [{inverse-rotation: r_rot}, r_intermediate_goal_rot]}}]}]
 
   # definition of joint goals and control laws
   - l_shoulder_pan_error: {double-sub: [l_shoulder_pan_joint_goal, l_shoulder_pan_joint]}
@@ -148,15 +166,6 @@ scope:
         - {double-sub: [l_wrist_roll_error_normalized, two_pi]}
         - l_wrist_roll_error_normalized
 
-  # some constants
-  - weight_arm_joints: 1.0
-  - weight_pos_control: 20.0
-  - weight_rot_control: 5.0
-  - weight_elbow_control: 0.1
-  - neg_vel_limit_arm_joints: -0.6
-  - pos_vel_limit_arm_joints: 0.6
-
-
 controllable-constraints:
   # torso joint
   - controllable-constraint: [-0.02, 0.02, 100.0, 0, torso_lift_joint]
@@ -181,9 +190,11 @@ soft-constraints:
   - soft-constraint: [{x-coord: r_trans_control}, {x-coord: r_trans_control}, weight_pos_control, {x-coord: r_trans}, right EE x-pos control slack]
   - soft-constraint: [{y-coord: r_trans_control}, {y-coord: r_trans_control}, weight_pos_control, {y-coord: r_trans}, right EE y-pos control slack]
   - soft-constraint: [{z-coord: r_trans_control}, {z-coord: r_trans_control}, weight_pos_control, {z-coord: r_trans}, right EE z-pos control slack]
-  - soft-constraint: [r_rot_control, r_rot_control, weight_rot_control, r_rot_error, right EE rotation control slack]
-  - soft-constraint: [-0.1, -0.1, weight_elbow_control, {y-coord: {origin-of: right_elbow}}, right elbow out control slack]
-  - soft-constraint: [0.1, 0.1, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
+  - soft-constraint: [{x-coord: r_rot_control}, {x-coord: r_rot_control}, weight_rot_control, {x-coord: {rot-vector: r_rot}}, right EE x-rot control slack]
+  - soft-constraint: [{y-coord: r_rot_control}, {y-coord: r_rot_control}, weight_rot_control, {y-coord: {rot-vector: r_rot}}, right EE y-rot control slack]
+  - soft-constraint: [{z-coord: r_rot_control}, {z-coord: r_rot_control}, weight_rot_control, {z-coord: {rot-vector: r_rot}}, right EE z-rot control slack]
+  - soft-constraint: [-0.01, -0.01, weight_elbow_control, {y-coord: {origin-of: right_elbow}}, right elbow out control slack]
+  - soft-constraint: [0.01, 0.01, weight_elbow_control, {z-coord: {origin-of: right_elbow}}, right elbow up control slack]
   - soft-constraint: [l_shoulder_pan_error, l_shoulder_pan_error , weight_pos_control, l_shoulder_pan_joint, l_shoulder_pan_joint control slack]
   - soft-constraint: [l_shoulder_lift_error, l_shoulder_lift_error , weight_pos_control, l_shoulder_lift_joint, l_shoulder_lift_joint control slack]
   - soft-constraint: [l_upper_arm_roll_error, l_upper_arm_roll_error , weight_pos_control, l_upper_arm_roll_joint, l_upper_arm_roll_joint control slack]
