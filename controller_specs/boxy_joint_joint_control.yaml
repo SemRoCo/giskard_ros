@@ -88,22 +88,23 @@ scope:
       input-var: 28
 
   # control params
+  - gain: 3
 
   # definition goals and control laws
-  - left_arm_0_error: {double-sub: [left_arm_0_joint_goal, left_arm_0_joint_var]}
-  - left_arm_1_error: {double-sub: [left_arm_1_joint_goal, left_arm_1_joint_var]}
-  - left_arm_2_error: {double-sub: [left_arm_2_joint_goal, left_arm_2_joint_var]}
-  - left_arm_3_error: {double-sub: [left_arm_3_joint_goal, left_arm_3_joint_var]}
-  - left_arm_4_error: {double-sub: [left_arm_4_joint_goal, left_arm_4_joint_var]}
-  - left_arm_5_error: {double-sub: [left_arm_5_joint_goal, left_arm_5_joint_var]}
-  - left_arm_6_error: {double-sub: [left_arm_6_joint_goal, left_arm_6_joint_var]}
-  - right_arm_0_error: {double-sub: [right_arm_0_joint_goal, right_arm_0_joint_var]}
-  - right_arm_1_error: {double-sub: [right_arm_1_joint_goal, right_arm_1_joint_var]}
-  - right_arm_2_error: {double-sub: [right_arm_2_joint_goal, right_arm_2_joint_var]}
-  - right_arm_3_error: {double-sub: [right_arm_3_joint_goal, right_arm_3_joint_var]}
-  - right_arm_4_error: {double-sub: [right_arm_4_joint_goal, right_arm_4_joint_var]}
-  - right_arm_5_error: {double-sub: [right_arm_5_joint_goal, right_arm_5_joint_var]}
-  - right_arm_6_error: {double-sub: [right_arm_6_joint_goal, right_arm_6_joint_var]}
+  - left_arm_0_error: {double-mul: [gain, {double-sub: [left_arm_0_joint_goal, left_arm_0_joint_var]}]}
+  - left_arm_1_error: {double-mul: [gain, {double-sub: [left_arm_1_joint_goal, left_arm_1_joint_var]}]}
+  - left_arm_2_error: {double-mul: [gain, {double-sub: [left_arm_2_joint_goal, left_arm_2_joint_var]}]}
+  - left_arm_3_error: {double-mul: [gain, {double-sub: [left_arm_3_joint_goal, left_arm_3_joint_var]}]}
+  - left_arm_4_error: {double-mul: [gain, {double-sub: [left_arm_4_joint_goal, left_arm_4_joint_var]}]}
+  - left_arm_5_error: {double-mul: [gain, {double-sub: [left_arm_5_joint_goal, left_arm_5_joint_var]}]}
+  - left_arm_6_error: {double-mul: [gain, {double-sub: [left_arm_6_joint_goal, left_arm_6_joint_var]}]}
+  - right_arm_0_error: {double-mul: [gain, {double-sub: [right_arm_0_joint_goal, right_arm_0_joint_var]}]}
+  - right_arm_1_error: {double-mul: [gain, {double-sub: [right_arm_1_joint_goal, right_arm_1_joint_var]}]}
+  - right_arm_2_error: {double-mul: [gain, {double-sub: [right_arm_2_joint_goal, right_arm_2_joint_var]}]}
+  - right_arm_3_error: {double-mul: [gain, {double-sub: [right_arm_3_joint_goal, right_arm_3_joint_var]}]}
+  - right_arm_4_error: {double-mul: [gain, {double-sub: [right_arm_4_joint_goal, right_arm_4_joint_var]}]}
+  - right_arm_5_error: {double-mul: [gain, {double-sub: [right_arm_5_joint_goal, right_arm_5_joint_var]}]}
+  - right_arm_6_error: {double-mul: [gain, {double-sub: [right_arm_6_joint_goal, right_arm_6_joint_var]}]}
 
   # some constants
   - weight_left_arm_joints: 1.0
@@ -147,7 +148,7 @@ soft-constraints:
 
 hard-constraints:
   - hard-constraint:
-      - {double-sub: [-0.586, triangle_base_joint_var]}
+      - {double-sub: [-0.490, triangle_base_joint_var]}
       - {double-sub: [0.0, triangle_base_joint_var]}
       - triangle_base_joint_var
   - hard-constraint:

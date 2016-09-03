@@ -395,10 +395,10 @@ scope:
         - left_gripper_tool_frame_joint_frame
 
   # control params
-  - pos_p_gain: 1.0
-  - rot_p_gain: 1.0
+  - pos_p_gain: 3.0
+  - rot_p_gain: 3.0
   - pos_thresh: 0.05
-  - rot_thresh: 0.1
+  - rot_thresh: 0.2
   - weight_left_arm_joints: 0.001
   - weight_right_arm_joints: 0.001
   - weight_torso_joint: 0.01
@@ -440,13 +440,15 @@ scope:
       scale-vector: [rot_p_gain, {rotate-vector: [l_rot, {rot-vector: {rotation-mul: [{inverse-rotation: l_rot}, l_intermediate_goal_rot]}}]}]
 
   # definition of joint control laws
-  - right_arm_0_error: {double-sub: [right_arm_0_joint_goal, right_arm_0_joint_var]}
-  - right_arm_1_error: {double-sub: [right_arm_1_joint_goal, right_arm_1_joint_var]}
-  - right_arm_2_error: {double-sub: [right_arm_2_joint_goal, right_arm_2_joint_var]}
-  - right_arm_3_error: {double-sub: [right_arm_3_joint_goal, right_arm_3_joint_var]}
-  - right_arm_4_error: {double-sub: [right_arm_4_joint_goal, right_arm_4_joint_var]}
-  - right_arm_5_error: {double-sub: [right_arm_5_joint_goal, right_arm_5_joint_var]}
-  - right_arm_6_error: {double-sub: [right_arm_6_joint_goal, right_arm_6_joint_var]}
+  - gain: 3
+
+  - right_arm_0_error: {double-mul: [gain, {double-sub: [right_arm_0_joint_goal, right_arm_0_joint_var]}]}
+  - right_arm_1_error: {double-mul: [gain, {double-sub: [right_arm_1_joint_goal, right_arm_1_joint_var]}]}
+  - right_arm_2_error: {double-mul: [gain, {double-sub: [right_arm_2_joint_goal, right_arm_2_joint_var]}]}
+  - right_arm_3_error: {double-mul: [gain, {double-sub: [right_arm_3_joint_goal, right_arm_3_joint_var]}]}
+  - right_arm_4_error: {double-mul: [gain, {double-sub: [right_arm_4_joint_goal, right_arm_4_joint_var]}]}
+  - right_arm_5_error: {double-mul: [gain, {double-sub: [right_arm_5_joint_goal, right_arm_5_joint_var]}]}
+  - right_arm_6_error: {double-mul: [gain, {double-sub: [right_arm_6_joint_goal, right_arm_6_joint_var]}]}
 
 controllable-constraints:
   - controllable-constraint: [neg_vel_limit_torso_joint, pos_vel_limit_torso_joint, weight_torso_joint, 0, triangle_base_joint]
@@ -479,10 +481,11 @@ soft-constraints:
   - soft-constraint: [right_arm_4_error, right_arm_4_error, weight_pos_control, right_arm_4_joint_var, right_arm_4_joint control slack]
   - soft-constraint: [right_arm_5_error, right_arm_5_error, weight_pos_control, right_arm_5_joint_var, right_arm_5_joint control slack]
   - soft-constraint: [right_arm_6_error, right_arm_6_error, weight_pos_control, right_arm_6_joint_var, right_arm_6_joint control slack]
+  - soft-constraint: [{double-sub: [0.17, left_arm_1_joint_var]}, {double-sub: [1.86, left_arm_1_joint_var]}, weight_pos_control, left_arm_1_joint_var, left EE x-pos control slack]
 
 hard-constraints:
   - hard-constraint:
-      - {double-sub: [-0.586, triangle_base_joint_var]}
+      - {double-sub: [-0.49, triangle_base_joint_var]}
       - {double-sub: [0.0, triangle_base_joint_var]}
       - triangle_base_joint_var
   - hard-constraint:
