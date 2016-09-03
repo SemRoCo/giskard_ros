@@ -133,11 +133,22 @@ scope:
   - triangle_left_arm_link_left_arm_base_joint_frame:
       frame-mul:
         - frame:
+            - axis-angle:
+                - vector3:
+                    - 1
+                    - 0
+                    - 0
+                - 0
+            - vector3:
+                - -0.006185
+                - 0.00408
+                - -0.010726
+        - frame:
             - quaternion:
-                - 0
-                - 0
-                - 0.5000001943375614
-                - 0.8660252915835663
+                - -0.002542135821897418
+                - -0.002406484375573583
+                - 0.5118468566541002
+                - 0.8590695790864268
             - vector3:
                 - 0
                 - 0
