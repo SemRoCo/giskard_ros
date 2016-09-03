@@ -404,6 +404,7 @@ scope:
   - weight_torso_joint: 0.01
   - weight_pos_control: 1
   - weight_rot_control: 1
+  - weight_torso_up: 0.0001
   - neg_vel_limit_arm_joints: -0.6
   - pos_vel_limit_arm_joints: 0.6
   - neg_vel_limit_torso_joint: -0.05
@@ -481,11 +482,12 @@ soft-constraints:
   - soft-constraint: [right_arm_4_error, right_arm_4_error, weight_pos_control, right_arm_4_joint_var, right_arm_4_joint control slack]
   - soft-constraint: [right_arm_5_error, right_arm_5_error, weight_pos_control, right_arm_5_joint_var, right_arm_5_joint control slack]
   - soft-constraint: [right_arm_6_error, right_arm_6_error, weight_pos_control, right_arm_6_joint_var, right_arm_6_joint control slack]
-  - soft-constraint: [{double-sub: [0.17, left_arm_1_joint_var]}, {double-sub: [1.86, left_arm_1_joint_var]}, weight_pos_control, left_arm_1_joint_var, left EE x-pos control slack]
+  - soft-constraint: [{double-sub: [0.17, left_arm_1_joint_var]}, {double-sub: [1.86, left_arm_1_joint_var]}, weight_pos_control, left_arm_1_joint_var, left arm first joint avoid unstable region control slack]
+  - soft-constraint: [{double-sub: [-0.2, triangle_base_joint_var]}, {double-sub: [0.0, triangle_base_joint_var]}, weight_torso_up, triangle_base_joint_var, triangle_base_joint stay up control slack]
 
 hard-constraints:
   - hard-constraint:
-      - {double-sub: [-0.49, triangle_base_joint_var]}
+      - {double-sub: [-0.35, triangle_base_joint_var]}
       - {double-sub: [0.0, triangle_base_joint_var]}
       - triangle_base_joint_var
   - hard-constraint:
