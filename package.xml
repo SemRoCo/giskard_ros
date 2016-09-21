@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>giskard_examples</name>
-  <version>0.1.0</version>
+  <version>0.0.3</version>
   <description>Example use cases for the giskard package</description>
 
   <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
