@@ -21,6 +21,7 @@ find_library(YAML_CPP_LIBRARIES NAMES yaml-cpp)
 
 catkin_package(
   INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp roslib giskard tf2_ros tf2_geometry_msgs interactive_markers geometry_msgs giskard_msgs kdl_conversions
   DEPENDS yaml_cpp
 )
@@ -34,8 +35,14 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
   ${YAML_CPP_INCLUDE_DIRS})
 
-add_executable(whole_body_controller src/${PROJECT_NAME}/whole_body_controller.cpp)
-target_link_libraries(whole_body_controller ${catkin_LIBRARIES} yaml-cpp)
+add_library(${PROJECT_NAME} 
+  src/${PROJECT_NAME}/whole_body_controller.cpp)
+target_link_libraries(${PROJECT_NAME}
+  ${catkin_LIBRARIES} yaml-cpp)
+
+add_executable(whole_body_controller src/${PROJECT_NAME}/whole_body_controller_node.cpp)
+target_link_libraries(whole_body_controller 
+  ${catkin_LIBRARIES} yaml-cpp ${PROJECT_NAME})
 add_dependencies(whole_body_controller ${catkin_EXPORTED_TARGETS})
 
 add_executable(controller_action_server src/${PROJECT_NAME}/controller_action_server.cpp)
