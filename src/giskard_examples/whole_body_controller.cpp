@@ -35,6 +35,7 @@
 #include <giskard_examples/utils.hpp>
 #include <giskard_examples/watchdog.hpp>
 
+#include <giskard_examples/conversions.hpp>
 #include <giskard_examples/whole_body_controller.hpp>
 
 namespace giskard_examples

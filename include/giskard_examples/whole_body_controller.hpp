@@ -24,46 +24,17 @@
 #define __GISKARD_WHOLE_BODY_CONTROLLER_HPP__
 
 #include <ros/ros.h>
-#include <ros/package.h>
-#include <ros/console.h>
+#include <giskard/giskard.hpp>
 #include <sensor_msgs/JointState.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <giskard_msgs/SemanticFloat64Array.h>
-#include <yaml-cpp/yaml.h>
-#include <giskard/giskard.hpp>
 #include <kdl_conversions/kdl_msg.h>
-#include <boost/lexical_cast.hpp>
-#include <giskard_examples/ros_utils.hpp>
-#include <giskard_examples/utils.hpp>
+// TODO: get rid of watchdog because people hate it
 #include <giskard_examples/watchdog.hpp>
 
 namespace giskard_examples
 {
-  // TODO: move this somewhere else
-  inline Eigen::VectorXd to_eigen(const std::vector<double>& v)
-  {
-    Eigen::VectorXd result(v.size());
-    for (size_t i=0; i<v.size(); ++i)
-      result[i] = v[i];
-    return result;
-  }
-
-  // TODO: move this somewhere else
-  inline Eigen::VectorXd to_eigen(const geometry_msgs::Pose& p)
-  {
-    Eigen::VectorXd result(6);
-    result[0] = p.position.x;
-    result[1] = p.position.y;
-    result[2] = p.position.z;
-  
-    KDL::Rotation rot;
-    tf::quaternionMsgToKDL(p.orientation, rot);
-    rot.GetEulerZYX(result[3], result[4], result[5]);
-
-    return result;
-  }
-
   class ControllerContext
   {
     private:
@@ -75,15 +46,15 @@ namespace giskard_examples
     public:
       void set_controller(const giskard::QPController& controller);
 
+      void set_joint_state(const sensor_msgs::JointState& msg);
+
+      void set_command(const giskard_msgs::WholeBodyCommand& command);
+
       bool update(const sensor_msgs::JointState& msg, int nWSR);
 
       bool start(int nWSR);
 
-      void set_joint_state(const sensor_msgs::JointState& msg);
-
       const giskard::QPController& get_controller() const;
-
-      void set_command(const giskard_msgs::WholeBodyCommand& command);
 
       const giskard_msgs::WholeBodyCommand& get_command() const;
 
@@ -112,6 +83,7 @@ namespace giskard_examples
       void start();
 
     private:
+      // TODO: separate into two classes to allow unit testing
       ros::NodeHandle nh_;
       ros::Publisher velocity_pub_, feedback_pub_;
       ros::Subscriber goal_sub_, joint_state_sub_;
