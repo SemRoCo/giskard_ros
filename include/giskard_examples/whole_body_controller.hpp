@@ -141,15 +141,6 @@ namespace giskard_examples
 
       giskard_msgs::WholeBodyCommand init_joint_cart_command (const sensor_msgs::JointState& msg);
 
-      void sanity_check(const std::vector<double>& v, const std::vector<std::string>& joint_names, const std::string& name);
-         
-      void sanity_check(const geometry_msgs::PoseStamped& msg, const std::string& name);
-
-      void sanity_check(const giskard_msgs::ArmCommand& msg, 
-          const std::vector<std::string>& joint_names, const std::string& name);
- 
-      void sanity_check(const giskard_msgs::WholeBodyCommand& command);
-
       void start_controller(ControllerContext& context, 
           const giskard_msgs::WholeBodyCommand& command,
           const sensor_msgs::JointState& msg, 

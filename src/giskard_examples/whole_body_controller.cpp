@@ -35,6 +35,7 @@
 #include <giskard_examples/utils.hpp>
 #include <giskard_examples/watchdog.hpp>
 
+#include <giskard_examples/command_utils.hpp>
 #include <giskard_examples/conversions.hpp>
 #include <giskard_examples/whole_body_controller.hpp>
 
@@ -493,58 +494,13 @@ namespace giskard_examples
         result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
         return result;
       }
-
-      void WholeBodyController::sanity_check(const std::vector<double>& v, const std::vector<std::string>& joint_names, const std::string& name)
-      {
-        if (v.size() != joint_names.size())
-          throw std::runtime_error("Did not find expected number of values for " + name + " joint goal.");
-      }
-         
-      void WholeBodyController::sanity_check(const geometry_msgs::PoseStamped& msg, const std::string& name)
-      {
-        if(msg.header.frame_id.compare(parameters_.frame_id) != 0)
-          throw std::runtime_error("frame_id of " + name + " goal did not match '" + 
-              parameters_.frame_id +"'.");
-      }
-
-      void WholeBodyController::sanity_check(const giskard_msgs::ArmCommand& msg, 
-          const std::vector<std::string>& joint_names, const std::string& name)
-      {
-        switch (msg.type)
-        {
-          case giskard_msgs::ArmCommand::JOINT_GOAL:
-            sanity_check(msg.goal_configuration, joint_names,name);
-            break;
-          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-            sanity_check(msg.goal_pose, name);
-            break;
-          default:
-            throw std::runtime_error("Received command of unknown type for " + name + ".");
-            break;
-        }
-      }
- 
-      void WholeBodyController::sanity_check(const giskard_msgs::WholeBodyCommand& command)
-      {
-        switch (command.type)
-        {
-          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
-            sanity_check(command.right_ee, parameters_.l_arm_names, "right arm");
-            sanity_check(command.left_ee, parameters_.r_arm_names, "left arm");
-            break;
-          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
-            break;
-          default:
-            throw std::runtime_error("Received unknown type for whole-body controller.");
-        }
-      }
-
+        
       void WholeBodyController::start_controller(ControllerContext& context, 
           const giskard_msgs::WholeBodyCommand& command,
           const sensor_msgs::JointState& msg, 
           const std::string& name)
       {
-        sanity_check(command);
+        sanity_check(command, parameters_);
         context.set_command(command);
         context.set_joint_state(msg);
 
