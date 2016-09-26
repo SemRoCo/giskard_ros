@@ -29,7 +29,6 @@
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <giskard_msgs/SemanticFloat64Array.h>
-#include <kdl_conversions/kdl_msg.h>
 // TODO: get rid of watchdog because people hate it
 #include <giskard_examples/watchdog.hpp>
 
@@ -128,18 +127,7 @@ namespace giskard_examples
 
       void process_watchdog(const std_msgs::Header& header);
 
-      giskard_msgs::ArmCommand init_arm_joint_command(const sensor_msgs::JointState& msg, const std::vector<std::string>& joint_names);
-      
-      giskard_msgs::ArmCommand init_arm_cart_command(const sensor_msgs::JointState& msg, 
-          const std::string& frame_id, const std::string& fk_name);
-
-      giskard_msgs::WholeBodyCommand init_joint_joint_command (const sensor_msgs::JointState& msg);
-
-      giskard_msgs::WholeBodyCommand init_cart_cart_command (const sensor_msgs::JointState& msg);
-
-      giskard_msgs::WholeBodyCommand init_cart_joint_command (const sensor_msgs::JointState& msg);
-
-      giskard_msgs::WholeBodyCommand init_joint_cart_command (const sensor_msgs::JointState& msg);
+      KDL::Frame eval_fk(const std::string& fk_name, const sensor_msgs::JointState& msg);
 
       void start_controller(ControllerContext& context, 
           const giskard_msgs::WholeBodyCommand& command,

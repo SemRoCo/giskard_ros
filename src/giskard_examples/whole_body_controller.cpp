@@ -389,13 +389,17 @@ namespace giskard_examples
       void WholeBodyController::process_first_joint_state(const sensor_msgs::JointState& msg)
       {
         start_controller(contexts_.at("joint_joint"), 
-            init_joint_joint_command(msg), msg, "joint_joint");
+            init_joint_joint_command(msg, parameters_), msg, "joint_joint");
         start_controller(contexts_.at("cart_joint"), 
-            init_cart_joint_command(msg), msg, "cart_joint");
+            init_cart_joint_command(msg, eval_fk(parameters_.l_fk_name, msg), parameters_), 
+            msg, "cart_joint");
         start_controller(contexts_.at("joint_cart"), 
-            init_joint_cart_command(msg), msg, "joint_cart");
+            init_joint_cart_command(msg, eval_fk(parameters_.r_fk_name, msg), parameters_),
+            msg, "joint_cart");
         start_controller(contexts_.at("cart_cart"), 
-            init_cart_cart_command(msg), msg, "cart_cart");
+            init_cart_cart_command(msg.header.stamp, parameters_.frame_id,
+              eval_fk(parameters_.l_fk_name, msg), eval_fk(parameters_.r_fk_name, msg)), 
+            msg, "cart_cart");
         state_ = WholeBodyControllerState::running;
         current_controller_ = "cart_cart";
         goal_sub_ = nh_.subscribe("goal", 1, &WholeBodyController::command_callback, this);
@@ -432,25 +436,9 @@ namespace giskard_examples
         velocity_pub_.publish(command);
       }
 
-      giskard_msgs::ArmCommand WholeBodyController::init_arm_joint_command(const sensor_msgs::JointState& msg, const std::vector<std::string>& joint_names)
+      KDL::Frame WholeBodyController::eval_fk(const std::string& fk_name, 
+          const sensor_msgs::JointState& msg)
       {
-        giskard_msgs::ArmCommand result;
-        result.type = giskard_msgs::ArmCommand::JOINT_GOAL;
-        for (size_t i=0; i<joint_names.size(); ++i)
-          for (size_t j=0; j<msg.name.size(); ++j)
-            if (msg.name[j].compare(joint_names[i]) == 0)
-              result.goal_configuration.push_back(msg.position[j]);
-
-        return result;
-      }
-      
-      giskard_msgs::ArmCommand WholeBodyController::init_arm_cart_command(const sensor_msgs::JointState& msg, 
-          const std::string& frame_id, const std::string& fk_name)
-      {
-        giskard_msgs::ArmCommand result;
-        result.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
-        result.goal_pose.header.stamp = msg.header.stamp;
-        result.goal_pose.header.frame_id = frame_id;
         const giskard::QPController& controller = get_context("cart_cart").get_controller();
         KDL::Expression<KDL::Frame>::Ptr fk = controller.get_scope().find_frame_expression(fk_name);
         std::set<int> deps;
@@ -459,42 +447,10 @@ namespace giskard_examples
           for (size_t i=0; i<msg.name.size(); ++i)
             if (controller.get_controllable_names()[*it].find(msg.name[i]) == 0)
               fk->setInputValue(*it, msg.position[i]);
-        tf::poseKDLToMsg(fk->value(), result.goal_pose.pose);
-        return result;
-      }
 
-      giskard_msgs::WholeBodyCommand WholeBodyController::init_joint_joint_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.right_ee = init_arm_joint_command(msg, parameters_.r_arm_names);
-        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
-        return result;
+        return fk->value();
       }
-
-      giskard_msgs::WholeBodyCommand WholeBodyController::init_cart_cart_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.left_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.l_fk_name);
-        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
-        return result;
-      }
-
-      giskard_msgs::WholeBodyCommand WholeBodyController::init_cart_joint_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
-        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
-        return result;
-      }
-
-      giskard_msgs::WholeBodyCommand WholeBodyController::init_joint_cart_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
-        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
-        return result;
-      }
-        
+      
       void WholeBodyController::start_controller(ControllerContext& context, 
           const giskard_msgs::WholeBodyCommand& command,
           const sensor_msgs::JointState& msg, 

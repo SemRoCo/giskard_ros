@@ -24,6 +24,8 @@
 
 #include <functional>
 #include <string>
+#include <Eigen/Dense>
+#include <kdl_conversions/kdl_msg.h>
 
 namespace giskard_examples
 {
@@ -48,6 +50,17 @@ namespace giskard_examples
 
     return result;
   }
+
+  inline geometry_msgs::PoseStamped to_msg(const ros::Time& stamp,
+      const std::string& frame_id, const KDL::Frame& pose)
+  {
+    geometry_msgs::PoseStamped result;
+    result.header.stamp = stamp;
+    result.header.frame_id = frame_id;
+    tf::poseKDLToMsg(pose, result.pose);
+    return result;
+  }
+
 }
 
 #endif // __GISKARD_CONVERSIONS__HPP
