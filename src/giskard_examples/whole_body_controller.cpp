@@ -35,42 +35,13 @@
 #include <giskard_examples/utils.hpp>
 #include <giskard_examples/watchdog.hpp>
 
-// TODO: separate this into a library and executable part
+#include <giskard_examples/command_utils.hpp>
+#include <giskard_examples/conversions.hpp>
+#include <giskard_examples/whole_body_controller.hpp>
 
 namespace giskard_examples
 {
-  Eigen::VectorXd to_eigen(const std::vector<double>& v)
-  {
-    Eigen::VectorXd result(v.size());
-    for (size_t i=0; i<v.size(); ++i)
-      result[i] = v[i];
-    return result;
-  }
-
-  Eigen::VectorXd to_eigen(const geometry_msgs::Pose& p)
-  {
-    Eigen::VectorXd result(6);
-    result[0] = p.position.x;
-    result[1] = p.position.y;
-    result[2] = p.position.z;
-  
-    KDL::Rotation rot;
-    tf::quaternionMsgToKDL(p.orientation, rot);
-    rot.GetEulerZYX(result[3], result[4], result[5]);
-
-    return result;
-  }
-
-  class ControllerContext
-  {
-    private:
-      giskard::QPController controller_;
-      Eigen::VectorXd state_;
-      giskard_msgs::ControllerFeedback feedback_;
-      giskard_msgs::SemanticFloat64Array vel_command_;
-
-    public:
-      void set_controller(const giskard::QPController& controller)
+      void ControllerContext::set_controller(const giskard::QPController& controller)
       {
         controller_ = controller;
 
@@ -86,12 +57,12 @@ namespace giskard_examples
         state_ = Eigen::VectorXd::Zero(controller_.num_observables());
       }
 
-      const giskard::QPController& get_controller() const
+      const giskard::QPController& ControllerContext::get_controller() const
       {
         return controller_;
       }
 
-      void set_command(const giskard_msgs::WholeBodyCommand& command)
+      void ControllerContext::set_command(const giskard_msgs::WholeBodyCommand& command)
       {
         feedback_.current_command_hash = 
           giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(command);
@@ -153,22 +124,22 @@ namespace giskard_examples
         }
       }
 
-      const giskard_msgs::WholeBodyCommand& get_command() const
+      const giskard_msgs::WholeBodyCommand& ControllerContext::get_command() const
       {
         return get_feedback().current_command;
       }
 
-      const giskard_msgs::ControllerFeedback& get_feedback() const
+      const giskard_msgs::ControllerFeedback& ControllerContext::get_feedback() const
       {
         return feedback_;
       }
 
-      const giskard_msgs::SemanticFloat64Array& get_vel_command() const
+      const giskard_msgs::SemanticFloat64Array& ControllerContext::get_vel_command() const
       {
         return vel_command_;
       }
 
-      bool update(const sensor_msgs::JointState& msg, int nWSR)
+      bool ControllerContext::update(const sensor_msgs::JointState& msg, int nWSR)
       {
         set_joint_state(msg);
       
@@ -200,12 +171,21 @@ namespace giskard_examples
           return false;
       }
 
-      bool start(int nWSR)
+      void ControllerContext::start_controller(
+          const giskard_msgs::WholeBodyCommand& command,
+          const WholeBodyControllerParams& params,
+          const sensor_msgs::JointState& msg, 
+          const std::string& name)
       {
-        return controller_.start(state_, nWSR);
+        sanity_check(command, params);
+        set_command(command);
+        set_joint_state(msg);
+
+        if (!controller_.start(state_, params.nWSR))
+          throw std::runtime_error("Could not start " + name + " controller.");
       }
 
-      void set_joint_state(const sensor_msgs::JointState& msg)
+      void ControllerContext::set_joint_state(const sensor_msgs::JointState& msg)
       {
         // TODO: turn this into a map!
         // is there a more efficient way?
@@ -214,27 +194,12 @@ namespace giskard_examples
             if (get_controller().get_controllable_names()[i].find(msg.name[j]) == 0)
               state_[i] = msg.position[j];
       }
-  };
 
-  class WholeBodyControllerParams
-  {
-    public:
-      std::string frame_id, l_fk_name, r_fk_name;
-      std::vector< std::string > joint_names, l_arm_names, r_arm_names;
-      std::set< std::string > controller_types;
-      int nWSR;
-  };
-
-  enum class WholeBodyControllerState { constructed, started, running };
-
-  class WholeBodyController
-  {
-    public:
-      WholeBodyController(const ros::NodeHandle& nh): 
+      WholeBodyController::WholeBodyController(const ros::NodeHandle& nh): 
         nh_(nh), state_(WholeBodyControllerState::constructed) {}
-      ~WholeBodyController() {}
+      WholeBodyController::~WholeBodyController() {}
 
-      void start()
+      void WholeBodyController::start()
       {
         ROS_DEBUG("Calling start.");
         if (state_ == WholeBodyControllerState::constructed)
@@ -253,19 +218,7 @@ namespace giskard_examples
         ROS_DEBUG("Finished start.");
       }
 
-    private:
-      ros::NodeHandle nh_;
-      ros::Publisher velocity_pub_, feedback_pub_;
-      ros::Subscriber goal_sub_, joint_state_sub_;
-
-      std::map< std::string, ControllerContext > contexts_;
-      Watchdog<ros::Time, ros::Duration> watchdog_;
-      std::string current_controller_;
-      WholeBodyControllerParams parameters_;
-      WholeBodyControllerState state_;
-      sensor_msgs::JointState last_joint_state_;
-
-      void joint_state_callback(const sensor_msgs::JointState::ConstPtr& msg)
+      void WholeBodyController::joint_state_callback(const sensor_msgs::JointState::ConstPtr& msg)
       {
         if (state_ == WholeBodyControllerState::started)
           process_first_joint_state(*msg);
@@ -278,7 +231,7 @@ namespace giskard_examples
         last_joint_state_ = *msg;
       }
 
-      void command_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
+      void WholeBodyController::command_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
       {
         size_t new_command_hash = 
           giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
@@ -293,12 +246,12 @@ namespace giskard_examples
 
       // INTERNAL HELPER FUNCTIONS
 
-      ControllerContext& get_current_context()
+      ControllerContext& WholeBodyController::get_current_context()
       {
         return get_context(current_controller_);
       }
 
-      ControllerContext& get_context(const std::string& controller)
+      ControllerContext& WholeBodyController::get_context(const std::string& controller)
       {
         if(parameters_.controller_types.count(controller) == 0)
           throw std::runtime_error("Could not retrieve current controller with unknown name + '" + 
@@ -307,7 +260,7 @@ namespace giskard_examples
         return contexts_[controller];
       }
 
-      giskard_msgs::WholeBodyCommand complete_command(const giskard_msgs::WholeBodyCommand& new_command,
+      giskard_msgs::WholeBodyCommand WholeBodyController::complete_command(const giskard_msgs::WholeBodyCommand& new_command,
           const giskard_msgs::WholeBodyCommand& current_command)
       {
         if (new_command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
@@ -323,7 +276,7 @@ namespace giskard_examples
         }
       }
 
-      std::string infer_controller(const giskard_msgs::WholeBodyCommand& msg)
+      std::string WholeBodyController::infer_controller(const giskard_msgs::WholeBodyCommand& msg)
       {
         switch (msg.type)
         {
@@ -365,7 +318,7 @@ namespace giskard_examples
         }
       }
 
-      void process_new_command(const giskard_msgs::WholeBodyCommand& msg)
+      void WholeBodyController::process_new_command(const giskard_msgs::WholeBodyCommand& msg)
       {
         giskard_msgs::WholeBodyCommand new_command = 
           complete_command(msg, get_current_context().get_command());
@@ -377,7 +330,7 @@ namespace giskard_examples
         watchdog_.kick(ros::Time::now());
       }
 
-      void init_and_start_yaml_controller(const giskard_msgs::WholeBodyCommand& msg)
+      void WholeBodyController::init_and_start_yaml_controller(const giskard_msgs::WholeBodyCommand& msg)
       {
         YAML::Node node = YAML::Load(msg.yaml_spec);
         giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
@@ -388,10 +341,10 @@ namespace giskard_examples
                 "' and controllable '" + controller.get_controllable_names()[i] + 
                 "' did not match.");
         get_current_context().set_controller(controller);
-        start_controller(get_current_context(), msg, last_joint_state_, "yaml");
+        get_current_context().start_controller(msg, parameters_, last_joint_state_, "yaml");
       }
 
-      void init_parameters()
+      void WholeBodyController::init_parameters()
       {
         parameters_.nWSR = readParam<int>(nh_, "nWSR");
         // TODO: extract joint_names from controller description
@@ -405,7 +358,7 @@ namespace giskard_examples
         parameters_.controller_types = {"cart_cart", "joint_cart", "cart_joint", "joint_joint", "yaml"};
       }
 
-      void init_controller_contexts()
+      void WholeBodyController::init_controller_contexts()
       {
         std::map<std::string, std::string> controller_descriptions =
           read_controller_descriptions();
@@ -431,7 +384,7 @@ namespace giskard_examples
         }
       }
 
-      std::map<std::string, std::string> read_controller_descriptions()
+      std::map<std::string, std::string> WholeBodyController::read_controller_descriptions()
       {
         std::map<std::string, std::string> result = 
           readParam< std::map<std::string, std::string> >(nh_, "controller_descriptions");
@@ -442,22 +395,27 @@ namespace giskard_examples
         return result;
       }
 
-      void process_first_joint_state(const sensor_msgs::JointState& msg)
+      void WholeBodyController::process_first_joint_state(const sensor_msgs::JointState& msg)
       {
-        start_controller(contexts_.at("joint_joint"), 
-            init_joint_joint_command(msg), msg, "joint_joint");
-        start_controller(contexts_.at("cart_joint"), 
-            init_cart_joint_command(msg), msg, "cart_joint");
-        start_controller(contexts_.at("joint_cart"), 
-            init_joint_cart_command(msg), msg, "joint_cart");
-        start_controller(contexts_.at("cart_cart"), 
-            init_cart_cart_command(msg), msg, "cart_cart");
+        contexts_.at("joint_joint").start_controller( 
+            init_joint_joint_command(msg, parameters_), 
+            parameters_, msg, "joint_joint");
+        contexts_.at("cart_joint").start_controller(
+            init_cart_joint_command(msg, eval_fk(parameters_.l_fk_name, msg), parameters_), 
+            parameters_, msg, "cart_joint");
+        contexts_.at("joint_cart").start_controller(
+            init_joint_cart_command(msg, eval_fk(parameters_.r_fk_name, msg), parameters_),
+            parameters_, msg, "joint_cart");
+        contexts_.at("cart_cart").start_controller(
+            init_cart_cart_command(msg.header.stamp, parameters_.frame_id,
+              eval_fk(parameters_.l_fk_name, msg), eval_fk(parameters_.r_fk_name, msg)), 
+            parameters_, msg, "cart_cart");
         state_ = WholeBodyControllerState::running;
         current_controller_ = "cart_cart";
         goal_sub_ = nh_.subscribe("goal", 1, &WholeBodyController::command_callback, this);
       }
 
-      void process_regular_joint_state(const sensor_msgs::JointState& msg)
+      void WholeBodyController::process_regular_joint_state(const sensor_msgs::JointState& msg)
       {
         ControllerContext& context = get_current_context();
         if (context.update(msg, parameters_.nWSR))
@@ -469,7 +427,7 @@ namespace giskard_examples
           throw std::runtime_error("Update of controller '" + current_controller_ + "' failed.");
       }
 
-      void process_watchdog(const std_msgs::Header& header)
+      void WholeBodyController::process_watchdog(const std_msgs::Header& header)
       {
         giskard_msgs::ControllerFeedback feedback;
         giskard_msgs::SemanticFloat64Array command;
@@ -488,25 +446,9 @@ namespace giskard_examples
         velocity_pub_.publish(command);
       }
 
-      giskard_msgs::ArmCommand init_arm_joint_command(const sensor_msgs::JointState& msg, const std::vector<std::string>& joint_names)
+      KDL::Frame WholeBodyController::eval_fk(const std::string& fk_name, 
+          const sensor_msgs::JointState& msg)
       {
-        giskard_msgs::ArmCommand result;
-        result.type = giskard_msgs::ArmCommand::JOINT_GOAL;
-        for (size_t i=0; i<joint_names.size(); ++i)
-          for (size_t j=0; j<msg.name.size(); ++j)
-            if (msg.name[j].compare(joint_names[i]) == 0)
-              result.goal_configuration.push_back(msg.position[j]);
-
-        return result;
-      }
-      
-      giskard_msgs::ArmCommand init_arm_cart_command(const sensor_msgs::JointState& msg, 
-          const std::string& frame_id, const std::string& fk_name)
-      {
-        giskard_msgs::ArmCommand result;
-        result.type = giskard_msgs::ArmCommand::CARTESIAN_GOAL;
-        result.goal_pose.header.stamp = msg.header.stamp;
-        result.goal_pose.header.frame_id = frame_id;
         const giskard::QPController& controller = get_context("cart_cart").get_controller();
         KDL::Expression<KDL::Frame>::Ptr fk = controller.get_scope().find_frame_expression(fk_name);
         std::set<int> deps;
@@ -515,117 +457,7 @@ namespace giskard_examples
           for (size_t i=0; i<msg.name.size(); ++i)
             if (controller.get_controllable_names()[*it].find(msg.name[i]) == 0)
               fk->setInputValue(*it, msg.position[i]);
-        tf::poseKDLToMsg(fk->value(), result.goal_pose.pose);
-        return result;
+
+        return fk->value();
       }
-
-      giskard_msgs::WholeBodyCommand init_joint_joint_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.right_ee = init_arm_joint_command(msg, parameters_.r_arm_names);
-        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
-        return result;
-      }
-
-      giskard_msgs::WholeBodyCommand init_cart_cart_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.left_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.l_fk_name);
-        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
-        return result;
-      }
-
-      giskard_msgs::WholeBodyCommand init_cart_joint_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
-        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
-        return result;
-      }
-
-      giskard_msgs::WholeBodyCommand init_joint_cart_command (const sensor_msgs::JointState& msg)
-      {
-        giskard_msgs::WholeBodyCommand result;
-        result.left_ee = init_arm_joint_command(msg, parameters_.l_arm_names);
-        result.right_ee = init_arm_cart_command(msg, parameters_.frame_id, parameters_.r_fk_name);
-        return result;
-      }
-
-      void sanity_check(const std::vector<double>& v, const std::vector<std::string>& joint_names, const std::string& name)
-      {
-        if (v.size() != joint_names.size())
-          throw std::runtime_error("Did not find expected number of values for " + name + " joint goal.");
-      }
-         
-      void sanity_check(const geometry_msgs::PoseStamped& msg, const std::string& name)
-      {
-        if(msg.header.frame_id.compare(parameters_.frame_id) != 0)
-          throw std::runtime_error("frame_id of " + name + " goal did not match '" + 
-              parameters_.frame_id +"'.");
-      }
-
-      void sanity_check(const giskard_msgs::ArmCommand& msg, 
-          const std::vector<std::string>& joint_names, const std::string& name)
-      {
-        switch (msg.type)
-        {
-          case giskard_msgs::ArmCommand::JOINT_GOAL:
-            sanity_check(msg.goal_configuration, joint_names,name);
-            break;
-          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
-            sanity_check(msg.goal_pose, name);
-            break;
-          default:
-            throw std::runtime_error("Received command of unknown type for " + name + ".");
-            break;
-        }
-      }
- 
-      void sanity_check(const giskard_msgs::WholeBodyCommand& command)
-      {
-        switch (command.type)
-        {
-          case (giskard_msgs::WholeBodyCommand::STANDARD_CONTROLLER):
-            sanity_check(command.right_ee, parameters_.l_arm_names, "right arm");
-            sanity_check(command.left_ee, parameters_.r_arm_names, "left arm");
-            break;
-          case (giskard_msgs::WholeBodyCommand::YAML_CONTROLLER):
-            break;
-          default:
-            throw std::runtime_error("Received unknown type for whole-body controller.");
-        }
-      }
-
-      void start_controller(ControllerContext& context, 
-          const giskard_msgs::WholeBodyCommand& command,
-          const sensor_msgs::JointState& msg, 
-          const std::string& name)
-      {
-        sanity_check(command);
-        context.set_command(command);
-        context.set_joint_state(msg);
-
-        if (!context.start(parameters_.nWSR))
-          throw std::runtime_error("Could not start " + name + " controller.");
-      }
-  };
-}
-
-int main(int argc, char **argv)
-{
-  ros::init(argc, argv, "whole_body_controller");
-  ros::NodeHandle nh("~");
-
-  giskard_examples::WholeBodyController wbc(nh);
-  try
-  {
-    wbc.start();
-    ros::spin();
-  }
-  catch (const std::exception& e)
-  {
-    ROS_ERROR("%s", e.what());
-  }
-
-  return 0;
 }

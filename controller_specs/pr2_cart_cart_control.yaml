@@ -132,11 +132,14 @@ scope:
   - pos_thresh: 0.05
   - rot_thresh: 0.1
   - weight_arm_joints: 0.001
+  - weight_torso_joint: 0.01
   - weight_pos_control: 1
   - weight_rot_control: 1
   - weight_elbow_control: 0
   - neg_vel_limit_arm_joints: -0.6
   - pos_vel_limit_arm_joints: 0.6
+  - neg_vel_limit_torso_joint: -0.05
+  - pos_vel_limit_torso_joint: 0.05
 
   # definition EE goals and control laws
   # left arm position
