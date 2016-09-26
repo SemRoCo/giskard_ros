@@ -171,9 +171,18 @@ namespace giskard_examples
           return false;
       }
 
-      bool ControllerContext::start(int nWSR)
+      void ControllerContext::start_controller(
+          const giskard_msgs::WholeBodyCommand& command,
+          const WholeBodyControllerParams& params,
+          const sensor_msgs::JointState& msg, 
+          const std::string& name)
       {
-        return controller_.start(state_, nWSR);
+        sanity_check(command, params);
+        set_command(command);
+        set_joint_state(msg);
+
+        if (!controller_.start(state_, params.nWSR))
+          throw std::runtime_error("Could not start " + name + " controller.");
       }
 
       void ControllerContext::set_joint_state(const sensor_msgs::JointState& msg)
@@ -332,7 +341,7 @@ namespace giskard_examples
                 "' and controllable '" + controller.get_controllable_names()[i] + 
                 "' did not match.");
         get_current_context().set_controller(controller);
-        start_controller(get_current_context(), msg, last_joint_state_, "yaml");
+        get_current_context().start_controller(msg, parameters_, last_joint_state_, "yaml");
       }
 
       void WholeBodyController::init_parameters()
@@ -388,18 +397,19 @@ namespace giskard_examples
 
       void WholeBodyController::process_first_joint_state(const sensor_msgs::JointState& msg)
       {
-        start_controller(contexts_.at("joint_joint"), 
-            init_joint_joint_command(msg, parameters_), msg, "joint_joint");
-        start_controller(contexts_.at("cart_joint"), 
+        contexts_.at("joint_joint").start_controller( 
+            init_joint_joint_command(msg, parameters_), 
+            parameters_, msg, "joint_joint");
+        contexts_.at("cart_joint").start_controller(
             init_cart_joint_command(msg, eval_fk(parameters_.l_fk_name, msg), parameters_), 
-            msg, "cart_joint");
-        start_controller(contexts_.at("joint_cart"), 
+            parameters_, msg, "cart_joint");
+        contexts_.at("joint_cart").start_controller(
             init_joint_cart_command(msg, eval_fk(parameters_.r_fk_name, msg), parameters_),
-            msg, "joint_cart");
-        start_controller(contexts_.at("cart_cart"), 
+            parameters_, msg, "joint_cart");
+        contexts_.at("cart_cart").start_controller(
             init_cart_cart_command(msg.header.stamp, parameters_.frame_id,
               eval_fk(parameters_.l_fk_name, msg), eval_fk(parameters_.r_fk_name, msg)), 
-            msg, "cart_cart");
+            parameters_, msg, "cart_cart");
         state_ = WholeBodyControllerState::running;
         current_controller_ = "cart_cart";
         goal_sub_ = nh_.subscribe("goal", 1, &WholeBodyController::command_callback, this);
@@ -449,18 +459,5 @@ namespace giskard_examples
               fk->setInputValue(*it, msg.position[i]);
 
         return fk->value();
-      }
-      
-      void WholeBodyController::start_controller(ControllerContext& context, 
-          const giskard_msgs::WholeBodyCommand& command,
-          const sensor_msgs::JointState& msg, 
-          const std::string& name)
-      {
-        sanity_check(command, parameters_);
-        context.set_command(command);
-        context.set_joint_state(msg);
-
-        if (!context.start(parameters_.nWSR))
-          throw std::runtime_error("Could not start " + name + " controller.");
       }
 }

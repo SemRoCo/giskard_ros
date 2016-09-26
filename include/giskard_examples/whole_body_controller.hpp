@@ -34,6 +34,15 @@
 
 namespace giskard_examples
 {
+  class WholeBodyControllerParams
+  {
+    public:
+      std::string frame_id, l_fk_name, r_fk_name;
+      std::vector< std::string > joint_names, l_arm_names, r_arm_names;
+      std::set< std::string > controller_types;
+      int nWSR;
+  };
+
   class ControllerContext
   {
     private:
@@ -51,7 +60,10 @@ namespace giskard_examples
 
       bool update(const sensor_msgs::JointState& msg, int nWSR);
 
-      bool start(int nWSR);
+      void start_controller(const giskard_msgs::WholeBodyCommand& command,
+          const WholeBodyControllerParams& params,
+          const sensor_msgs::JointState& msg, 
+          const std::string& name);
 
       const giskard::QPController& get_controller() const;
 
@@ -60,15 +72,6 @@ namespace giskard_examples
       const giskard_msgs::ControllerFeedback& get_feedback() const;
 
       const giskard_msgs::SemanticFloat64Array& get_vel_command() const;
-  };
-
-  class WholeBodyControllerParams
-  {
-    public:
-      std::string frame_id, l_fk_name, r_fk_name;
-      std::vector< std::string > joint_names, l_arm_names, r_arm_names;
-      std::set< std::string > controller_types;
-      int nWSR;
   };
 
   enum class WholeBodyControllerState { constructed, started, running };
@@ -128,11 +131,6 @@ namespace giskard_examples
       void process_watchdog(const std_msgs::Header& header);
 
       KDL::Frame eval_fk(const std::string& fk_name, const sensor_msgs::JointState& msg);
-
-      void start_controller(ControllerContext& context, 
-          const giskard_msgs::WholeBodyCommand& command,
-          const sensor_msgs::JointState& msg, 
-          const std::string& name);
   };
 }
 
