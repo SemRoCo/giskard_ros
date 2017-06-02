@@ -5,7 +5,7 @@
 - git: 
     local-name: expressiongraph
     uri: https://github.com/SemRoCo/expressiongraph.git
-    version: fmod-new-feature
+    version: master
 - git: 
     local-name: giskard_core
     uri: https://github.com/SemRoCo/giskard_core.git
