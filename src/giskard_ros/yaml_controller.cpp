@@ -1,11 +1,11 @@
 /*
-* Copyright (C) 2015, 2016 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
-* Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2015-2017 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
+*                         Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -24,20 +24,30 @@
 #include <ros/package.h>
 #include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <std_msgs/Float64MultiArray.h>
+#include <std_msgs/String.h>
 #include <yaml-cpp/yaml.h>
-#include <giskard/giskard.hpp>
+#include <giskard_core/giskard_core.hpp>
 #include <kdl_conversions/kdl_msg.h>
 #include <boost/lexical_cast.hpp>
 
 int nWSR_;
-giskard::QPController controller_;
+giskard::core::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
 ros::Subscriber js_sub_;
+ros::Publisher cmd_pub_;
 Eigen::VectorXd state_;
 bool controller_started_;
-std::string frame_id_;
+std_msgs::Float64MultiArray cmd_msg_;
+
+void print_eigen(const Eigen::VectorXd& command)
+{
+  std::string cmd_str = " ";
+  for(size_t i=0; i<command.rows(); ++i)
+    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
+  ROS_DEBUG("Command: (%s)", cmd_str.c_str());
+}
 
 void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
 {
@@ -64,56 +74,35 @@ void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
     {
       std_msgs::Float64 command;
       command.data = commands[i];
+      cmd_msg_.data[i] = commands[i];
       vel_controllers_[i].publish(command);
     }
+    cmd_pub_.publish(cmd_msg_);
   }
   else
   {
-    ROS_WARN("Update failed.");
-    // TODO: remove or change to ros_debug
-    std::cout << "State " << state_ << std::endl;
+    ROS_ERROR("Update failed. Stopping controller.");
+    controller_started_ = false;
+    print_eigen(state_);
   }
 }
 
-void print_eigen(const Eigen::VectorXd& command)
+void goal_callback(const std_msgs::String::ConstPtr& msg)
 {
-  std::string cmd_str = " ";
-  for(size_t i=0; i<command.rows(); ++i)
-    cmd_str += boost::lexical_cast<std::string>(command[i]) + " ";
-  ROS_INFO("Command: (%s)", cmd_str.c_str());
-}
+  YAML::Node node = YAML::Load(msg->data);
+  giskard::core::QPControllerSpec spec = node.as< giskard::core::QPControllerSpec >();
+  controller_ = giskard::core::generate(spec);
+  controller_started_ = false;
 
-void goal_callback(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-  if(msg->header.frame_id.compare(frame_id_) != 0)
+  if (controller_.start(state_, nWSR_))
   {
-    ROS_WARN("frame_id of goal did not match expected '%s'. Ignoring goal", 
-        frame_id_.c_str());
-    return;
+    ROS_INFO("Controller started.");
+    controller_started_ = true;
   }
-
-  // copying over goal
-  state_[joint_names_.size() + 0] = msg->pose.position.x;
-  state_[joint_names_.size() + 1] = msg->pose.position.y;
-  state_[joint_names_.size() + 2] = msg->pose.position.z;
-
-  KDL::Rotation rot;
-  tf::quaternionMsgToKDL(msg->pose.orientation, rot);
-  rot.GetEulerZYX(state_[joint_names_.size() + 3], state_[joint_names_.size() + 4], 
-      state_[joint_names_.size() + 5]);
-
-  if (!controller_started_)
+  else
   {
-    if (controller_.start(state_, nWSR_))
-    {
-      ROS_INFO("Controller started.");
-      controller_started_ = true;
-    }
-    else
-    {
-      ROS_ERROR("Couldn't start controller.");
-      print_eigen(state_);
-    }
+    ROS_ERROR("Couldn't start controller. Ignoring goal.");
+    print_eigen(state_);
   }
 }
 
@@ -122,35 +111,22 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "single_pose_controller");
   ros::NodeHandle nh("~");
 
-  nh.param("nWSR", nWSR_, 10);
+  nh.param("nWSR", nWSR_, 20);
 
   std::string controller_description;
-  if (!nh.getParam("controller_description", controller_description))
-  {
-    ROS_ERROR("Parameter 'controller_description' not found in namespace '%s'.", nh.getNamespace().c_str());
-    return 0;
-  }
-
   if (!nh.getParam("joint_names", joint_names_))
   {
     ROS_ERROR("Parameter 'joint_names' not found in namespace '%s'.", nh.getNamespace().c_str());
     return 0;
   }
 
-  if (!nh.getParam("frame_id", frame_id_))
-  {
-    ROS_ERROR("Parameter 'frame_id' not found in namespace '%s'.", nh.getNamespace().c_str());
-    return 0;
-  }
-
-  YAML::Node node = YAML::Load(controller_description);
-  giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
-  controller_ = giskard::generate(spec);
-  state_ = Eigen::VectorXd::Zero(joint_names_.size() + 6);
-  controller_started_ = false;
-
   for (std::vector<std::string>::iterator it = joint_names_.begin(); it != joint_names_.end(); ++it)
     vel_controllers_.push_back(nh.advertise<std_msgs::Float64>("/" + it->substr(0, it->size() - 6) + "_velocity_controller/command", 1));
+
+  cmd_pub_ = nh.advertise<std_msgs::Float64MultiArray>("cmd", 1);
+  cmd_msg_.data.resize(joint_names_.size());
+
+  state_ = Eigen::VectorXd::Zero(joint_names_.size());
 
   ROS_INFO("Waiting for goal.");
   ros::Subscriber goal_sub = nh.subscribe("goal", 0, goal_callback);

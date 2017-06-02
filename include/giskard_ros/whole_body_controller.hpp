@@ -1,11 +1,11 @@
 /*
-* Copyright (C) 2015, 2016 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
-* Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2015-2016 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
+*               2015-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -24,15 +24,15 @@
 #define __GISKARD_WHOLE_BODY_CONTROLLER_HPP__
 
 #include <ros/ros.h>
-#include <giskard/giskard.hpp>
+#include <giskard_core/giskard_core.hpp>
 #include <sensor_msgs/JointState.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <giskard_msgs/SemanticFloat64Array.h>
 // TODO: get rid of watchdog because people hate it
-#include <giskard_examples/watchdog.hpp>
+#include <giskard_ros/watchdog.hpp>
 
-namespace giskard_examples
+namespace giskard { namespace ros
 {
   class WholeBodyControllerParams
   {
@@ -46,13 +46,13 @@ namespace giskard_examples
   class ControllerContext
   {
     private:
-      giskard::QPController controller_;
+      giskard::core::QPController controller_;
       Eigen::VectorXd state_;
       giskard_msgs::ControllerFeedback feedback_;
       giskard_msgs::SemanticFloat64Array vel_command_;
 
     public:
-      void set_controller(const giskard::QPController& controller);
+      void set_controller(const giskard::core::QPController& controller);
 
       void set_joint_state(const sensor_msgs::JointState& msg);
 
@@ -65,7 +65,7 @@ namespace giskard_examples
           const sensor_msgs::JointState& msg, 
           const std::string& name);
 
-      const giskard::QPController& get_controller() const;
+      const giskard::core::QPController& get_controller() const;
 
       const giskard_msgs::WholeBodyCommand& get_command() const;
 
@@ -132,6 +132,6 @@ namespace giskard_examples
 
       KDL::Frame eval_fk(const std::string& fk_name, const sensor_msgs::JointState& msg);
   };
-}
+}}
 
 #endif // __GISKARD_WHOLE_BODY_CONTROLLER__HPP

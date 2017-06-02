@@ -1,9 +1,9 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2
 * of the License, or (at your option) any later version.
@@ -21,7 +21,7 @@
 #ifndef __GISKARD_WATCHDOG_HPP__
 #define __GISKARD_WATCHDOG_HPP__
 
-namespace giskard_examples
+namespace giskard { namespace ros
 {
   template<class Time, class Duration>
   class Watchdog
@@ -55,6 +55,6 @@ namespace giskard_examples
       Duration period_;
       Time last_kick_;
   };
-}
+}}
 
 #endif // __GISKARD_WATCHDOG__HPP

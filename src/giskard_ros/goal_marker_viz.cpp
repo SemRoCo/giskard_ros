@@ -1,10 +1,10 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -105,7 +105,7 @@ std::vector<visualization_msgs::Marker> to_markers(const giskard_msgs::WholeBody
   return result;
 }
 
-namespace giskard_examples
+namespace giskard::ros
 {
   class GoalMarkerViz
   {
@@ -131,14 +131,14 @@ namespace giskard_examples
         pub_.publish(out_msg);
       }
   };
-}
+}}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "goal_marker_viz");
   ros::NodeHandle nh("~");
 
-  giskard_examples::GoalMarkerViz viz(nh);
+  giskard::ros::GoalMarkerViz viz(nh);
 
   viz.start();
 

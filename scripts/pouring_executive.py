@@ -85,7 +85,7 @@ if __name__ == '__main__':
     if len(args) == 2:
         experiment_num = args[1]
         r = rospkg.RosPack()
-        package_path = r.get_path('giskard_examples')
+        package_path = r.get_path('giskard_ros')
         experiment_path = "/experiments/" + experiment_num + "/"
         path = package_path + experiment_path
         with open(path + "PR2_experiment.yaml", 'r') as stream:

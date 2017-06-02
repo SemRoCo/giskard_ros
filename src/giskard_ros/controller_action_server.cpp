@@ -1,10 +1,10 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -24,14 +24,14 @@
 #include <ros/ros.h>
 #include <tf2_ros/buffer_client.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <giskard_examples/utils.hpp>
-#include <giskard_examples/ros_utils.hpp>
+#include <giskard_ros/utils.hpp>
+#include <giskard_ros/ros_utils.hpp>
 #include <actionlib/server/simple_action_server.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_msgs/ControllerFeedback.h>
 #include <algorithm>
 
-namespace giskard_examples
+namespace giskard { namespace ros
 {
   inline std::map<std::string, double> toIndex(const std::vector<giskard_msgs::SemanticFloat64>& msgs)
   {
@@ -343,11 +343,11 @@ namespace giskard_examples
         last_command_ = init_command;
       }
   };
-}
+}}
 
 int main(int argc, char **argv)
 {
-  using namespace giskard_examples;
+  using namespace giskard::ros;
   ros::init(argc, argv, "controller_action_server");
   ros::NodeHandle nh("~");
 

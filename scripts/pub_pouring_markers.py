@@ -72,10 +72,10 @@ def table_marker_publisher():
         msg = MarkerArray()
         msg.markers = make_table_markers()
         if cup_on_table:
-            msg.markers.append(make_mesh_marker("base_link", len(msg.markers) + 1, Pose(Point(x=0.4, z=0.71), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/cup_eco_orange.dae", frame_locked=True))
+            msg.markers.append(make_mesh_marker("base_link", len(msg.markers) + 1, Pose(Point(x=0.4, z=0.71), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_ros/object_meshes/cup_eco_orange.dae", frame_locked=True))
         else:
-            msg.markers.append(make_mesh_marker("l_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(x=-0.01, z=-0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/cup_eco_orange.dae", frame_locked=True))
-        msg.markers.append(make_mesh_marker("r_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(x=-0.01, z=0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_examples/object_meshes/sigg_bottle.dae", frame_locked=True))
+            msg.markers.append(make_mesh_marker("l_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(x=-0.01, z=-0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_ros/object_meshes/cup_eco_orange.dae", frame_locked=True))
+        msg.markers.append(make_mesh_marker("r_gripper_tool_frame", len(msg.markers) + 1, Pose(Point(x=-0.01, z=0.02), Quaternion(z=1.0)), Vector3(1, 1, 1), white(), "package://giskard_ros/object_meshes/sigg_bottle.dae", frame_locked=True))
 #        msg.markers.append(make_cylinder_marker("cup_bottom_frame", len(msg.markers) +1, Pose(position=Point(z=0.07)), Vector3(0.085, 0.085, 0.14), transparent_red(), True))
         pub.publish(msg)
 

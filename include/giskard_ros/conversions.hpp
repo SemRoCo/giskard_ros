@@ -1,9 +1,9 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2
 * of the License, or (at your option) any later version.
@@ -26,8 +26,11 @@
 #include <string>
 #include <Eigen/Dense>
 #include <kdl_conversions/kdl_msg.h>
+#include <ros/ros.h>
 
-namespace giskard_examples
+namespace giskard 
+{
+  namespace ros
 {
   inline Eigen::VectorXd to_eigen(const std::vector<double>& v)
   {
@@ -61,6 +64,7 @@ namespace giskard_examples
     return result;
   }
 
+}
 }
 
 #endif // __GISKARD_CONVERSIONS__HPP

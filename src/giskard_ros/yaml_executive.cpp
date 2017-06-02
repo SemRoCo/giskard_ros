@@ -1,10 +1,10 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -22,10 +22,10 @@
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <yaml-cpp/yaml.h>
-#include <giskard_examples/ros_utils.hpp>
+#include <giskard_ros/ros_utils.hpp>
 #include <giskard_msgs/WholeBodyAction.h>
 
-namespace giskard_examples
+namespace giskard { namespace ros
 {
   std::map<std::string, double> parse_threshold_file(const std::string& file_content)
   {
@@ -66,8 +66,8 @@ namespace giskard_examples
           readParam< std::vector<std::string> >(nh_, "controller_filenames");
         std::vector<std::string> threshold_filenames=
           readParam< std::vector<std::string> >(nh_, "threshold_filenames");
-        controller_specs_ = read_ros_files(controller_filenames, "giskard_examples");
-        std::vector<std::string> threshold_files = read_ros_files(threshold_filenames, "giskard_examples");
+        controller_specs_ = read_ros_files(controller_filenames, "giskard_ros");
+        std::vector<std::string> threshold_files = read_ros_files(threshold_filenames, "giskard_ros");
         for (size_t i=0; i<threshold_files.size(); ++i)
           convergence_thresholds_.push_back(parse_threshold_file(threshold_files[i]));
       }
@@ -101,14 +101,14 @@ namespace giskard_examples
       }
   };
 
-}
+}}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "yaml_executive");
   ros::NodeHandle nh("~");
 
-  giskard_examples::YAMLExecutive executive(nh, "controller_action_server/move");
+  giskard::ros::YAMLExecutive executive(nh, "controller_action_server/move");
 
   try
   {

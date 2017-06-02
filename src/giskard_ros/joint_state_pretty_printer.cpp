@@ -1,10 +1,10 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -21,9 +21,9 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/JointState.h>
-#include <giskard_examples/ros_utils.hpp>
+#include <giskard_ros/ros_utils.hpp>
 
-namespace giskard_examples
+namespace giskard { namespace ros
 {
   class JointStatePrettyPrinter
   {
@@ -58,14 +58,14 @@ namespace giskard_examples
       }
   };
 
-}
+}}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "joint_state_pretty_printer");
   ros::NodeHandle nh("~");
 
-  giskard_examples::JointStatePrettyPrinter printer(nh);
+  giskard::ros::JointStatePrettyPrinter printer(nh);
 
   try
   {

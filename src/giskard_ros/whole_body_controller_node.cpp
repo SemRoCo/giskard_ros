@@ -1,11 +1,11 @@
 /*
-* Copyright (C) 2015, 2016 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
-* Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2015-2017 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
+*                         Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -20,14 +20,14 @@
 * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-#include <giskard_examples/whole_body_controller.hpp>
+#include <giskard_ros/whole_body_controller.hpp>
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "whole_body_controller");
   ros::NodeHandle nh("~");
 
-  giskard_examples::WholeBodyController wbc(nh);
+  giskard::ros::WholeBodyController wbc(nh);
   try
   {
     wbc.start();

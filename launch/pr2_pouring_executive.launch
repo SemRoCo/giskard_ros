@@ -25,13 +25,13 @@
   <arg name="models_name" if="$(arg cup_on_table)"
        default="executive_cup_on_table.yaml" />
 
-  <node pkg="giskard_examples" type="yaml_executive" name="yaml_executive" 
+  <node pkg="giskard_ros" type="yaml_executive" name="yaml_executive" 
         output="screen" >
     <rosparam command="load" 
-              file="$(find giskard_examples)/$(arg models_path)/$(arg models_name)" />
+              file="$(find giskard_ros)/$(arg models_path)/$(arg models_name)" />
   </node>
 
-  <node pkg="giskard_examples" type="pub_pouring_markers.py" name="marker_publisher" >
+  <node pkg="giskard_ros" type="pub_pouring_markers.py" name="marker_publisher" >
     <param name="cup_on_table" value="$(arg cup_on_table)" />
   </node>
 </launch>

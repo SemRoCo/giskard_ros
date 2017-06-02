@@ -1,11 +1,11 @@
 /*
-* Copyright (C) 2015, 2016 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
-* Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2015-2017 Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
+*                         Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2 
 * of the License, or (at your option) any later version.  
@@ -28,20 +28,22 @@
 #include <giskard_msgs/ControllerFeedback.h>
 #include <giskard_msgs/SemanticFloat64Array.h>
 #include <yaml-cpp/yaml.h>
-#include <giskard/giskard.hpp>
+#include <giskard_core/giskard_core.hpp>
 #include <kdl_conversions/kdl_msg.h>
 #include <boost/lexical_cast.hpp>
-#include <giskard_examples/ros_utils.hpp>
-#include <giskard_examples/utils.hpp>
-#include <giskard_examples/watchdog.hpp>
+#include <giskard_ros/ros_utils.hpp>
+#include <giskard_ros/utils.hpp>
+#include <giskard_ros/watchdog.hpp>
 
-#include <giskard_examples/command_utils.hpp>
-#include <giskard_examples/conversions.hpp>
-#include <giskard_examples/whole_body_controller.hpp>
+#include <giskard_ros/command_utils.hpp>
+#include <giskard_ros/conversions.hpp>
+#include <giskard_ros/whole_body_controller.hpp>
 
-namespace giskard_examples
+namespace giskard
 {
-      void ControllerContext::set_controller(const giskard::QPController& controller)
+  namespace ros
+  {
+      void ControllerContext::set_controller(const giskard::core::QPController& controller)
       {
         controller_ = controller;
 
@@ -57,7 +59,7 @@ namespace giskard_examples
         state_ = Eigen::VectorXd::Zero(controller_.num_observables());
       }
 
-      const giskard::QPController& ControllerContext::get_controller() const
+      const giskard::core::QPController& ControllerContext::get_controller() const
       {
         return controller_;
       }
@@ -65,7 +67,7 @@ namespace giskard_examples
       void ControllerContext::set_command(const giskard_msgs::WholeBodyCommand& command)
       {
         feedback_.current_command_hash = 
-          giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(command);
+          giskard_ros::calculateHash<giskard_msgs::WholeBodyCommand>(command);
         feedback_.current_command = command;
 
         feedback_.convergence_features.clear();
@@ -234,7 +236,7 @@ namespace giskard_examples
       void WholeBodyController::command_callback(const giskard_msgs::WholeBodyCommand::ConstPtr& msg)
       {
         size_t new_command_hash = 
-          giskard_examples::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
+          giskard_ros::calculateHash<giskard_msgs::WholeBodyCommand>(*msg);
       
         if(get_current_context().get_feedback().current_command_hash == new_command_hash)
         {
@@ -333,8 +335,8 @@ namespace giskard_examples
       void WholeBodyController::init_and_start_yaml_controller(const giskard_msgs::WholeBodyCommand& msg)
       {
         YAML::Node node = YAML::Load(msg.yaml_spec);
-        giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
-        giskard::QPController controller = giskard::generate(spec);
+        giskard::core::QPControllerSpec spec = node.as< giskard::core::QPControllerSpec >();
+        giskard::core::QPController controller = giskard::core::generate(spec);
         for (size_t i=0; i<parameters_.joint_names.size(); ++i)
           if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
             throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
@@ -369,8 +371,8 @@ namespace giskard_examples
           if (it->compare("yaml") != 0)
           {
             YAML::Node node = YAML::Load(controller_descriptions.at(*it));
-            giskard::QPControllerSpec spec = node.as< giskard::QPControllerSpec >();
-            giskard::QPController controller = giskard::generate(spec);
+            giskard::core::QPControllerSpec spec = node.as< giskard::core::QPControllerSpec >();
+            giskard::core::QPController controller = giskard::core::generate(spec);
             for (size_t i=0; i<parameters_.joint_names.size(); ++i)
               if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
                 throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
@@ -449,7 +451,7 @@ namespace giskard_examples
       KDL::Frame WholeBodyController::eval_fk(const std::string& fk_name, 
           const sensor_msgs::JointState& msg)
       {
-        const giskard::QPController& controller = get_context("cart_cart").get_controller();
+        const giskard::core::QPController& controller = get_context("cart_cart").get_controller();
         KDL::Expression<KDL::Frame>::Ptr fk = controller.get_scope().find_frame_expression(fk_name);
         std::set<int> deps;
         fk->getDependencies(deps);
@@ -460,4 +462,5 @@ namespace giskard_examples
 
         return fk->value();
       }
+  }
 }

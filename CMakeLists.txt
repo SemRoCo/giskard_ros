@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(giskard_examples)
+project(giskard_ros)
 set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
 
 find_package(catkin REQUIRED COMPONENTS 
   roscpp 
   roslib 
-  giskard 
+  giskard_core 
   tf2_ros
   tf2_geometry_msgs
   interactive_markers 
@@ -22,7 +22,7 @@ find_library(YAML_CPP_LIBRARIES NAMES yaml-cpp)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS roscpp roslib giskard tf2_ros tf2_geometry_msgs interactive_markers geometry_msgs giskard_msgs kdl_conversions
+  CATKIN_DEPENDS roscpp roslib giskard_core tf2_ros tf2_geometry_msgs interactive_markers geometry_msgs giskard_msgs kdl_conversions
   DEPENDS yaml_cpp
 )
 

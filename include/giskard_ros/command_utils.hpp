@@ -1,9 +1,9 @@
 /*
-* Copyright (C) 2016 Georg Bartels <georg.bartels@cs.uni-bremen.de>
+* Copyright (C) 2016-2017 Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2
 * of the License, or (at your option) any later version.
@@ -24,10 +24,10 @@
 #include <vector>
 #include <string>
 #include <exception>
-#include <giskard_examples/conversions.hpp>
-#include <giskard_examples/whole_body_controller.hpp>
+#include <giskard_ros/conversions.hpp>
+#include <giskard_ros/whole_body_controller.hpp>
 
-namespace giskard_examples
+namespace giskard { namespace ros
 {
   inline void sanity_check(const std::vector<double>& v, 
       const std::vector<std::string>& joint_names, const std::string& name)
@@ -63,7 +63,7 @@ namespace giskard_examples
   }
 
   inline void sanity_check(const giskard_msgs::WholeBodyCommand& command,
-      const giskard_examples::WholeBodyControllerParams& params)
+      const giskard_ros::WholeBodyControllerParams& params)
   {
     switch (command.type)
     {
@@ -140,6 +140,6 @@ namespace giskard_examples
     return result;
   }
 
-}
+}}
 
 #endif // __GISKARD_COMMANDS_UTILS__HPP

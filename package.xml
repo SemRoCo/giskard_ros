@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>giskard_examples</name>
+  <name>giskard_ros</name>
   <version>0.0.3</version>
-  <description>Example use cases for the giskard package</description>
+  <description>
+    Various ROS nodes that use the giskard library, a framework for
+    constraint- and optimization-based robot motion control.
+  </description>
 
   <maintainer email="georg.bartels@cs.uni-bremen.de">Georg Bartels</maintainer>
   <author email="georg.bartels@cs.uni-bremen.de">Georg Bartels</author>
@@ -12,7 +15,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>yaml-cpp</depend>
-  <depend>giskard</depend>
+  <depend>giskard_core</depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>
   <depend>roslib</depend>

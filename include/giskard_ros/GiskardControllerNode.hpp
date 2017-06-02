@@ -1,11 +1,11 @@
 /*
-* Copyright (C) 2015, 2016 Mihai Pomarlan <blandc@cs.uni-bremen.de>
-* Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
-* Georg Bartels <georg.bartels@cs.uni-bremen.de>,*
+* Copyright (C) 2015-2017 Mihai Pomarlan <blandc@cs.uni-bremen.de>
+*                         Jannik Buckelo <jannikbu@cs.uni-bremen.de>,
+*                         Georg Bartels <georg.bartels@cs.uni-bremen.de>
 *
-* This file is part of giskard_examples.
+* This file is part of giskard.
 *
-* giskard_examples is free software; you can redistribute it and/or
+* giskard is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
 * as published by the Free Software Foundation; either version 2
 * of the License, or (at your option) any later version.
@@ -31,7 +31,7 @@
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Point.h>
 #include <yaml-cpp/yaml.h>
-#include <giskard/giskard.hpp>
+#include <giskard_core/giskard_core.hpp>
 
 #include <giskard_msgs/SetEnable.h>
 #include <giskard_msgs/Finished.h>
@@ -80,9 +80,9 @@ private:
             {
                 YAML::Node node = YAML::Load(controller_description);
                 ROS_INFO("Loaded controller description.");
-                spec_ = node.as< giskard::QPControllerSpec >();
+                spec_ = node.as< giskard::core::QPControllerSpec >();
                 ROS_INFO("Parsed controller description.");
-                controller_ = giskard::generate(spec_);
+                controller_ = giskard::core::generate(spec_);
                 ROS_INFO("Generated controller description.");
                 state_ = Eigen::VectorXd::Zero(joint_names_.size() + goalSize_);
                 ROS_INFO("Created a state.");
@@ -206,7 +206,7 @@ private:
     std::string doneTopic_;
     bool isInitialized_;
 
-    giskard::QPController controller_;
+    giskard::core::QPController controller_;
     std::vector<std::string> joint_names_;
     std::vector<std::string> controllable_joint_names_;
     std::vector<ros::Publisher> vel_controllers_;
@@ -216,7 +216,7 @@ private:
 
     ros::ServiceServer enable_service_;
     ros::Subscriber goal_sub_;
-    giskard::QPControllerSpec spec_;
+    giskard::core::QPControllerSpec spec_;
 
     ros::Publisher done_adv_;
 
