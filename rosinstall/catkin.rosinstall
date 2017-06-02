@@ -7,16 +7,16 @@
     uri: https://github.com/SemRoCo/expressiongraph.git
     version: fmod-new-feature
 - git: 
-    local-name: giskard
-    uri: https://github.com/SemRoCo/giskard.git
+    local-name: giskard_core
+    uri: https://github.com/SemRoCo/giskard_core.git
     version: master
 - git: 
     local-name: giskard_msgs
     uri: https://github.com/SemRoCo/giskard_msgs.git
     version: master
 - git: 
-    local-name: giskard_examples
-    uri: https://github.com/SemRoCo/giskard_examples.git
+    local-name: giskard_ros
+    uri: https://github.com/SemRoCo/giskard_ros.git
     version: master
 - git: 
     local-name: iai_naive_kinematics_sim
