@@ -39,11 +39,9 @@
 #include <giskard_ros/conversions.hpp>
 #include <giskard_ros/whole_body_controller.hpp>
 
-namespace giskard
+namespace giskard_ros
 {
-  namespace ros
-  {
-      void ControllerContext::set_controller(const giskard::core::QPController& controller)
+      void ControllerContext::set_controller(const giskard_core::QPController& controller)
       {
         controller_ = controller;
 
@@ -59,7 +57,7 @@ namespace giskard
         state_ = Eigen::VectorXd::Zero(controller_.num_observables());
       }
 
-      const giskard::core::QPController& ControllerContext::get_controller() const
+      const giskard_core::QPController& ControllerContext::get_controller() const
       {
         return controller_;
       }
@@ -335,8 +333,8 @@ namespace giskard
       void WholeBodyController::init_and_start_yaml_controller(const giskard_msgs::WholeBodyCommand& msg)
       {
         YAML::Node node = YAML::Load(msg.yaml_spec);
-        giskard::core::QPControllerSpec spec = node.as< giskard::core::QPControllerSpec >();
-        giskard::core::QPController controller = giskard::core::generate(spec);
+        giskard_core::QPControllerSpec spec = node.as< giskard_core::QPControllerSpec >();
+        giskard_core::QPController controller = giskard_core::generate(spec);
         for (size_t i=0; i<parameters_.joint_names.size(); ++i)
           if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
             throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
@@ -371,8 +369,8 @@ namespace giskard
           if (it->compare("yaml") != 0)
           {
             YAML::Node node = YAML::Load(controller_descriptions.at(*it));
-            giskard::core::QPControllerSpec spec = node.as< giskard::core::QPControllerSpec >();
-            giskard::core::QPController controller = giskard::core::generate(spec);
+            giskard_core::QPControllerSpec spec = node.as< giskard_core::QPControllerSpec >();
+            giskard_core::QPController controller = giskard_core::generate(spec);
             for (size_t i=0; i<parameters_.joint_names.size(); ++i)
               if (controller.get_controllable_names()[i].find(parameters_.joint_names[i]) != 0)
                 throw std::runtime_error("Name of joint '" + parameters_.joint_names[i] + 
@@ -451,7 +449,7 @@ namespace giskard
       KDL::Frame WholeBodyController::eval_fk(const std::string& fk_name, 
           const sensor_msgs::JointState& msg)
       {
-        const giskard::core::QPController& controller = get_context("cart_cart").get_controller();
+        const giskard_core::QPController& controller = get_context("cart_cart").get_controller();
         KDL::Expression<KDL::Frame>::Ptr fk = controller.get_scope().find_frame_expression(fk_name);
         std::set<int> deps;
         fk->getDependencies(deps);
@@ -462,5 +460,4 @@ namespace giskard
 
         return fk->value();
       }
-  }
 }

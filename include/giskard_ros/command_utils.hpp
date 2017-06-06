@@ -27,7 +27,7 @@
 #include <giskard_ros/conversions.hpp>
 #include <giskard_ros/whole_body_controller.hpp>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   inline void sanity_check(const std::vector<double>& v, 
       const std::vector<std::string>& joint_names, const std::string& name)
@@ -140,6 +140,6 @@ namespace giskard { namespace ros
     return result;
   }
 
-}}
+}
 
 #endif // __GISKARD_COMMANDS_UTILS__HPP

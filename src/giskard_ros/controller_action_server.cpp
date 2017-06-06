@@ -31,7 +31,7 @@
 #include <giskard_msgs/ControllerFeedback.h>
 #include <algorithm>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   inline std::map<std::string, double> toIndex(const std::vector<giskard_msgs::SemanticFloat64>& msgs)
   {
@@ -343,11 +343,11 @@ namespace giskard { namespace ros
         last_command_ = init_command;
       }
   };
-}}
+}
 
 int main(int argc, char **argv)
 {
-  using namespace giskard::ros;
+  using namespace giskard_ros;
   ros::init(argc, argv, "controller_action_server");
   ros::NodeHandle nh("~");
 

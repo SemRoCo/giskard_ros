@@ -80,9 +80,9 @@ private:
             {
                 YAML::Node node = YAML::Load(controller_description);
                 ROS_INFO("Loaded controller description.");
-                spec_ = node.as< giskard::core::QPControllerSpec >();
+                spec_ = node.as< giskard_core::QPControllerSpec >();
                 ROS_INFO("Parsed controller description.");
-                controller_ = giskard::core::generate(spec_);
+                controller_ = giskard_core::generate(spec_);
                 ROS_INFO("Generated controller description.");
                 state_ = Eigen::VectorXd::Zero(joint_names_.size() + goalSize_);
                 ROS_INFO("Created a state.");
@@ -206,7 +206,7 @@ private:
     std::string doneTopic_;
     bool isInitialized_;
 
-    giskard::core::QPController controller_;
+    giskard_core::QPController controller_;
     std::vector<std::string> joint_names_;
     std::vector<std::string> controllable_joint_names_;
     std::vector<ros::Publisher> vel_controllers_;
@@ -216,7 +216,7 @@ private:
 
     ros::ServiceServer enable_service_;
     ros::Subscriber goal_sub_;
-    giskard::core::QPControllerSpec spec_;
+    giskard_core::QPControllerSpec spec_;
 
     ros::Publisher done_adv_;
 

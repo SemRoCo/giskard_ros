@@ -23,7 +23,7 @@
 #include <sensor_msgs/JointState.h>
 #include <giskard_ros/ros_utils.hpp>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   class JointStatePrettyPrinter
   {
@@ -58,14 +58,14 @@ namespace giskard { namespace ros
       }
   };
 
-}}
+}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "joint_state_pretty_printer");
   ros::NodeHandle nh("~");
 
-  giskard::ros::JointStatePrettyPrinter printer(nh);
+  giskard_ros::JointStatePrettyPrinter printer(nh);
 
   try
   {

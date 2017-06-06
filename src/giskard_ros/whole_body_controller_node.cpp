@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "whole_body_controller");
   ros::NodeHandle nh("~");
 
-  giskard::ros::WholeBodyController wbc(nh);
+  giskard_ros::WholeBodyController wbc(nh);
   try
   {
     wbc.start();

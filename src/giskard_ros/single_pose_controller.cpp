@@ -31,7 +31,7 @@
 #include <boost/lexical_cast.hpp>
 
 int nWSR_;
-giskard::core::QPController controller_;
+giskard_core::QPController controller_;
 std::vector<std::string> joint_names_;
 std::vector<ros::Publisher> vel_controllers_;
 ros::Subscriber js_sub_;
@@ -144,8 +144,8 @@ int main(int argc, char **argv)
   }
 
   YAML::Node node = YAML::Load(controller_description);
-  giskard::core::QPControllerSpec spec = node.as< giskard::core::QPControllerSpec >();
-  controller_ = giskard::core::generate(spec);
+  giskard_core::QPControllerSpec spec = node.as< giskard_core::QPControllerSpec >();
+  controller_ = giskard_core::generate(spec);
   state_ = Eigen::VectorXd::Zero(joint_names_.size() + 6);
   controller_started_ = false;
 

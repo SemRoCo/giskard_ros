@@ -23,7 +23,7 @@
 #include <giskard_ros/ros_utils.hpp>
 #include <ros/ros.h>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   class ControllerYamlChecker
   {
@@ -36,21 +36,21 @@ namespace giskard { namespace ros
         std::string filename = readParam<std::string>(nh_, "filename");
         std::string file = read_ros_file(filename, "giskard_ros");
         YAML::Node node = YAML::Load(file);
-        giskard::core::QPControllerSpec spec = node.as<giskard::core::QPControllerSpec>();
-        giskard::core::QPController controller = giskard::core::generate(spec);
+        giskard_core::QPControllerSpec spec = node.as<giskard_core::QPControllerSpec>();
+        giskard_core::QPController controller = giskard_core::generate(spec);
       }
 
     private:
       ros::NodeHandle nh_;
   };
-} }
+}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "check_controller_yaml");
   ros::NodeHandle nh("~");
 
-  giskard::ros::ControllerYamlChecker checker(nh);
+  giskard_ros::ControllerYamlChecker checker(nh);
 
   try
   {

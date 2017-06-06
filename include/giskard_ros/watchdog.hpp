@@ -21,7 +21,7 @@
 #ifndef __GISKARD_WATCHDOG_HPP__
 #define __GISKARD_WATCHDOG_HPP__
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   template<class Time, class Duration>
   class Watchdog
@@ -55,6 +55,6 @@ namespace giskard { namespace ros
       Duration period_;
       Time last_kick_;
   };
-}}
+}
 
 #endif // __GISKARD_WATCHDOG__HPP

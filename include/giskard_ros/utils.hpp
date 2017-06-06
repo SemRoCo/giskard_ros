@@ -25,7 +25,7 @@
 #include <functional>
 #include <string>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   template<class T>
   inline size_t calculateHash(const T& msg)
@@ -36,6 +36,6 @@ namespace giskard { namespace ros
     return hash_fn(ss.str());
   }
 
-}}
+}
 
 #endif // __GISKARD_UTILS__HPP

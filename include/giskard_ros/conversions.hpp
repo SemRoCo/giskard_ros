@@ -28,9 +28,7 @@
 #include <kdl_conversions/kdl_msg.h>
 #include <ros/ros.h>
 
-namespace giskard 
-{
-  namespace ros
+namespace giskard_ros
 {
   inline Eigen::VectorXd to_eigen(const std::vector<double>& v)
   {
@@ -64,7 +62,6 @@ namespace giskard
     return result;
   }
 
-}
 }
 
 #endif // __GISKARD_CONVERSIONS__HPP

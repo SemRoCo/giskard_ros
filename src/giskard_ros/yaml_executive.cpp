@@ -25,7 +25,7 @@
 #include <giskard_ros/ros_utils.hpp>
 #include <giskard_msgs/WholeBodyAction.h>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   std::map<std::string, double> parse_threshold_file(const std::string& file_content)
   {
@@ -101,14 +101,14 @@ namespace giskard { namespace ros
       }
   };
 
-}}
+}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "yaml_executive");
   ros::NodeHandle nh("~");
 
-  giskard::ros::YAMLExecutive executive(nh, "controller_action_server/move");
+  giskard_ros::YAMLExecutive executive(nh, "controller_action_server/move");
 
   try
   {

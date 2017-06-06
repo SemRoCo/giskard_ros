@@ -105,7 +105,7 @@ std::vector<visualization_msgs::Marker> to_markers(const giskard_msgs::WholeBody
   return result;
 }
 
-namespace giskard::ros
+namespace giskard_ros
 {
   class GoalMarkerViz
   {
@@ -131,14 +131,14 @@ namespace giskard::ros
         pub_.publish(out_msg);
       }
   };
-}}
+}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "goal_marker_viz");
   ros::NodeHandle nh("~");
 
-  giskard::ros::GoalMarkerViz viz(nh);
+  giskard_ros::GoalMarkerViz viz(nh);
 
   viz.start();
 

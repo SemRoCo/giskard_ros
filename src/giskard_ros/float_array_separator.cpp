@@ -26,7 +26,7 @@
 #include <std_msgs/Float64.h>
 #include <giskard_ros/ros_utils.hpp>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   class FloatArraySeparator
   {
@@ -62,14 +62,14 @@ namespace giskard { namespace ros
         }
       }
   };
-}}
+}
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "float_array_separator");
   ros::NodeHandle nh("~");
 
-  giskard::ros::FloatArraySeparator separator(nh);
+  giskard_ros::FloatArraySeparator separator(nh);
 
   try
   {

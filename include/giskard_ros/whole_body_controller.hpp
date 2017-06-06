@@ -32,7 +32,7 @@
 // TODO: get rid of watchdog because people hate it
 #include <giskard_ros/watchdog.hpp>
 
-namespace giskard { namespace ros
+namespace giskard_ros
 {
   class WholeBodyControllerParams
   {
@@ -46,13 +46,13 @@ namespace giskard { namespace ros
   class ControllerContext
   {
     private:
-      giskard::core::QPController controller_;
+      giskard_core::QPController controller_;
       Eigen::VectorXd state_;
       giskard_msgs::ControllerFeedback feedback_;
       giskard_msgs::SemanticFloat64Array vel_command_;
 
     public:
-      void set_controller(const giskard::core::QPController& controller);
+      void set_controller(const giskard_core::QPController& controller);
 
       void set_joint_state(const sensor_msgs::JointState& msg);
 
@@ -65,7 +65,7 @@ namespace giskard { namespace ros
           const sensor_msgs::JointState& msg, 
           const std::string& name);
 
-      const giskard::core::QPController& get_controller() const;
+      const giskard_core::QPController& get_controller() const;
 
       const giskard_msgs::WholeBodyCommand& get_command() const;
 
@@ -132,6 +132,6 @@ namespace giskard { namespace ros
 
       KDL::Frame eval_fk(const std::string& fk_name, const sensor_msgs::JointState& msg);
   };
-}}
+}
 
 #endif // __GISKARD_WHOLE_BODY_CONTROLLER__HPP
