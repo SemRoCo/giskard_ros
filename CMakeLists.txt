@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_geometry_msgs
   interactive_markers 
   geometry_msgs
+  sensor_msgs
   giskard_msgs
   kdl_conversions)
 
