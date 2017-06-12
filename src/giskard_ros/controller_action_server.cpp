@@ -42,6 +42,18 @@ namespace giskard_ros
     return index;
   }
 
+  inline std::map<std::string, double> toIndex(const std::vector<std::string>& names, const std::vector<double>& values)
+  {
+    if (names.size() != values.size())
+      throw std::runtime_error("Indices of name and value lists do not match.");
+
+    std::map<std::string, double> index;
+    for (size_t i=0; i<names.size(); ++i)
+      index.insert(std::pair<std::string, double>(names[i], values[i]));
+
+    return index;
+  }
+
   inline std::map<std::string, giskard_msgs::SemanticFloat64> toIndex2(const std::vector<giskard_msgs::SemanticFloat64>& msgs)
   {
     std::map<std::string, giskard_msgs::SemanticFloat64> index;
@@ -104,7 +116,8 @@ namespace giskard_ros
     result.state.header = msg.header;
     result.state.running_time = msg.header.stamp - motion_start_time;
 
-    std::map<std::string, double> command_index = toIndex(msg.commands);
+    std::map<std::string, double> command_index = 
+      toIndex(msg.commands.name, msg.commands.velocity);
     std::map<std::string, giskard_msgs::SemanticFloat64> convergence_index = toIndex2(msg.convergence_features);
 
     result.state.left_arm_max_vel = 

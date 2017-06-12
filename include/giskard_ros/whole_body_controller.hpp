@@ -28,7 +28,6 @@
 #include <sensor_msgs/JointState.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
-#include <giskard_msgs/SemanticFloat64Array.h>
 // TODO: get rid of watchdog because people hate it
 #include <giskard_ros/watchdog.hpp>
 
@@ -49,7 +48,6 @@ namespace giskard_ros
       giskard_core::QPController controller_;
       Eigen::VectorXd state_;
       giskard_msgs::ControllerFeedback feedback_;
-      giskard_msgs::SemanticFloat64Array vel_command_;
 
     public:
       void set_controller(const giskard_core::QPController& controller);
@@ -71,7 +69,7 @@ namespace giskard_ros
 
       const giskard_msgs::ControllerFeedback& get_feedback() const;
 
-      const giskard_msgs::SemanticFloat64Array& get_vel_command() const;
+      const sensor_msgs::JointState& get_vel_command() const;
   };
 
   enum class WholeBodyControllerState { constructed, started, running };

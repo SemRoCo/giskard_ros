@@ -26,7 +26,6 @@
 #include <sensor_msgs/JointState.h>
 #include <giskard_msgs/WholeBodyCommand.h>
 #include <giskard_msgs/ControllerFeedback.h>
-#include <giskard_msgs/SemanticFloat64Array.h>
 #include <yaml-cpp/yaml.h>
 #include <giskard_core/giskard_core.hpp>
 #include <kdl_conversions/kdl_msg.h>
@@ -45,10 +44,10 @@ namespace giskard_ros
       {
         controller_ = controller;
 
-        feedback_.commands.resize(controller_.num_controllables());
-        for (size_t i=0; i<controller_.num_controllables(); ++i)
-          feedback_.commands[i].semantics = controller_.get_controllable_names()[i];
-        vel_command_.data = feedback_.commands;
+        feedback_.commands.name = controller_.get_controllable_names();
+        feedback_.commands.position.resize(0);
+        feedback_.commands.velocity.assign(controller_.num_controllables(), 0.0);
+        feedback_.commands.effort.resize(0);
 
         feedback_.slacks.resize(controller_.num_soft_constraints());
         for (size_t i=0; i<controller_.num_soft_constraints(); ++i)
@@ -134,9 +133,9 @@ namespace giskard_ros
         return feedback_;
       }
 
-      const giskard_msgs::SemanticFloat64Array& ControllerContext::get_vel_command() const
+      const sensor_msgs::JointState& ControllerContext::get_vel_command() const
       {
-        return vel_command_;
+        return feedback_.commands;
       }
 
       bool ControllerContext::update(const sensor_msgs::JointState& msg, int nWSR)
@@ -147,8 +146,8 @@ namespace giskard_ros
         {
           // fill feedback
           feedback_.header = msg.header;
-          for (size_t i=0; i<feedback_.commands.size(); ++i)
-            feedback_.commands[i].value = controller_.get_command()[i];
+          for (size_t i=0; i<feedback_.commands.velocity.size(); ++i)
+            feedback_.commands.velocity[i] = controller_.get_command()[i];
           for (size_t i=0; i<feedback_.slacks.size(); ++i)
             feedback_.slacks[i].value = controller_.get_slack()[i];
           for (size_t i=0; i<feedback_.convergence_features.size(); ++i)
@@ -162,9 +161,6 @@ namespace giskard_ros
           for (size_t i=0; i<feedback_.vectors.size(); ++i)
               tf::vectorKDLToMsg(controller_.get_scope().find_vector_expression(
                     feedback_.vectors[i].semantics)->value(), feedback_.vectors[i].value);
-          // fill command
-          vel_command_.data = feedback_.commands;
-
           return true;
         }
         else 
@@ -209,7 +205,7 @@ namespace giskard_ros
           init_controller_contexts();
   
           feedback_pub_ = nh_.advertise<giskard_msgs::ControllerFeedback>("feedback", 1, true);
-          velocity_pub_ = nh_.advertise<giskard_msgs::SemanticFloat64Array>("velocity_cmd", 1);
+          velocity_pub_ = nh_.advertise<sensor_msgs::JointState>("velocity_cmd", 1);
           joint_state_sub_ = nh_.subscribe("joint_states", 1, &WholeBodyController::joint_state_callback, this,
             ros::TransportHints().tcpNoDelay());
 
@@ -430,20 +426,18 @@ namespace giskard_ros
       void WholeBodyController::process_watchdog(const std_msgs::Header& header)
       {
         giskard_msgs::ControllerFeedback feedback;
-        giskard_msgs::SemanticFloat64Array command;
+        sensor_msgs::JointState command;
         for (size_t i=0; i<parameters_.joint_names.size(); ++i)
         {
-          giskard_msgs::SemanticFloat64 msg;
-          msg.value = 0.0;
-          msg.semantics = parameters_.joint_names[i];
-          feedback.commands.push_back(msg);
+          feedback.commands.name.push_back(parameters_.joint_names[i]);
+          feedback.commands.velocity.push_back(0.0);
         }
         feedback.header = header;
+        feedback.commands.header = header;
         feedback.watchdog_active = true;
         feedback_pub_.publish(feedback);
 
-        command.data = feedback.commands;
-        velocity_pub_.publish(command);
+        velocity_pub_.publish(feedback.commands);
       }
 
       KDL::Frame WholeBodyController::eval_fk(const std::string& fk_name, 
