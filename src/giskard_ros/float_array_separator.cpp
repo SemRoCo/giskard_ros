@@ -22,7 +22,7 @@
 #include <exception>
 #include <ros/ros.h>
 #include <boost/lexical_cast.hpp>
-#include <giskard_msgs/SemanticFloat64Array.h>
+#include <sensor_msgs/JointState.h>
 #include <std_msgs/Float64.h>
 #include <giskard_ros/ros_utils.hpp>
 
@@ -49,15 +49,16 @@ namespace giskard_ros
       ros::Subscriber sub_;
       std::vector<ros::Publisher> pubs_;
 
-      void callback(const giskard_msgs::SemanticFloat64Array::ConstPtr& msg)
+      void callback(const sensor_msgs::JointState::ConstPtr& msg)
       {
-        if (msg->data.size() != pubs_.size() )
-          throw std::runtime_error("Received message with " + boost::lexical_cast<std::string>(msg->data.size()) + " elements but excepted " + boost::lexical_cast<std::string>(pubs_.size()) + " entries.");
+
+        if (msg->velocity.size() != pubs_.size() )
+          throw std::runtime_error("Received message with " + boost::lexical_cast<std::string>(msg->velocity.size()) + " elements but excepted " + boost::lexical_cast<std::string>(pubs_.size()) + " entries.");
 
         for (size_t i=0; i<pubs_.size(); ++i)
         {
           std_msgs::Float64 out_msg;
-          out_msg.data = msg->data[i].value;
+          out_msg.data = msg->velocity[i];
           pubs_[i].publish(out_msg);
         }
       }

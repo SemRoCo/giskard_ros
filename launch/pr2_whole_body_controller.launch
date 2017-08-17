@@ -33,11 +33,11 @@
     </node>
   </group>
 
-  <node pkg="giskard_ros" type="float_array_separator" name="velocity_cmd_separator" output="screen" >
+<!--   <node pkg="giskard_ros" type="float_array_separator" name="velocity_cmd_separator" output="screen" >
     <rosparam param="joint_names"
       file="$(find giskard_ros)/config/pr2_upper_body.yaml" />
     <remap from="~input_array" to="/whole_body_controller/velocity_cmd" />
-  </node>
+  </node> -->
 
 
   <node pkg="giskard_ros" type="controller_action_server" name="controller_action_server" 
