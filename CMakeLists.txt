@@ -58,6 +58,10 @@ add_executable(float_array_separator src/${PROJECT_NAME}/float_array_separator.c
 target_link_libraries(float_array_separator ${catkin_LIBRARIES} yaml-cpp)
 add_dependencies(float_array_separator ${catkin_EXPORTED_TARGETS})
 
+add_executable(joint_state_separator src/${PROJECT_NAME}/joint_state_separator.cpp)
+target_link_libraries(joint_state_separator ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(joint_state_separator ${catkin_EXPORTED_TARGETS})
+
 add_executable(single_pose_controller src/${PROJECT_NAME}/single_pose_controller.cpp)
 target_link_libraries(single_pose_controller ${catkin_LIBRARIES} yaml-cpp)
 add_dependencies(single_pose_controller ${catkin_EXPORTED_TARGETS})
