@@ -26,6 +26,7 @@
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_core/giskard_core.hpp>
+#include <giskard_ros/ros_utils.hpp>
 
 namespace giskard_ros
 {
@@ -40,9 +41,20 @@ namespace giskard_ros
           joint_traj_act_( nh_, joint_traj_act_name, true ),
           giskard_act_( nh_, giskard_act_name, boost::bind(&QPControllerTrajectory::goal_callback, this, _1), false )
       {
+        if (!robot_model_.initParam("/robot_description"))
+          throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
+
+        root_link_ = readParam<std::string>(nh_, "root_link");
+
+        read_joint_weights();
+
+        read_joint_velocity_thresholds();
+
         if (!joint_traj_act_.waitForServer(act_server_timeout))
             throw std::runtime_error("Waited for action server '" + joint_traj_act_name + "' for " +
                                       std::to_string(act_server_timeout.toSec()) + "s. Aborting.");
+
+
         giskard_act_.start();
       }
 
@@ -55,6 +67,9 @@ namespace giskard_ros
 
       // internal state
       std::map<std::string, double> current_joint_state_;
+      urdf::Model robot_model_;
+      std::string root_link_;
+      std::map<std::string, double> joint_weights_, joint_velocity_thresholds_;
 
       void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       {
@@ -103,6 +118,7 @@ namespace giskard_ros
 //      giskard_core::QPControllerProjection projection(controller, params);
 //      projection.run(current_joint_state_);
 //      joint_traj_act_.sendGoalAndWait(get_trajectory_goal(), get_trajectory_duration());
+        giskard_core::QPControllerParams gen_params = create_generator_params(goal);
         giskard_core::QPController controller;
         giskard_core::QPControllerProjectionParams params(0.01, {}, {}, 10, 1000, 100);
         return giskard_core::QPControllerProjection(controller, params);
@@ -118,6 +134,43 @@ namespace giskard_ros
       {
         // TODO: implement me
         return ros::Duration(5.0);
+      }
+
+      giskard_core::QPControllerParams create_generator_params(const giskard_msgs::WholeBodyGoal& goal)
+      {
+        // TODO: fill control_params based on goal
+        const std::map<std::string, giskard_core::ControlParams> control_params;
+
+        return giskard_core::QPControllerParams(robot_model_, root_link_, joint_weights_,
+            joint_velocity_thresholds_, control_params);
+      }
+
+      void read_joint_weights()
+      {
+        joint_weights_.clear();
+
+        try {
+          joint_weights_ = readParam< std::map<std::string, double> >(nh_, "joint_weights");
+        }
+        catch (const std::exception& e) {
+          ROS_WARN("%s", e.what());
+        }
+
+        joint_weights_.insert(std::make_pair(giskard_core::Robot::default_joint_weight_key(), readParam<double>(nh_, giskard_core::Robot::default_joint_weight_key())));
+      }
+
+      void read_joint_velocity_thresholds()
+      {
+        joint_velocity_thresholds_.clear();
+
+        try {
+          joint_velocity_thresholds_ = readParam< std::map<std::string, double> >(nh_, "joint_velocity_thresholds");
+        }
+        catch (const std::exception& e) {
+          ROS_WARN("%s", e.what());
+        }
+
+        joint_velocity_thresholds_.insert(std::make_pair(giskard_core::Robot::default_joint_velocity_key(), readParam<double>(nh_, giskard_core::Robot::default_joint_velocity_key())));
       }
   };
 }
