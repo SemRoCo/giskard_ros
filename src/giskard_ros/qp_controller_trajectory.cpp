@@ -22,6 +22,8 @@
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
+#include <tf2_ros/buffer_client.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <sensor_msgs/JointState.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <giskard_msgs/WholeBodyAction.h>
@@ -34,26 +36,30 @@ namespace giskard_ros
   {
     public:
       QPControllerTrajectory(const ros::NodeHandle& nh, const std::string& joint_traj_act_name,
-                             const std::string& giskard_act_name,
-                             const ros::Duration& act_server_timeout) :
+                             const std::string& giskard_act_name, const ros::Duration& server_timeout,
+                             const std::string& tf_ns) :
           nh_(nh),
           js_sub_( nh_.subscribe("joint_states", 1, &QPControllerTrajectory::js_callback, this) ),
           joint_traj_act_( nh_, joint_traj_act_name, true ),
-          giskard_act_( nh_, giskard_act_name, boost::bind(&QPControllerTrajectory::goal_callback, this, _1), false )
+          giskard_act_( nh_, giskard_act_name, boost::bind(&QPControllerTrajectory::goal_callback, this, _1), false ),
+          tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns))
       {
         if (!robot_model_.initParam("/robot_description"))
           throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
 
         root_link_ = readParam<std::string>(nh_, "root_link");
 
+        sample_period_ = readParam<double>(nh_, "sample_period");
         read_joint_weights();
 
         read_joint_velocity_thresholds();
 
-        if (!joint_traj_act_.waitForServer(act_server_timeout))
+        if (!joint_traj_act_.waitForServer(server_timeout))
             throw std::runtime_error("Waited for action server '" + joint_traj_act_name + "' for " +
-                                      std::to_string(act_server_timeout.toSec()) + "s. Aborting.");
+                                      std::to_string(server_timeout.toSec()) + "s. Aborting.");
 
+        if(!tf_->waitForServer(server_timeout))
+          throw std::runtime_error("Waited for TF2 BufferServer " + std::to_string(server_timeout.toSec()) + "s. Aborting.");
 
         giskard_act_.start();
       }
@@ -64,12 +70,16 @@ namespace giskard_ros
       ros::Subscriber js_sub_;
       actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> joint_traj_act_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> giskard_act_;
+      std::shared_ptr<tf2_ros::BufferClient> tf_;
 
       // internal state
       std::map<std::string, double> current_joint_state_;
+
+      // parameters
       urdf::Model robot_model_;
       std::string root_link_;
       std::map<std::string, double> joint_weights_, joint_velocity_thresholds_;
+      double sample_period_;
 
       void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       {
@@ -83,16 +93,23 @@ namespace giskard_ros
 
       void goal_callback(const giskard_msgs::WholeBodyGoalConstPtr& goal)
       {
+        ros::Time start_time = ros::Time::now();
         ROS_DEBUG("Received a new goal.");
-        std::cout << *goal << std::endl;
+//        std::cout << *goal << std::endl;
         try
         {
           giskard_core::QPControllerProjection projection = create_projection(*goal);
-          projection.run(current_joint_state_);
+          ros::Time setup_complete = ros::Time::now();
+          projection.run(get_observable_values(projection, *goal));
+          ros::Time projection_complete = ros::Time::now();
+          ROS_INFO_STREAM("Setup time: " << (setup_complete - start_time).toSec());
+          ROS_INFO_STREAM("Projection time: " << (projection_complete - setup_complete).toSec());
+
           joint_traj_act_.cancelAllGoals();
+
           // TODO: periodically check for preemption
 
-          joint_traj_act_.sendGoalAndWait(calc_trajectory_goal(), calc_trajectory_duration());
+          joint_traj_act_.sendGoalAndWait(calc_trajectory_goal(projection), calc_trajectory_duration(projection));
           if (joint_traj_act_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
             giskard_act_.setSucceeded(giskard_msgs::WholeBodyResult());
           else
@@ -110,27 +127,30 @@ namespace giskard_ros
 
       giskard_core::QPControllerProjection create_projection(const giskard_msgs::WholeBodyGoal& goal)
       {
-        // TODO: implement me
-//      giskard_core::QPControllerParams params = get_qp_controller_params(*goal);
-//      giskard_core::QPControllerSpecGenerator generator(params);
-//      giskard_core::QPController controller();
-//      giskard_core::QPControllerProjectionParams params(period, observable_names, convergence_thresholds, min_traj_points, max_traj_points, nWSR);
-//      giskard_core::QPControllerProjection projection(controller, params);
-//      projection.run(current_joint_state_);
-//      joint_traj_act_.sendGoalAndWait(get_trajectory_goal(), get_trajectory_duration());
-        giskard_core::QPControllerParams gen_params = create_generator_params(goal);
-        giskard_core::QPController controller;
-        giskard_core::QPControllerProjectionParams params(0.01, {}, {}, 10, 1000, 100);
+        if (goal.command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
+          // TODO: implement me
+          throw std::runtime_error("Command type YAML_CONTROLLER is not supported, yet.");
+
+        giskard_core::QPControllerSpecGenerator gen(create_generator_params(goal));
+        giskard_core::QPController controller = giskard_core::generate(gen.get_spec());
+        // TODO: get these values from the parameter server
+        std::map<std::string, double> joint_convergence_thresholds;
+        for (auto const & controllable_name: gen.get_controllable_names())
+          joint_convergence_thresholds.insert(std::make_pair(controllable_name, 0.001));
+        joint_convergence_thresholds["torso_lift_joint"] = 0.0001;
+
+        giskard_core::QPControllerProjectionParams params(sample_period_, gen.get_observable_names(), joint_convergence_thresholds, 10, 500, 100); // TODO: get these parameters from the server
         return giskard_core::QPControllerProjection(controller, params);
       }
 
-      control_msgs::FollowJointTrajectoryGoal calc_trajectory_goal()
+      control_msgs::FollowJointTrajectoryGoal calc_trajectory_goal(const giskard_core::QPControllerProjection& projection) const
       {
+        std::cout << "Projected a trajectory with " << projection.get_position_trajectories().size() << " points.\n";
         // TODO: implement me
         return control_msgs::FollowJointTrajectoryGoal();
       }
 
-      ros::Duration calc_trajectory_duration()
+      ros::Duration calc_trajectory_duration(const giskard_core::QPControllerProjection& projection) const
       {
         // TODO: implement me
         return ros::Duration(5.0);
@@ -138,8 +158,46 @@ namespace giskard_ros
 
       giskard_core::QPControllerParams create_generator_params(const giskard_msgs::WholeBodyGoal& goal)
       {
-        // TODO: fill control_params based on goal
-        const std::map<std::string, giskard_core::ControlParams> control_params;
+        if (goal.command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
+          throw std::runtime_error("Cannot create QPControllerParams for command type YAML_CONTROLLER.");
+
+        std::map<std::string, giskard_core::ControlParams> control_params;
+
+        switch (goal.command.left_ee.type)
+        {
+          case giskard_msgs::ArmCommand::IGNORE_GOAL:
+            break;
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            // TODO: implement me
+            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+          {
+            giskard_core::ControlParams trans3d_params;
+            trans3d_params.type = giskard_core::ControlParams::Translation3D;
+            trans3d_params.root_link = root_link_;
+            trans3d_params.tip_link = "l_gripper_tool_frame"; // TODO: get these parameters from server
+            trans3d_params.threshold_error = true;
+            trans3d_params.threshold = 0.05;
+            trans3d_params.p_gain = 1.0;
+            trans3d_params.weight = 1.0;
+
+            giskard_core::ControlParams rot3d_params;
+            rot3d_params.type = giskard_core::ControlParams::Rotation3D;
+            rot3d_params.root_link = root_link_;
+            rot3d_params.tip_link = "l_gripper_tool_frame"; // TODO: get these parameters from server
+            rot3d_params.threshold_error = true;
+            rot3d_params.threshold = 0.1;
+            rot3d_params.p_gain = 1.0;
+            rot3d_params.weight = 1.0;
+
+            // TODO: put these names somewhere central
+            control_params.insert(std::make_pair("left_arm_translation3d", trans3d_params));
+            control_params.insert(std::make_pair("left_arm_rotation3d", rot3d_params));
+            break;
+          }
+          default:
+            std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.left_ee.type));
+        }
 
         return giskard_core::QPControllerParams(robot_model_, root_link_, joint_weights_,
             joint_velocity_thresholds_, control_params);
@@ -164,13 +222,67 @@ namespace giskard_ros
         joint_velocity_thresholds_.clear();
 
         try {
-          joint_velocity_thresholds_ = readParam< std::map<std::string, double> >(nh_, "joint_velocity_thresholds");
+          joint_velocity_thresholds_ = readParam< std::map<std::string, double> >(nh_, "joint_velocity_limits");
         }
         catch (const std::exception& e) {
           ROS_WARN("%s", e.what());
         }
 
         joint_velocity_thresholds_.insert(std::make_pair(giskard_core::Robot::default_joint_velocity_key(), readParam<double>(nh_, giskard_core::Robot::default_joint_velocity_key())));
+      }
+
+      std::map<std::string, double> get_observable_values(const giskard_core::QPControllerProjection& projection,
+          const giskard_msgs::WholeBodyGoal& goal)
+      {
+        std::map<std::string, double> result = current_joint_state_;
+
+        switch (goal.command.left_ee.type)
+        {
+          case giskard_msgs::ArmCommand::IGNORE_GOAL:
+            break;
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            // TODO: implement me
+            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+          {
+            // TODO: get this timeout from somewhere
+            // TODO: refactor this into somewhere a bit prettier ;)
+            geometry_msgs::PoseStamped transformed_goal_pose;
+            tf_->transform(goal.command.left_ee.goal_pose, transformed_goal_pose, root_link_, ros::Duration(0.1));
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[0]),
+                transformed_goal_pose.pose.position.x));
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[1]),
+                transformed_goal_pose.pose.position.y));
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[2]),
+                transformed_goal_pose.pose.position.z));
+
+            KDL::Rotation goal_rot = KDL::Rotation::Quaternion(transformed_goal_pose.pose.orientation.x,
+                transformed_goal_pose.pose.orientation.y, transformed_goal_pose.pose.orientation.z,
+                transformed_goal_pose.pose.orientation.z);
+            KDL::Vector axis;
+            double angle = goal_rot.GetRotAngle(axis);
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[0]),
+                axis.x()));
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[1]),
+                axis.y()));
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[2]),
+                axis.z()));
+            result.insert(std::make_pair(
+                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[3]),
+                angle));
+
+            break;
+          }
+          default:
+            std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.left_ee.type));
+        }
+        return result;
       }
   };
 }
@@ -183,7 +295,7 @@ int main(int argc, char **argv)
 
   try
   {
-    QPControllerTrajectory controller(nh, "follow_joint_trajectory", "command", ros::Duration(2.0));
+    QPControllerTrajectory controller(nh, "follow_joint_trajectory", "command", ros::Duration(2.0), "/tf2_buffer_server");
     ros::spin();
   }
   catch (const std::exception& e)
