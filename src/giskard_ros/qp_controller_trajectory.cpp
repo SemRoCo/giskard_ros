@@ -26,6 +26,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <sensor_msgs/JointState.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
+#include <control_msgs/JointTrajectoryControllerState.h>
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_core/giskard_core.hpp>
 #include <giskard_ros/ros_utils.hpp>
@@ -40,6 +41,7 @@ namespace giskard_ros
                              const std::string& tf_ns) :
           nh_(nh),
           js_sub_( nh_.subscribe("joint_states", 1, &QPControllerTrajectory::js_callback, this) ),
+          joint_traj_state_sub_( nh_.subscribe("joint_trajectory_controller_state", 1, &QPControllerTrajectory::joint_traj_state_callback, this) ),
           joint_traj_act_( nh_, joint_traj_act_name, true ),
           giskard_act_( nh_, giskard_act_name, boost::bind(&QPControllerTrajectory::goal_callback, this, _1), false ),
           tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns))
@@ -67,13 +69,16 @@ namespace giskard_ros
     protected:
       // ROS communication
       ros::NodeHandle nh_;
-      ros::Subscriber js_sub_;
+      ros::Subscriber js_sub_, joint_traj_state_sub_;
       actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> joint_traj_act_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> giskard_act_;
       std::shared_ptr<tf2_ros::BufferClient> tf_;
 
       // internal state
       std::map<std::string, double> current_joint_state_;
+      trajectory_msgs::JointTrajectoryPoint joint_controller_state_;
+      std::map<std::string, size_t> joint_controller_joint_name_index_;
+      std::vector<std::string> joint_controller_joint_names_;
 
       // parameters
       urdf::Model robot_model_;
@@ -91,11 +96,39 @@ namespace giskard_ros
           current_joint_state_.insert(std::make_pair(msg->name[i], msg->position[i]));
       }
 
+      void joint_traj_state_callback(const control_msgs::JointTrajectoryControllerState::ConstPtr& msg)
+      {
+        // copy the current state, i.e. joint positions, velocities, etc.
+        joint_controller_state_ = msg->actual;
+
+        // check whether the joint names in the state are different from what we internally hold
+        bool joint_names_equal = false;
+        if (msg->joint_names.size() == joint_controller_joint_name_index_.size())
+          joint_names_equal = std::equal(msg->joint_names.begin(), msg->joint_names.end(), joint_controller_joint_names_.begin());
+
+        if (!joint_names_equal)
+        {
+          // TODO: turn this into a debug
+          ROS_INFO("Recalculating index of joint names of the joint controller.");
+          joint_controller_joint_names_ = msg->joint_names;
+          joint_controller_joint_name_index_.clear();
+          for (size_t i=0; i<msg->joint_names.size(); ++i)
+            joint_controller_joint_name_index_.insert(std::make_pair(msg->joint_names[i], i));
+        }
+      }
+
+      size_t joint_goal_index(const std::string& joint_name) const
+      {
+        if (joint_controller_joint_name_index_.count(joint_name) == 0)
+          throw std::runtime_error("Could not find joint controller index for joint '" + joint_name + "'.");
+
+        return joint_controller_joint_name_index_.find(joint_name)->second;
+      }
+
       void goal_callback(const giskard_msgs::WholeBodyGoalConstPtr& goal)
       {
         ros::Time start_time = ros::Time::now();
-        ROS_DEBUG("Received a new goal.");
-//        std::cout << *goal << std::endl;
+        ROS_INFO("Received a new goal.");
         try
         {
           giskard_core::QPControllerProjection projection = create_projection(*goal);
@@ -107,9 +140,22 @@ namespace giskard_ros
 
           joint_traj_act_.cancelAllGoals();
 
-          // TODO: periodically check for preemption
+          ROS_INFO_STREAM("Commanding trajectory with duration " << calc_trajectory_duration(projection));
+//          joint_traj_act_.sendGoalAndWait(calc_trajectory_goal(projection), calc_trajectory_duration(projection));
+          joint_traj_act_.sendGoal(calc_trajectory_goal(projection));
+          ros::Duration traj_duration = calc_trajectory_duration(projection);
+          ros::Time start_time = ros::Time::now();
+          ros::Rate monitor_rate(10); // TODO: get this from the parameter server?
 
-          joint_traj_act_.sendGoalAndWait(calc_trajectory_goal(projection), calc_trajectory_duration(projection));
+          while((ros::Time::now() - start_time) < traj_duration)
+          {
+            // TODO: check for preemption from our own client
+            // TODO: check for errors from trajectory controller
+
+            monitor_rate.sleep();
+          }
+
+          ROS_INFO("Stopped monitoring trajectory goal.");
           if (joint_traj_act_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
             giskard_act_.setSucceeded(giskard_msgs::WholeBodyResult());
           else
@@ -122,6 +168,8 @@ namespace giskard_ros
           ROS_ERROR("%s", e.what());
           giskard_act_.setAborted(giskard_msgs::WholeBodyResult(), e.what());
         }
+
+        ROS_INFO("Finished callback.");
 
       }
 
@@ -145,15 +193,39 @@ namespace giskard_ros
 
       control_msgs::FollowJointTrajectoryGoal calc_trajectory_goal(const giskard_core::QPControllerProjection& projection) const
       {
-        std::cout << "Projected a trajectory with " << projection.get_position_trajectories().size() << " points.\n";
-        // TODO: implement me
-        return control_msgs::FollowJointTrajectoryGoal();
+        // TODO: turn this into a debug
+        ROS_INFO_STREAM("Projection holds a trajectory with " << projection.get_position_trajectories().size() << " points.");
+
+        // set up joint names
+        control_msgs::FollowJointTrajectoryGoal goal;
+        goal.trajectory.joint_names = joint_controller_joint_names_;
+
+        // initialize memory of trajectory points in goal with current joint controller state
+        // NOTE: this will lead to sane values for all the joints we are not controlling with the QPController
+        goal.trajectory.points.resize(projection.get_position_trajectories().size(), joint_controller_state_);
+
+        // fill trajectory points with desired values for the joint we control
+        for (size_t i=0; i<projection.get_position_trajectories().size(); ++i)
+        {
+          trajectory_msgs::JointTrajectoryPoint& sample = goal.trajectory.points[i];
+          sample.time_from_start = ros::Duration(sample_period_ * (i + 1));
+          for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
+            sample.positions[joint_goal_index(projection.get_controllable_names()[j])] =
+                projection.get_position_trajectories()[i](j);
+          for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
+            sample.velocities[joint_goal_index(projection.get_controllable_names()[j])] =
+                projection.get_velocity_trajectories()[i](j);
+        }
+
+        // set up start time
+        goal.trajectory.header.stamp = ros::Time::now();
+
+        return goal;
       }
 
       ros::Duration calc_trajectory_duration(const giskard_core::QPControllerProjection& projection) const
       {
-        // TODO: implement me
-        return ros::Duration(5.0);
+        return ros::Duration(sample_period_ * projection.get_position_trajectories().size());
       }
 
       giskard_core::QPControllerParams create_generator_params(const giskard_msgs::WholeBodyGoal& goal)
