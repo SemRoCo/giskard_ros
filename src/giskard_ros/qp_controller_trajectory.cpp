@@ -333,7 +333,7 @@ namespace giskard_ros
 
             KDL::Rotation goal_rot = KDL::Rotation::Quaternion(transformed_goal_pose.pose.orientation.x,
                 transformed_goal_pose.pose.orientation.y, transformed_goal_pose.pose.orientation.z,
-                transformed_goal_pose.pose.orientation.z);
+                transformed_goal_pose.pose.orientation.w);
             KDL::Vector axis;
             double angle = goal_rot.GetRotAngle(axis);
             result.insert(std::make_pair(
@@ -354,6 +354,10 @@ namespace giskard_ros
           default:
             std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.left_ee.type));
         }
+
+        std::cout << "observable values:\n";
+        for (auto const & obs: result)
+          std::cout << obs.first << ": " << obs.second << std::endl;
         return result;
       }
   };
