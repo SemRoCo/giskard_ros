@@ -30,6 +30,21 @@
 
 namespace giskard_ros
 {
+  inline KDL::Vector to_kdl(const geometry_msgs::Point& p)
+  {
+    return KDL::Vector(p.x, p.y, p.z);
+  }
+
+  inline KDL::Rotation to_kdl(const geometry_msgs::Quaternion& q)
+  {
+    return KDL::Rotation::Quaternion(q.x, q.y, q.z, q.w);
+  }
+
+  inline KDL::Frame to_kdl(const geometry_msgs::Pose& p)
+  {
+    return KDL::Frame(to_kdl(p.orientation), to_kdl(p.position));
+  }
+
   inline Eigen::VectorXd to_eigen(const std::vector<double>& v)
   {
     Eigen::VectorXd result(v.size());
@@ -41,6 +56,23 @@ namespace giskard_ros
   inline Eigen::Vector3d to_eigen(const geometry_msgs::Point& p)
   {
     return {p.x, p.y, p.z};
+  }
+
+  inline Eigen::Vector4d to_eigen_axis_angle(const geometry_msgs::Quaternion& q)
+  {
+    KDL::Vector axis;
+    double angle = to_kdl(q).GetRotAngle(axis);
+    return {axis.x(), axis.y(), axis.z(), angle};
+  }
+
+  typedef Eigen::Matrix< double, 7, 1 > Vector7d;
+
+  inline Vector7d to_eigen_axis_angle(const geometry_msgs::Pose& p)
+  {
+    Vector7d result;
+    result.segment(0, 4) = to_eigen_axis_angle(p.orientation);
+    result.segment(4, 3) = to_eigen(p.position);
+    return result;
   }
 
   inline Eigen::VectorXd to_eigen(const geometry_msgs::Pose& p)
@@ -65,21 +97,6 @@ namespace giskard_ros
     result.header.frame_id = frame_id;
     tf::poseKDLToMsg(pose, result.pose);
     return result;
-  }
-
-  inline KDL::Vector to_kdl(const geometry_msgs::Point& p)
-  {
-    return KDL::Vector(p.x, p.y, p.z);
-  }
-
-  inline KDL::Rotation to_kdl(const geometry_msgs::Quaternion& q)
-  {
-    return KDL::Rotation::Quaternion(q.x, q.y, q.z, q.w);
-  }
-
-  inline KDL::Frame to_kdl(const geometry_msgs::Pose& p)
-  {
-    return KDL::Frame(to_kdl(p.orientation), to_kdl(p.position));
   }
 }
 
