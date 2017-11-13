@@ -30,6 +30,7 @@
 #include <giskard_msgs/WholeBodyAction.h>
 #include <giskard_core/giskard_core.hpp>
 #include <giskard_ros/ros_utils.hpp>
+#include <giskard_ros/conversions.hpp>
 
 namespace giskard_ros
 {
@@ -334,33 +335,20 @@ namespace giskard_ros
             // TODO: refactor this into somewhere a bit prettier ;)
             geometry_msgs::PoseStamped transformed_goal_pose;
             tf_->transform(goal.command.left_ee.goal_pose, transformed_goal_pose, root_link_, ros::Duration(0.1));
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[0]),
-                transformed_goal_pose.pose.position.x));
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[1]),
-                transformed_goal_pose.pose.position.y));
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[2]),
-                transformed_goal_pose.pose.position.z));
+            Eigen::Vector3d trans_tmp = to_eigen(transformed_goal_pose.pose.position);
+            for (size_t i=0; i<trans_tmp.rows(); ++i)
+              result.insert(std::make_pair(
+                  giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[i]),
+                  trans_tmp(i)));
 
-            KDL::Rotation goal_rot = KDL::Rotation::Quaternion(transformed_goal_pose.pose.orientation.x,
-                transformed_goal_pose.pose.orientation.y, transformed_goal_pose.pose.orientation.z,
-                transformed_goal_pose.pose.orientation.w);
+            KDL::Rotation goal_rot = to_kdl(transformed_goal_pose.pose.orientation);
             KDL::Vector axis;
             double angle = goal_rot.GetRotAngle(axis);
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[0]),
-                axis.x()));
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[1]),
-                axis.y()));
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[2]),
-                axis.z()));
-            result.insert(std::make_pair(
-                giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[3]),
-                angle));
+            Eigen::Vector4d rot_tmp = {axis.x(), axis.y(), axis.z(), angle};
+            for (size_t i=0; i<rot_tmp.rows(); ++i)
+              result.insert(std::make_pair(
+                  giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[i]),
+                  rot_tmp(i)));
 
             break;
           }
