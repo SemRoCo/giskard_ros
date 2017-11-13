@@ -38,6 +38,11 @@ namespace giskard_ros
     return result;
   }
 
+  inline Eigen::Vector3d to_eigen(const geometry_msgs::Point& p)
+  {
+    return {p.x, p.y, p.z};
+  }
+
   inline Eigen::VectorXd to_eigen(const geometry_msgs::Pose& p)
   {
     Eigen::VectorXd result(6);
@@ -62,6 +67,20 @@ namespace giskard_ros
     return result;
   }
 
+  inline KDL::Vector to_kdl(const geometry_msgs::Point& p)
+  {
+    return KDL::Vector(p.x, p.y, p.z);
+  }
+
+  inline KDL::Rotation to_kdl(const geometry_msgs::Quaternion& q)
+  {
+    return KDL::Rotation::Quaternion(q.x, q.y, q.z, q.w);
+  }
+
+  inline KDL::Frame to_kdl(const geometry_msgs::Pose& p)
+  {
+    return KDL::Frame(to_kdl(p.orientation), to_kdl(p.position));
+  }
 }
 
 #endif // __GISKARD_CONVERSIONS__HPP
