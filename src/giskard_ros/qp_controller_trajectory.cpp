@@ -141,7 +141,6 @@ namespace giskard_ros
           joint_traj_act_.cancelAllGoals();
 
           ROS_INFO_STREAM("Commanding trajectory with duration " << calc_trajectory_duration(projection));
-//          joint_traj_act_.sendGoalAndWait(calc_trajectory_goal(projection), calc_trajectory_duration(projection));
           joint_traj_act_.sendGoal(calc_trajectory_goal(projection));
           ros::Duration traj_duration = calc_trajectory_duration(projection);
           ros::Time start_time = ros::Time::now();
@@ -149,9 +148,23 @@ namespace giskard_ros
 
           while((ros::Time::now() - start_time) < traj_duration)
           {
-            // TODO: check for preemption from our own client
-            // TODO: check for errors from trajectory controller
+            if (giskard_act_.isPreemptRequested() || !ros::ok())
+            {
+              giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Received preempt request.");
+              joint_traj_act_.cancelAllGoals();
+              return;
+            }
 
+            if (joint_traj_act_.getState() == actionlib::SimpleClientGoalState::ACTIVE ||
+                joint_traj_act_.getState() == actionlib::SimpleClientGoalState::PENDING)
+            {
+              giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Joint trajectory action in unexpected state: " +
+                      joint_traj_act_.getState().getText());
+              joint_traj_act_.cancelAllGoals();
+              return;
+            }
+
+            // TODO: re-run projection to emulate reactiveness
             monitor_rate.sleep();
           }
 
@@ -250,7 +263,7 @@ namespace giskard_ros
             trans3d_params.tip_link = "l_gripper_tool_frame"; // TODO: get these parameters from server
             trans3d_params.threshold_error = true;
             trans3d_params.threshold = 0.05;
-            trans3d_params.p_gain = 1.0;
+            trans3d_params.p_gain = 3.0;
             trans3d_params.weight = 1.0;
 
             giskard_core::ControlParams rot3d_params;
@@ -259,7 +272,7 @@ namespace giskard_ros
             rot3d_params.tip_link = "l_gripper_tool_frame"; // TODO: get these parameters from server
             rot3d_params.threshold_error = true;
             rot3d_params.threshold = 0.1;
-            rot3d_params.p_gain = 1.0;
+            rot3d_params.p_gain = 3.0;
             rot3d_params.weight = 1.0;
 
             // TODO: put these names somewhere central
@@ -355,9 +368,6 @@ namespace giskard_ros
             std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.left_ee.type));
         }
 
-        std::cout << "observable values:\n";
-        for (auto const & obs: result)
-          std::cout << obs.first << ": " << obs.second << std::endl;
         return result;
       }
   };
