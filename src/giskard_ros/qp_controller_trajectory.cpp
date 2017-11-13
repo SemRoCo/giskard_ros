@@ -331,24 +331,28 @@ namespace giskard_ros
             throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
-            // TODO: get this timeout from somewhere
-            // TODO: refactor this into somewhere a bit prettier ;)
+            // use TF to transform goal pose
             geometry_msgs::PoseStamped transformed_goal_pose;
+            // TODO: get this TF timeout from somewhere
             tf_->transform(goal.command.left_ee.goal_pose, transformed_goal_pose, root_link_, ros::Duration(0.1));
-            Eigen::Vector3d trans_tmp = to_eigen(transformed_goal_pose.pose.position);
-            for (size_t i=0; i<trans_tmp.rows(); ++i)
-              result.insert(std::make_pair(
-                  giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_translation3d", giskard_core::QPControllerSpecGenerator::translation3d_names()[i]),
-                  trans_tmp(i)));
 
-            KDL::Rotation goal_rot = to_kdl(transformed_goal_pose.pose.orientation);
-            KDL::Vector axis;
-            double angle = goal_rot.GetRotAngle(axis);
-            Eigen::Vector4d rot_tmp = {axis.x(), axis.y(), axis.z(), angle};
-            for (size_t i=0; i<rot_tmp.rows(); ++i)
-              result.insert(std::make_pair(
-                  giskard_core::QPControllerSpecGenerator::create_input_name("left_arm_rotation3d", giskard_core::QPControllerSpecGenerator::rotation3d_names()[i]),
-                  rot_tmp(i)));
+            // convert goal pose into axis-angle-representation for rotation, and store all in Eigen Vector
+            Vector7d goal_tmp = to_eigen_axis_angle(transformed_goal_pose.pose);
+
+            // get vector of goal input names
+            using namespace giskard_core;
+            std::map< std::string, ControlParams::ControlType > pairs =
+                {{"left_arm_rotation3d", ControlParams::Rotation3D}, {"left_arm_translation3d", ControlParams::Translation3D}};
+            std::vector<std::string> input_names = {};
+            for (auto const & pair: pairs)
+              for (auto const &input_name : QPControllerSpecGenerator::create_input_names(pair.first, pair.second))
+                input_names.push_back(input_name);
+
+            // fill the result map
+            if (input_names.size() != goal_tmp.rows())
+              throw std::runtime_error("Dimensions of input_names and goal_tmp do not match.");
+            for (size_t i=0; i<input_names.size(); ++i)
+              result.insert(std::make_pair(input_names[i], goal_tmp(i)));
 
             break;
           }
