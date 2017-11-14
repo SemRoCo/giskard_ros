@@ -47,15 +47,7 @@ namespace giskard_ros
           giskard_act_( nh_, giskard_act_name, boost::bind(&QPControllerTrajectory::goal_callback, this, _1), false ),
           tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns))
       {
-        if (!robot_model_.initParam("/robot_description"))
-          throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
-
-        root_link_ = readParam<std::string>(nh_, "root_link");
-
-        sample_period_ = readParam<double>(nh_, "sample_period");
-        read_joint_weights();
-
-        read_joint_velocity_thresholds();
+        read_parameters();
 
         if (!joint_traj_act_.waitForServer(server_timeout))
             throw std::runtime_error("Waited for action server '" + joint_traj_act_name + "' for " +
@@ -84,8 +76,10 @@ namespace giskard_ros
       // parameters
       urdf::Model robot_model_;
       std::string root_link_;
-      std::map<std::string, double> joint_weights_, joint_velocity_thresholds_;
+      std::map<std::string, double> joint_weights_, joint_velocity_thresholds_, joint_convergence_thresholds_;
       double sample_period_;
+      int nWSR_;
+      size_t min_num_trajectory_points_, max_num_trajectory_points_;
 
       void js_callback(const sensor_msgs::JointState::ConstPtr& msg)
       {
@@ -195,13 +189,9 @@ namespace giskard_ros
 
         giskard_core::QPControllerSpecGenerator gen(create_generator_params(goal));
         giskard_core::QPController controller = giskard_core::generate(gen.get_spec());
-        // TODO: get these values from the parameter server
-        std::map<std::string, double> joint_convergence_thresholds;
-        for (auto const & controllable_name: gen.get_controllable_names())
-          joint_convergence_thresholds.insert(std::make_pair(controllable_name, 0.001));
-        joint_convergence_thresholds["torso_lift_joint"] = 0.0001;
 
-        giskard_core::QPControllerProjectionParams params(sample_period_, gen.get_observable_names(), joint_convergence_thresholds, 10, 500, 100); // TODO: get these parameters from the server
+        giskard_core::QPControllerProjectionParams params(sample_period_, gen.get_observable_names(), joint_convergence_thresholds_,
+            min_num_trajectory_points_, max_num_trajectory_points_, nWSR_);
         return giskard_core::QPControllerProjection(controller, params);
       }
 
@@ -289,6 +279,26 @@ namespace giskard_ros
             joint_velocity_thresholds_, control_params);
       }
 
+      void read_parameters()
+      {
+        if (!robot_model_.initParam("/robot_description"))
+          throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
+
+        root_link_ = readParam<std::string>(nh_, "root_link");
+
+        sample_period_ = readParam<double>(nh_, "sample_period");
+
+        min_num_trajectory_points_ = readParam<int>(nh_, "min_num_traj_points");
+        max_num_trajectory_points_ = readParam<int>(nh_, "max_num_traj_points");
+        nWSR_ = readParam<int>(nh_, "nWSR");
+
+        read_joint_weights();
+
+        read_joint_velocity_thresholds();
+
+        read_joint_convergence_thresholds();
+      }
+
       void read_joint_weights()
       {
         joint_weights_.clear();
@@ -315,6 +325,24 @@ namespace giskard_ros
         }
 
         joint_velocity_thresholds_.insert(std::make_pair(giskard_core::Robot::default_joint_velocity_key(), readParam<double>(nh_, giskard_core::Robot::default_joint_velocity_key())));
+      }
+
+      void read_joint_convergence_thresholds()
+      {
+        joint_convergence_thresholds_.clear();
+
+        double default_value = readParam<double>(nh_, giskard_core::QPControllerProjectionParams::default_joint_convergence_threshold_key());
+
+        try {
+          joint_convergence_thresholds_ = readParam< std::map<std::string, double> >(nh_, "joint_convergence_thresholds");
+        }
+        catch (const std::exception& e) {
+          ROS_WARN("%s", e.what());
+        }
+
+        joint_convergence_thresholds_.insert(
+            std::make_pair(giskard_core::QPControllerProjectionParams::default_joint_convergence_threshold_key(),
+            readParam<double>(nh_, giskard_core::QPControllerProjectionParams::default_joint_convergence_threshold_key())));
       }
 
       std::map<std::string, double> get_observable_values(const giskard_core::QPControllerProjection& projection,
