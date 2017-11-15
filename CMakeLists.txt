@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   interactive_markers 
   geometry_msgs
   sensor_msgs
+  std_srvs
   giskard_msgs
   kdl_conversions)
 

@@ -25,6 +25,7 @@
 #include <tf2_ros/buffer_client.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <sensor_msgs/JointState.h>
+#include <std_srvs/Trigger.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/JointTrajectoryControllerState.h>
 #include <giskard_msgs/WholeBodyAction.h>
@@ -45,6 +46,7 @@ namespace giskard_ros
           joint_traj_state_sub_( nh_.subscribe("joint_trajectory_controller_state", 1, &QPControllerTrajectory::joint_traj_state_callback, this) ),
           joint_traj_act_( nh_, joint_traj_act_name, true ),
           giskard_act_( nh_, giskard_act_name, boost::bind(&QPControllerTrajectory::goal_callback, this, _1), false ),
+          trigger_param_loading_serv_( nh_.advertiseService("reload_params", &QPControllerTrajectory::reload_params_callback, this)),
           tf_(std::make_shared<tf2_ros::BufferClient>(tf_ns))
       {
         read_parameters();
@@ -65,6 +67,7 @@ namespace giskard_ros
       ros::Subscriber js_sub_, joint_traj_state_sub_;
       actionlib::SimpleActionClient<control_msgs::FollowJointTrajectoryAction> joint_traj_act_;
       actionlib::SimpleActionServer<giskard_msgs::WholeBodyAction> giskard_act_;
+      ros::ServiceServer trigger_param_loading_serv_;
       std::shared_ptr<tf2_ros::BufferClient> tf_;
 
       // internal state
@@ -180,6 +183,24 @@ namespace giskard_ros
 
         ROS_INFO("Finished callback.");
 
+      }
+
+      bool reload_params_callback(std_srvs::Trigger::Request& request, std_srvs::Trigger::Response& response)
+      {
+        ROS_INFO("Reloading parameters from server.");
+        // TODO: safe-guard us against failed parameter reading
+        // NOTE: an exception might leave us with parameters that cannot be run
+        try {
+          read_parameters();
+          response.success = true;
+        }
+        catch (const std::runtime_error& e) {
+          ROS_ERROR("Error when reloading parameters: %s", e.what());
+          response.message = e.what();
+          response.success = false;
+        }
+
+        return true;
       }
 
       giskard_core::QPControllerProjection create_projection(const giskard_msgs::WholeBodyGoal& goal)
