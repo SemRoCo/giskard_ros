@@ -75,9 +75,11 @@ namespace giskard_ros
 
       // parameters
       urdf::Model robot_model_;
-      std::string root_link_;
+      std::string root_link_, left_ee_tip_link_;
       std::map<std::string, double> joint_weights_, joint_velocity_thresholds_, joint_convergence_thresholds_;
-      double sample_period_;
+      double sample_period_, trans3d_threshold_, trans3d_p_gain_, trans3d_weight_,
+              rot3d_threshold_, rot3d_p_gain_, rot3d_weight_;
+      bool enable_thresholding_trans3d_, enable_thresholding_rot3d_;
       int nWSR_;
       size_t min_num_trajectory_points_, max_num_trajectory_points_;
 
@@ -103,8 +105,7 @@ namespace giskard_ros
 
         if (!joint_names_equal)
         {
-          // TODO: turn this into a debug
-          ROS_INFO("Recalculating index of joint names of the joint controller.");
+          ROS_DEBUG("Recalculating index of joint names of the joint controller.");
           joint_controller_joint_names_ = msg->joint_names;
           joint_controller_joint_name_index_.clear();
           for (size_t i=0; i<msg->joint_names.size(); ++i)
@@ -123,7 +124,7 @@ namespace giskard_ros
       void goal_callback(const giskard_msgs::WholeBodyGoalConstPtr& goal)
       {
         ros::Time start_time = ros::Time::now();
-        ROS_INFO("Received a new goal.");
+        ROS_DEBUG("Received a new goal.");
         try
         {
           giskard_core::QPControllerProjection projection = create_projection(*goal);
@@ -197,8 +198,7 @@ namespace giskard_ros
 
       control_msgs::FollowJointTrajectoryGoal calc_trajectory_goal(const giskard_core::QPControllerProjection& projection) const
       {
-        // TODO: turn this into a debug
-        ROS_INFO_STREAM("Projection holds a trajectory with " << projection.get_position_trajectories().size() << " points.");
+        ROS_DEBUG_STREAM("Projection holds a trajectory with " << projection.get_position_trajectories().size() << " points.");
 
         // set up joint names
         control_msgs::FollowJointTrajectoryGoal goal;
@@ -251,20 +251,20 @@ namespace giskard_ros
             giskard_core::ControlParams trans3d_params;
             trans3d_params.type = giskard_core::ControlParams::Translation3D;
             trans3d_params.root_link = root_link_;
-            trans3d_params.tip_link = "l_gripper_tool_frame"; // TODO: get these parameters from server
-            trans3d_params.threshold_error = true;
-            trans3d_params.threshold = 0.05;
-            trans3d_params.p_gain = 3.0;
-            trans3d_params.weight = 1.0;
+            trans3d_params.tip_link = left_ee_tip_link_;// "l_gripper_tool_frame";
+            trans3d_params.threshold_error = enable_thresholding_trans3d_;
+            trans3d_params.threshold = trans3d_threshold_; // 0.05
+            trans3d_params.p_gain = trans3d_p_gain_;
+            trans3d_params.weight = trans3d_weight_;
 
             giskard_core::ControlParams rot3d_params;
             rot3d_params.type = giskard_core::ControlParams::Rotation3D;
             rot3d_params.root_link = root_link_;
-            rot3d_params.tip_link = "l_gripper_tool_frame"; // TODO: get these parameters from server
-            rot3d_params.threshold_error = true;
-            rot3d_params.threshold = 0.1;
-            rot3d_params.p_gain = 3.0;
-            rot3d_params.weight = 1.0;
+            rot3d_params.tip_link = left_ee_tip_link_; //"l_gripper_tool_frame"; //
+            rot3d_params.threshold_error = enable_thresholding_rot3d_;
+            rot3d_params.threshold = rot3d_threshold_; // 0.1
+            rot3d_params.p_gain = rot3d_p_gain_;
+            rot3d_params.weight = rot3d_weight_;
 
             // TODO: put these names somewhere central
             control_params.insert(std::make_pair("left_arm_translation3d", trans3d_params));
@@ -285,12 +285,23 @@ namespace giskard_ros
           throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
 
         root_link_ = readParam<std::string>(nh_, "root_link");
+        left_ee_tip_link_ = readParam<std::string>(nh_, "left_ee_tip_link");
 
         sample_period_ = readParam<double>(nh_, "sample_period");
 
         min_num_trajectory_points_ = readParam<int>(nh_, "min_num_traj_points");
         max_num_trajectory_points_ = readParam<int>(nh_, "max_num_traj_points");
         nWSR_ = readParam<int>(nh_, "nWSR");
+
+        enable_thresholding_trans3d_ = readParam<bool>(nh_, "trans3d_control/enable_thresholding");
+        trans3d_threshold_ = readParam<double>(nh_, "trans3d_control/error_threshold");
+        trans3d_p_gain_ = readParam<double>(nh_, "trans3d_control/p_gain");
+        trans3d_weight_ = readParam<double>(nh_, "trans3d_control/weight");
+
+        enable_thresholding_rot3d_ = readParam<bool>(nh_, "rot3d_control/enable_thresholding");
+        rot3d_threshold_ = readParam<double>(nh_, "rot3d_control/error_threshold");
+        rot3d_p_gain_ = readParam<double>(nh_, "rot3d_control/p_gain");
+        rot3d_weight_ = readParam<double>(nh_, "rot3d_control/weight");
 
         read_joint_weights();
 
