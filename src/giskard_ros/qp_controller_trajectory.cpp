@@ -102,6 +102,9 @@ namespace giskard_ros
       {
         // copy the current state, i.e. joint positions, velocities, etc.
         joint_controller_state_ = msg->actual;
+        joint_controller_state_.velocities.clear();
+        joint_controller_state_.accelerations.clear();
+        joint_controller_state_.effort.clear();
 
         // check whether the joint names in the state are different from what we internally hold
         bool joint_names_equal = false;
@@ -239,9 +242,9 @@ namespace giskard_ros
           for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
             sample.positions[joint_goal_index(projection.get_controllable_names()[j])] =
                 projection.get_position_trajectories()[i](j);
-          for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
-            sample.velocities[joint_goal_index(projection.get_controllable_names()[j])] =
-                projection.get_velocity_trajectories()[i](j);
+//          for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
+//            sample.velocities[joint_goal_index(projection.get_controllable_names()[j])] =
+//                projection.get_velocity_trajectories()[i](j);
         }
 
         // set up start time
