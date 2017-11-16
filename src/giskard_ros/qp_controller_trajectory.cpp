@@ -150,29 +150,36 @@ namespace giskard_ros
           ros::Time start_time = ros::Time::now();
           ros::Rate monitor_rate(10); // TODO: get this from the parameter server?
 
-          while((ros::Time::now() - start_time) < traj_duration)
+          while((ros::Time::now() - start_time) <= traj_duration)
           {
             if (giskard_act_.isPreemptRequested() || !ros::ok())
             {
               giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Received preempt request.");
               joint_traj_act_.cancelAllGoals();
-              return;
+              break;
             }
 
             if (!(joint_traj_act_.getState() == actionlib::SimpleClientGoalState::ACTIVE ||
                 joint_traj_act_.getState() == actionlib::SimpleClientGoalState::PENDING))
             {
+              ROS_INFO("Aborting because the trajectory goal is not running in the controller.");
               giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Joint trajectory action in unexpected state: " +
                       joint_traj_act_.getState().getText());
               joint_traj_act_.cancelAllGoals();
-              return;
+              break;
             }
 
             // TODO: re-run projection to emulate reactiveness
             monitor_rate.sleep();
           }
 
-          ROS_INFO("Stopped monitoring trajectory goal.");
+          ROS_INFO("Waiting for trajectory goal to finish.");
+          ros::Time finish_time = ros::Time::now();
+          while ((ros::Time::now() - finish_time) <= ros::Duration(0.2) &&
+                 !joint_traj_act_.getState().isDone())
+            ros::Rate(50).sleep();
+
+          ROS_INFO("Finished waiting.");
           if (joint_traj_act_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
             giskard_act_.setSucceeded(giskard_msgs::WholeBodyResult());
           else
