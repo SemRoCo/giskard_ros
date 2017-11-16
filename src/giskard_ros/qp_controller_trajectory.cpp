@@ -156,8 +156,8 @@ namespace giskard_ros
               return;
             }
 
-            if (joint_traj_act_.getState() == actionlib::SimpleClientGoalState::ACTIVE ||
-                joint_traj_act_.getState() == actionlib::SimpleClientGoalState::PENDING)
+            if (!(joint_traj_act_.getState() == actionlib::SimpleClientGoalState::ACTIVE ||
+                joint_traj_act_.getState() == actionlib::SimpleClientGoalState::PENDING))
             {
               giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Joint trajectory action in unexpected state: " +
                       joint_traj_act_.getState().getText());
