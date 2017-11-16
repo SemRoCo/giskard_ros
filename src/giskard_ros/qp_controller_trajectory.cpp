@@ -81,8 +81,8 @@ namespace giskard_ros
       std::string root_link_, left_ee_tip_link_, right_ee_tip_link_;
       std::map<std::string, double> joint_weights_, joint_velocity_thresholds_, joint_convergence_thresholds_;
       double sample_period_, trans3d_threshold_, trans3d_p_gain_, trans3d_weight_,
-              rot3d_threshold_, rot3d_p_gain_, rot3d_weight_;
-      bool enable_thresholding_trans3d_, enable_thresholding_rot3d_;
+              rot3d_threshold_, rot3d_p_gain_, rot3d_weight_, joint_threshold_, joint_p_gain_, joint_weight_;
+      bool enable_thresholding_trans3d_, enable_thresholding_rot3d_, enable_thresholding_joint_;
       int nWSR_;
       size_t min_num_trajectory_points_, max_num_trajectory_points_;
 
@@ -277,25 +277,35 @@ namespace giskard_ros
           case giskard_msgs::ArmCommand::IGNORE_GOAL:
             break;
           case giskard_msgs::ArmCommand::JOINT_GOAL:
-            // TODO: implement me
-            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          {
+            giskard_core::ControlParams joint_params;
+            joint_params.type = giskard_core::ControlParams::Joint;
+            joint_params.root_link = root_link_;
+            joint_params.tip_link = left_ee_tip_link_;
+            joint_params.threshold_error = enable_thresholding_joint_;
+            joint_params.threshold = joint_threshold_;
+            joint_params.p_gain = joint_p_gain_;
+            joint_params.weight = joint_weight_;
+
+            control_params.insert(std::make_pair("left_arm_joint", joint_params));
+          }
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
             giskard_core::ControlParams trans3d_params;
             trans3d_params.type = giskard_core::ControlParams::Translation3D;
             trans3d_params.root_link = root_link_;
-            trans3d_params.tip_link = left_ee_tip_link_;// "l_gripper_tool_frame";
+            trans3d_params.tip_link = left_ee_tip_link_;
             trans3d_params.threshold_error = enable_thresholding_trans3d_;
-            trans3d_params.threshold = trans3d_threshold_; // 0.05
+            trans3d_params.threshold = trans3d_threshold_;
             trans3d_params.p_gain = trans3d_p_gain_;
             trans3d_params.weight = trans3d_weight_;
 
             giskard_core::ControlParams rot3d_params;
             rot3d_params.type = giskard_core::ControlParams::Rotation3D;
             rot3d_params.root_link = root_link_;
-            rot3d_params.tip_link = left_ee_tip_link_; //"l_gripper_tool_frame"; //
+            rot3d_params.tip_link = left_ee_tip_link_;
             rot3d_params.threshold_error = enable_thresholding_rot3d_;
-            rot3d_params.threshold = rot3d_threshold_; // 0.1
+            rot3d_params.threshold = rot3d_threshold_;
             rot3d_params.p_gain = rot3d_p_gain_;
             rot3d_params.weight = rot3d_weight_;
 
@@ -373,6 +383,11 @@ namespace giskard_ros
         rot3d_threshold_ = readParam<double>(nh_, "rot3d_control/error_threshold");
         rot3d_p_gain_ = readParam<double>(nh_, "rot3d_control/p_gain");
         rot3d_weight_ = readParam<double>(nh_, "rot3d_control/weight");
+
+        enable_thresholding_joint_ = readParam<bool>(nh_, "joint_control/enable_thresholding");
+        joint_threshold_ = readParam<double>(nh_, "joint_control/error_threshold");
+        joint_p_gain_ = readParam<double>(nh_, "joint_control/p_gain");
+        joint_weight_ = readParam<double>(nh_, "joint_control/weight");
 
         read_joint_weights();
 
