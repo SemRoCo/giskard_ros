@@ -129,7 +129,7 @@ namespace giskard_ros
       void goal_callback(const giskard_msgs::WholeBodyGoalConstPtr& goal)
       {
         ros::Time start_time = ros::Time::now();
-        ROS_DEBUG("Received a new goal.");
+        ROS_INFO("Received a new goal.");
         try
         {
           giskard_core::QPControllerProjection projection = create_projection(*goal);
