@@ -78,7 +78,7 @@ namespace giskard_ros
 
       // parameters
       urdf::Model robot_model_;
-      std::string root_link_, left_ee_tip_link_;
+      std::string root_link_, left_ee_tip_link_, right_ee_tip_link_;
       std::map<std::string, double> joint_weights_, joint_velocity_thresholds_, joint_convergence_thresholds_;
       double sample_period_, trans3d_threshold_, trans3d_p_gain_, trans3d_weight_,
               rot3d_threshold_, rot3d_p_gain_, rot3d_weight_;
@@ -90,6 +90,8 @@ namespace giskard_ros
       {
         if (msg->name.size() != msg->position.size())
           throw std::runtime_error("Received a joint state message with position and name fields of different length.");
+
+        // TODO: check for all joints in joint state message
 
         current_joint_state_.clear();
         for (size_t i=0; i<msg->name.size(); ++i)
@@ -296,6 +298,43 @@ namespace giskard_ros
             std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.left_ee.type));
         }
 
+        // TODO: refactor this into a separate method to reduce code
+        switch (goal.command.right_ee.type)
+        {
+          case giskard_msgs::ArmCommand::IGNORE_GOAL:
+            break;
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            // TODO: implement me
+            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+          {
+            giskard_core::ControlParams trans3d_params;
+            trans3d_params.type = giskard_core::ControlParams::Translation3D;
+            trans3d_params.root_link = root_link_;
+            trans3d_params.tip_link = right_ee_tip_link_;
+            trans3d_params.threshold_error = enable_thresholding_trans3d_;
+            trans3d_params.threshold = trans3d_threshold_;
+            trans3d_params.p_gain = trans3d_p_gain_;
+            trans3d_params.weight = trans3d_weight_;
+
+            giskard_core::ControlParams rot3d_params;
+            rot3d_params.type = giskard_core::ControlParams::Rotation3D;
+            rot3d_params.root_link = root_link_;
+            rot3d_params.tip_link = right_ee_tip_link_;
+            rot3d_params.threshold_error = enable_thresholding_rot3d_;
+            rot3d_params.threshold = rot3d_threshold_;
+            rot3d_params.p_gain = rot3d_p_gain_;
+            rot3d_params.weight = rot3d_weight_;
+
+            // TODO: put these names somewhere central
+            control_params.insert(std::make_pair("right_arm_translation3d", trans3d_params));
+            control_params.insert(std::make_pair("right_arm_rotation3d", rot3d_params));
+            break;
+          }
+          default:
+            std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.right_ee.type));
+        }
+
         return giskard_core::QPControllerParams(robot_model_, root_link_, joint_weights_,
             joint_velocity_thresholds_, control_params);
       }
@@ -307,6 +346,7 @@ namespace giskard_ros
 
         root_link_ = readParam<std::string>(nh_, "root_link");
         left_ee_tip_link_ = readParam<std::string>(nh_, "left_ee_tip_link");
+        right_ee_tip_link_ = readParam<std::string>(nh_, "right_ee_tip_link");
 
         sample_period_ = readParam<double>(nh_, "sample_period");
 
@@ -418,6 +458,45 @@ namespace giskard_ros
           }
           default:
             std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.left_ee.type));
+        }
+
+        // TODO: refactor this into a separate method to reduce code duplication
+        switch (goal.command.right_ee.type)
+        {
+          case giskard_msgs::ArmCommand::IGNORE_GOAL:
+            break;
+          case giskard_msgs::ArmCommand::JOINT_GOAL:
+            // TODO: implement me
+            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
+          {
+            // use TF to transform goal pose
+            geometry_msgs::PoseStamped transformed_goal_pose;
+            // TODO: get this TF timeout from somewhere
+            tf_->transform(goal.command.right_ee.goal_pose, transformed_goal_pose, root_link_, ros::Duration(0.1));
+
+            // convert goal pose into axis-angle-representation for rotation, and store all in Eigen Vector
+            Vector7d goal_tmp = to_eigen_axis_angle(transformed_goal_pose.pose);
+
+            // get vector of goal input names
+            using namespace giskard_core;
+            std::map< std::string, ControlParams::ControlType > pairs =
+                {{"right_arm_rotation3d", ControlParams::Rotation3D}, {"right_arm_translation3d", ControlParams::Translation3D}};
+            std::vector<std::string> input_names = {};
+            for (auto const & pair: pairs)
+              for (auto const &input_name : QPControllerSpecGenerator::create_input_names(pair.first, pair.second))
+                input_names.push_back(input_name);
+
+            // fill the result map
+            if (input_names.size() != goal_tmp.rows())
+              throw std::runtime_error("Dimensions of input_names and goal_tmp do not match.");
+            for (size_t i=0; i<input_names.size(); ++i)
+              result.insert(std::make_pair(input_names[i], goal_tmp(i)));
+
+            break;
+          }
+          default:
+            std::runtime_error("Received unknown arm command type: " + std::to_string(goal.command.right_ee.type));
         }
 
         return result;
