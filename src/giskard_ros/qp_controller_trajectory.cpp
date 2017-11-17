@@ -135,9 +135,14 @@ namespace giskard_ros
         ROS_INFO("Received a new goal.");
         try
         {
-          giskard_core::QPControllerProjection projection = create_projection(*goal);
+          if (goal->command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
+            // TODO: implement me
+            throw std::runtime_error("Command type YAML_CONTROLLER is not supported, yet.");
+
+          giskard_core::QPControllerSpecGenerator gen(create_generator_params(*goal));
+          giskard_core::QPControllerProjection projection = create_projection(gen);
           ros::Time setup_complete = ros::Time::now();
-          projection.run(get_observable_values(projection, *goal));
+          projection.run(get_observable_values(gen, *goal));
           ros::Time projection_complete = ros::Time::now();
           ROS_INFO_STREAM("Setup time: " << (setup_complete - start_time).toSec());
           ROS_INFO_STREAM("Projection time: " << (projection_complete - setup_complete).toSec());
@@ -215,13 +220,8 @@ namespace giskard_ros
         return true;
       }
 
-      giskard_core::QPControllerProjection create_projection(const giskard_msgs::WholeBodyGoal& goal)
+      giskard_core::QPControllerProjection create_projection(const giskard_core::QPControllerSpecGenerator& gen)
       {
-        if (goal.command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
-          // TODO: implement me
-          throw std::runtime_error("Command type YAML_CONTROLLER is not supported, yet.");
-
-        giskard_core::QPControllerSpecGenerator gen(create_generator_params(goal));
         giskard_core::QPController controller = giskard_core::generate(gen.get_spec());
 
         giskard_core::QPControllerProjectionParams params(sample_period_, gen.get_observable_names(), joint_convergence_thresholds_,
@@ -442,7 +442,7 @@ namespace giskard_ros
             readParam<double>(nh_, giskard_core::QPControllerProjectionParams::default_joint_convergence_threshold_key())));
       }
 
-      std::map<std::string, double> get_observable_values(const giskard_core::QPControllerProjection& projection,
+      std::map<std::string, double> get_observable_values(const giskard_core::QPControllerSpecGenerator& gen,
           const giskard_msgs::WholeBodyGoal& goal)
       {
         std::map<std::string, double> result = current_joint_state_;
