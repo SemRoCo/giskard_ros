@@ -78,7 +78,7 @@ namespace giskard_ros
 
       // parameters
       urdf::Model robot_model_;
-      std::string root_link_, left_ee_tip_link_, right_ee_tip_link_;
+      std::string root_link_, left_ee_tip_link_, left_ee_root_link_, right_ee_tip_link_, right_ee_root_link_;
       std::map<std::string, double> joint_weights_, joint_velocity_thresholds_, joint_convergence_thresholds_;
       double sample_period_, trans3d_threshold_, trans3d_p_gain_, trans3d_weight_,
               rot3d_threshold_, rot3d_p_gain_, rot3d_weight_, joint_threshold_, joint_p_gain_, joint_weight_;
@@ -302,7 +302,7 @@ namespace giskard_ros
 
             giskard_core::ControlParams rot3d_params;
             rot3d_params.type = giskard_core::ControlParams::Rotation3D;
-            rot3d_params.root_link = root_link_;
+            rot3d_params.root_link = left_ee_root_link_;
             rot3d_params.tip_link = left_ee_tip_link_;
             rot3d_params.threshold_error = enable_thresholding_rot3d_;
             rot3d_params.threshold = rot3d_threshold_;
@@ -324,8 +324,18 @@ namespace giskard_ros
           case giskard_msgs::ArmCommand::IGNORE_GOAL:
             break;
           case giskard_msgs::ArmCommand::JOINT_GOAL:
-            // TODO: implement me
-            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          {
+            giskard_core::ControlParams joint_params;
+            joint_params.type = giskard_core::ControlParams::Joint;
+            joint_params.root_link = right_ee_root_link_;
+            joint_params.tip_link = right_ee_tip_link_;
+            joint_params.threshold_error = enable_thresholding_joint_;
+            joint_params.threshold = joint_threshold_;
+            joint_params.p_gain = joint_p_gain_;
+            joint_params.weight = joint_weight_;
+
+            control_params.insert(std::make_pair("right_arm_joint", joint_params));
+          }
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
             giskard_core::ControlParams trans3d_params;
@@ -366,7 +376,9 @@ namespace giskard_ros
 
         root_link_ = readParam<std::string>(nh_, "root_link");
         left_ee_tip_link_ = readParam<std::string>(nh_, "left_ee_tip_link");
+        left_ee_root_link_ = readParam<std::string>(nh_, "left_ee_root_link");
         right_ee_tip_link_ = readParam<std::string>(nh_, "right_ee_tip_link");
+        right_ee_root_link_ = readParam<std::string>(nh_, "right_ee_root_link");
 
         sample_period_ = readParam<double>(nh_, "sample_period");
 
@@ -452,8 +464,16 @@ namespace giskard_ros
           case giskard_msgs::ArmCommand::IGNORE_GOAL:
             break;
           case giskard_msgs::ArmCommand::JOINT_GOAL:
-            // TODO: implement me
-            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          {
+            std::vector<std::string> input_names = gen.get_control_params().create_input_names("left_arm_joint");
+            if (input_names.size() != goal.command.left_ee.goal_configuration.size())
+              throw std::runtime_error("Left arm goal configuration has " + std::to_string(goal.command.left_ee.goal_configuration.size()) +
+                                       " elements, but " + std::to_string(input_names.size()) + " were expected.");
+            for (size_t i=0; i<input_names.size(); ++i)
+              result.insert(std::make_pair(input_names[i], goal.command.left_ee.goal_configuration[i]));
+
+            break;
+          }
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
             // use TF to transform goal pose
@@ -490,8 +510,16 @@ namespace giskard_ros
           case giskard_msgs::ArmCommand::IGNORE_GOAL:
             break;
           case giskard_msgs::ArmCommand::JOINT_GOAL:
-            // TODO: implement me
-            throw std::runtime_error("Arm command type JOINT_GOAL is not supported, yet.");
+          {
+            std::vector<std::string> input_names = gen.get_control_params().create_input_names("right_arm_joint");
+            if (input_names.size() != goal.command.right_ee.goal_configuration.size())
+              throw std::runtime_error("Right arm goal configuration has " + std::to_string(goal.command.right_ee.goal_configuration.size()) +
+                                       " elements, but " + std::to_string(input_names.size()) + " were expected.");
+            for (size_t i=0; i<input_names.size(); ++i)
+              result.insert(std::make_pair(input_names[i], goal.command.right_ee.goal_configuration[i]));
+
+            break;
+          }
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
             // use TF to transform goal pose
