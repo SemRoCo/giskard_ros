@@ -465,12 +465,11 @@ namespace giskard_ros
             Vector7d goal_tmp = to_eigen_axis_angle(transformed_goal_pose.pose);
 
             // get vector of goal input names
+            // TODO: refactor this into a member function of giskard_core::QPControllerParams ?
             using namespace giskard_core;
-            std::map< std::string, ControlParams::ControlType > pairs =
-                {{"left_arm_rotation3d", ControlParams::Rotation3D}, {"left_arm_translation3d", ControlParams::Translation3D}};
             std::vector<std::string> input_names = {};
-            for (auto const & pair: pairs)
-              for (auto const &input_name : QPControllerSpecGenerator::create_input_names(pair.first, pair.second))
+            for (auto const & control_name: {"left_arm_rotation3d", "left_arm_translation3d"})
+              for (auto const &input_name : gen.get_control_params().create_input_names(control_name))
                 input_names.push_back(input_name);
 
             // fill the result map
@@ -504,12 +503,11 @@ namespace giskard_ros
             Vector7d goal_tmp = to_eigen_axis_angle(transformed_goal_pose.pose);
 
             // get vector of goal input names
+            // TODO: refactor this into a member function of giskard_core::QPControllerParams ?
             using namespace giskard_core;
-            std::map< std::string, ControlParams::ControlType > pairs =
-                {{"right_arm_rotation3d", ControlParams::Rotation3D}, {"right_arm_translation3d", ControlParams::Translation3D}};
             std::vector<std::string> input_names = {};
-            for (auto const & pair: pairs)
-              for (auto const &input_name : QPControllerSpecGenerator::create_input_names(pair.first, pair.second))
+            for (auto const & control_name: {"right_arm_rotation3d", "right_arm_translation3d"})
+              for (auto const &input_name : gen.get_control_params().create_input_names(control_name))
                 input_names.push_back(input_name);
 
             // fill the result map
