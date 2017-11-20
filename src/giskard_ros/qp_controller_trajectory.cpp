@@ -140,6 +140,7 @@ namespace giskard_ros
             throw std::runtime_error("Command type YAML_CONTROLLER is not supported, yet.");
 
           giskard_core::QPControllerSpecGenerator gen(create_generator_params(*goal));
+
           giskard_core::QPControllerProjection projection = create_projection(gen);
           ros::Time setup_complete = ros::Time::now();
           projection.run(get_observable_values(gen, *goal));
@@ -199,7 +200,6 @@ namespace giskard_ros
         }
 
         ROS_INFO("Finished callback.");
-
       }
 
       bool reload_params_callback(std_srvs::Trigger::Request& request, std_srvs::Trigger::Response& response)
@@ -270,7 +270,7 @@ namespace giskard_ros
         if (goal.command.type == giskard_msgs::WholeBodyCommand::YAML_CONTROLLER)
           throw std::runtime_error("Cannot create QPControllerParams for command type YAML_CONTROLLER.");
 
-        std::map<std::string, giskard_core::ControlParams> control_params;
+        std::map<std::string, giskard_core::ControlParams> control_params = {};
 
         switch (goal.command.left_ee.type)
         {
@@ -280,7 +280,7 @@ namespace giskard_ros
           {
             giskard_core::ControlParams joint_params;
             joint_params.type = giskard_core::ControlParams::Joint;
-            joint_params.root_link = root_link_;
+            joint_params.root_link = left_ee_root_link_;
             joint_params.tip_link = left_ee_tip_link_;
             joint_params.threshold_error = enable_thresholding_joint_;
             joint_params.threshold = joint_threshold_;
@@ -288,6 +288,7 @@ namespace giskard_ros
             joint_params.weight = joint_weight_;
 
             control_params.insert(std::make_pair("left_arm_joint", joint_params));
+            break;
           }
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
@@ -302,7 +303,7 @@ namespace giskard_ros
 
             giskard_core::ControlParams rot3d_params;
             rot3d_params.type = giskard_core::ControlParams::Rotation3D;
-            rot3d_params.root_link = left_ee_root_link_;
+            rot3d_params.root_link = root_link_;
             rot3d_params.tip_link = left_ee_tip_link_;
             rot3d_params.threshold_error = enable_thresholding_rot3d_;
             rot3d_params.threshold = rot3d_threshold_;
@@ -335,6 +336,7 @@ namespace giskard_ros
             joint_params.weight = joint_weight_;
 
             control_params.insert(std::make_pair("right_arm_joint", joint_params));
+            break;
           }
           case giskard_msgs::ArmCommand::CARTESIAN_GOAL:
           {
