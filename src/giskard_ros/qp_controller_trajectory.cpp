@@ -476,7 +476,7 @@ namespace giskard_ros
         if (!robot_model_.initParam("/robot_description"))
           throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
 
-        use_new_interface_ = readParam<bool>(nh_, "use_new_inteface");
+        use_new_interface_ = readParam<bool>(nh_, "use_new_interface");
 
         root_link_ = readParam<std::string>(nh_, "root_link");
         left_ee_tip_link_ = readParam<std::string>(nh_, "left_ee_tip_link");
