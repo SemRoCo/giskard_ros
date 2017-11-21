@@ -165,9 +165,9 @@ namespace giskard_ros
 
           while((ros::Time::now() - start_time) <= traj_duration)
           {
-            if (giskard_act_.isPreemptRequested() || !ros::ok())
+            if (new_giskard_act_.isPreemptRequested() || !ros::ok())
             {
-              giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Received preempt request.");
+              new_giskard_act_.setPreempted(giskard_msgs::ControllerListResult(), "Received preempt request.");
               joint_traj_act_.cancelAllGoals();
               break;
             }
@@ -176,7 +176,7 @@ namespace giskard_ros
                 joint_traj_act_.getState() == actionlib::SimpleClientGoalState::PENDING))
             {
               ROS_INFO("Aborting because the trajectory goal is not running in the controller.");
-              giskard_act_.setPreempted(giskard_msgs::WholeBodyResult(), "Joint trajectory action in unexpected state: " +
+              new_giskard_act_.setPreempted(giskard_msgs::ControllerListResult(), "Joint trajectory action in unexpected state: " +
                       joint_traj_act_.getState().getText());
               joint_traj_act_.cancelAllGoals();
               break;
@@ -194,16 +194,16 @@ namespace giskard_ros
 
           ROS_INFO("Finished waiting.");
           if (joint_traj_act_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED)
-            giskard_act_.setSucceeded(giskard_msgs::WholeBodyResult());
+            new_giskard_act_.setSucceeded(giskard_msgs::ControllerListResult());
           else
-            giskard_act_.setAborted(giskard_msgs::WholeBodyResult(),
+            new_giskard_act_.setAborted(giskard_msgs::ControllerListResult(),
                 "Trajectory execution failed with: " + joint_traj_act_.getState().getText());
 
         }
         catch (const std::exception& e)
         {
           ROS_ERROR("%s", e.what());
-          giskard_act_.setAborted(giskard_msgs::WholeBodyResult(), e.what());
+          new_giskard_act_.setAborted(giskard_msgs::ControllerListResult(), e.what());
         }
 
         ROS_INFO("Finished callback.");
@@ -479,10 +479,12 @@ namespace giskard_ros
         use_new_interface_ = readParam<bool>(nh_, "use_new_interface");
 
         root_link_ = readParam<std::string>(nh_, "root_link");
-        left_ee_tip_link_ = readParam<std::string>(nh_, "left_ee_tip_link");
-        left_ee_root_link_ = readParam<std::string>(nh_, "left_ee_root_link");
-        right_ee_tip_link_ = readParam<std::string>(nh_, "right_ee_tip_link");
-        right_ee_root_link_ = readParam<std::string>(nh_, "right_ee_root_link");
+        if (!use_new_interface_) {
+            left_ee_tip_link_ = readParam<std::string>(nh_, "left_ee_tip_link");
+            left_ee_root_link_ = readParam<std::string>(nh_, "left_ee_root_link");
+            right_ee_tip_link_ = readParam<std::string>(nh_, "right_ee_tip_link");
+            right_ee_root_link_ = readParam<std::string>(nh_, "right_ee_root_link");
+        }
 
         sample_period_ = readParam<double>(nh_, "sample_period");
 
@@ -490,20 +492,22 @@ namespace giskard_ros
         max_num_trajectory_points_ = readParam<int>(nh_, "max_num_traj_points");
         nWSR_ = readParam<int>(nh_, "nWSR");
 
-        enable_thresholding_trans3d_ = readParam<bool>(nh_, "trans3d_control/enable_thresholding");
-        trans3d_threshold_ = readParam<double>(nh_, "trans3d_control/error_threshold");
-        trans3d_p_gain_ = readParam<double>(nh_, "trans3d_control/p_gain");
-        trans3d_weight_ = readParam<double>(nh_, "trans3d_control/weight");
+        if (!use_new_interface_) {
+          enable_thresholding_trans3d_ = readParam<bool>(nh_, "trans3d_control/enable_thresholding");
+          trans3d_threshold_ = readParam<double>(nh_, "trans3d_control/error_threshold");
+          trans3d_p_gain_ = readParam<double>(nh_, "trans3d_control/p_gain");
+          trans3d_weight_ = readParam<double>(nh_, "trans3d_control/weight");
 
-        enable_thresholding_rot3d_ = readParam<bool>(nh_, "rot3d_control/enable_thresholding");
-        rot3d_threshold_ = readParam<double>(nh_, "rot3d_control/error_threshold");
-        rot3d_p_gain_ = readParam<double>(nh_, "rot3d_control/p_gain");
-        rot3d_weight_ = readParam<double>(nh_, "rot3d_control/weight");
+          enable_thresholding_rot3d_ = readParam<bool>(nh_, "rot3d_control/enable_thresholding");
+          rot3d_threshold_ = readParam<double>(nh_, "rot3d_control/error_threshold");
+          rot3d_p_gain_ = readParam<double>(nh_, "rot3d_control/p_gain");
+          rot3d_weight_ = readParam<double>(nh_, "rot3d_control/weight");
 
-        enable_thresholding_joint_ = readParam<bool>(nh_, "joint_control/enable_thresholding");
-        joint_threshold_ = readParam<double>(nh_, "joint_control/error_threshold");
-        joint_p_gain_ = readParam<double>(nh_, "joint_control/p_gain");
-        joint_weight_ = readParam<double>(nh_, "joint_control/weight");
+          enable_thresholding_joint_ = readParam<bool>(nh_, "joint_control/enable_thresholding");
+          joint_threshold_ = readParam<double>(nh_, "joint_control/error_threshold");
+          joint_p_gain_ = readParam<double>(nh_, "joint_control/p_gain");
+          joint_weight_ = readParam<double>(nh_, "joint_control/weight");
+        }
 
         read_joint_weights();
 
