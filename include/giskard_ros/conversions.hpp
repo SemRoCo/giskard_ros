@@ -27,6 +27,8 @@
 #include <Eigen/Dense>
 #include <kdl_conversions/kdl_msg.h>
 #include <ros/ros.h>
+#include <giskard_msgs/Controller.h>
+#include <giskard_core/giskard_core.hpp>
 
 namespace giskard_ros
 {
@@ -98,6 +100,41 @@ namespace giskard_ros
     tf::poseKDLToMsg(pose, result.pose);
     return result;
   }
+
+  inline giskard_core::ControlParams from_msg(const giskard_msgs::Controller& controller)
+  {
+    giskard_core::ControlParams result;
+    switch (controller.type)
+    {
+      case giskard_msgs::Controller::JOINT:
+      {
+        result.type = giskard_core::ControlParams::Joint;
+        break;
+      }
+      case giskard_msgs::Controller::ROTATION_3D:
+      {
+        result.type = giskard_core::ControlParams::Rotation3D;
+        break;
+      }
+      case giskard_msgs::Controller::TRANSLATION_3D:
+      {
+        result.type = giskard_core::ControlParams::Translation3D;
+        break;
+      }
+      default:
+        throw std::runtime_error("Supported controller type: " + controller.type);
+    }
+
+    result.root_link = controller.root_link;
+    result.tip_link = controller.tip_link;
+    result.threshold_error = controller.enable_error_threshold;
+    result.threshold = controller.threshold_value;
+    result.p_gain = controller.p_gain;
+    result.weight = controller.weight;
+
+    return result;
+  }
+
 }
 
 #endif // __GISKARD_CONVERSIONS__HPP
