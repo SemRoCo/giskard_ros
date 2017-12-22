@@ -75,7 +75,7 @@ namespace giskard_ros
       actionlib::SimpleActionServer<giskard_msgs::ControllerListAction> new_giskard_act_;
       ros::ServiceServer trigger_param_loading_serv_;
       std::shared_ptr<tf2_ros::BufferClient> tf_;
-      bool use_new_interface_;
+      bool use_new_interface_, fill_velocity_values_;
 
       // internal state
       std::map<std::string, double> current_joint_state_;
@@ -109,7 +109,9 @@ namespace giskard_ros
       {
         // copy the current state, i.e. joint positions, velocities, etc.
         joint_controller_state_ = msg->actual;
-        joint_controller_state_.velocities.clear();
+        // clear all fields that shall not be transmitted to the controller
+        if (!fill_velocity_values_)
+          joint_controller_state_.velocities.clear();
         joint_controller_state_.accelerations.clear();
         joint_controller_state_.effort.clear();
 
@@ -331,9 +333,10 @@ namespace giskard_ros
           for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
             sample.positions[joint_goal_index(projection.get_controllable_names()[j])] =
                 projection.get_position_trajectories()[i](j);
-//          for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
-//            sample.velocities[joint_goal_index(projection.get_controllable_names()[j])] =
-//                projection.get_velocity_trajectories()[i](j);
+          if (fill_velocity_values_)
+            for (size_t j=0; j<projection.get_controllable_names().size(); ++j)
+              sample.velocities[joint_goal_index(projection.get_controllable_names()[j])] =
+                  projection.get_velocity_trajectories()[i](j);
         }
 
         // set up start time
@@ -477,6 +480,7 @@ namespace giskard_ros
           throw std::runtime_error("Could not read urdf from parameter server at '/robot_description'.");
 
         use_new_interface_ = readParam<bool>(nh_, "use_new_interface");
+        fill_velocity_values_ = readParam<bool>(nh_, "fill_velocity_values");
 
         root_link_ = readParam<std::string>(nh_, "root_link");
         if (!use_new_interface_) {
