@@ -27,14 +27,53 @@
 #include <Eigen/Dense>
 #include <kdl_conversions/kdl_msg.h>
 #include <ros/ros.h>
+#include <giskard_msgs/Controller.h>
+#include <giskard_core/giskard_core.hpp>
 
 namespace giskard_ros
 {
+  inline KDL::Vector to_kdl(const geometry_msgs::Point& p)
+  {
+    return KDL::Vector(p.x, p.y, p.z);
+  }
+
+  inline KDL::Rotation to_kdl(const geometry_msgs::Quaternion& q)
+  {
+    return KDL::Rotation::Quaternion(q.x, q.y, q.z, q.w);
+  }
+
+  inline KDL::Frame to_kdl(const geometry_msgs::Pose& p)
+  {
+    return KDL::Frame(to_kdl(p.orientation), to_kdl(p.position));
+  }
+
   inline Eigen::VectorXd to_eigen(const std::vector<double>& v)
   {
     Eigen::VectorXd result(v.size());
     for (size_t i=0; i<v.size(); ++i)
       result[i] = v[i];
+    return result;
+  }
+
+  inline Eigen::Vector3d to_eigen(const geometry_msgs::Point& p)
+  {
+    return {p.x, p.y, p.z};
+  }
+
+  inline Eigen::Vector4d to_eigen_axis_angle(const geometry_msgs::Quaternion& q)
+  {
+    KDL::Vector axis;
+    double angle = to_kdl(q).GetRotAngle(axis);
+    return {axis.x(), axis.y(), axis.z(), angle};
+  }
+
+  typedef Eigen::Matrix< double, 7, 1 > Vector7d;
+
+  inline Vector7d to_eigen_axis_angle(const geometry_msgs::Pose& p)
+  {
+    Vector7d result;
+    result.segment(0, 4) = to_eigen_axis_angle(p.orientation);
+    result.segment(4, 3) = to_eigen(p.position);
     return result;
   }
 
@@ -59,6 +98,40 @@ namespace giskard_ros
     result.header.stamp = stamp;
     result.header.frame_id = frame_id;
     tf::poseKDLToMsg(pose, result.pose);
+    return result;
+  }
+
+  inline giskard_core::ControlParams from_msg(const giskard_msgs::Controller& controller)
+  {
+    giskard_core::ControlParams result;
+    switch (controller.type)
+    {
+      case giskard_msgs::Controller::JOINT:
+      {
+        result.type = giskard_core::ControlParams::Joint;
+        break;
+      }
+      case giskard_msgs::Controller::ROTATION_3D:
+      {
+        result.type = giskard_core::ControlParams::Rotation3D;
+        break;
+      }
+      case giskard_msgs::Controller::TRANSLATION_3D:
+      {
+        result.type = giskard_core::ControlParams::Translation3D;
+        break;
+      }
+      default:
+        throw std::runtime_error("Supported controller type: " + controller.type);
+    }
+
+    result.root_link = controller.root_link;
+    result.tip_link = controller.tip_link;
+    result.threshold_error = controller.enable_error_threshold;
+    result.threshold = controller.threshold_value;
+    result.p_gain = controller.p_gain;
+    result.weight = controller.weight;
+
     return result;
   }
 

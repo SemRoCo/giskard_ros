@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   interactive_markers 
   geometry_msgs
   sensor_msgs
+  std_srvs
   giskard_msgs
   kdl_conversions)
 
@@ -97,3 +98,7 @@ add_dependencies(yaml_executive ${catkin_EXPORTED_TARGETS})
 add_executable(check_controller_yaml src/${PROJECT_NAME}/check_controller_yaml.cpp)
 target_link_libraries(check_controller_yaml ${catkin_LIBRARIES} yaml-cpp)
 add_dependencies(check_controller_yaml ${catkin_EXPORTED_TARGETS})
+
+add_executable(qp_controller_trajectory src/${PROJECT_NAME}/qp_controller_trajectory.cpp)
+target_link_libraries(qp_controller_trajectory ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(qp_controller_trajectory ${catkin_EXPORTED_TARGETS})
