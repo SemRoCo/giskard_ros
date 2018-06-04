@@ -87,9 +87,8 @@ namespace giskard_ros
       urdf::Model robot_model_;
       std::string root_link_, left_ee_tip_link_, left_ee_root_link_, right_ee_tip_link_, right_ee_root_link_;
       std::map<std::string, double> joint_weights_, joint_velocity_thresholds_, joint_convergence_thresholds_;
-      double sample_period_, trans3d_threshold_, trans3d_p_gain_, trans3d_weight_,
-              rot3d_threshold_, rot3d_p_gain_, rot3d_weight_, joint_threshold_, joint_p_gain_, joint_weight_;
-      bool enable_thresholding_trans3d_, enable_thresholding_rot3d_, enable_thresholding_joint_;
+      double sample_period_, trans3d_max_speed_, trans3d_p_gain_, trans3d_weight_,
+              rot3d_max_speed_, rot3d_p_gain_, rot3d_weight_, joint_max_speed_, joint_p_gain_, joint_weight_;
       int nWSR_;
       size_t min_num_trajectory_points_, max_num_trajectory_points_;
 
@@ -385,8 +384,7 @@ namespace giskard_ros
             joint_params.type = giskard_core::ControlParams::Joint;
             joint_params.root_link = left_ee_root_link_;
             joint_params.tip_link = left_ee_tip_link_;
-            joint_params.threshold_error = enable_thresholding_joint_;
-            joint_params.threshold = joint_threshold_;
+            joint_params.max_speed = joint_max_speed_;
             joint_params.p_gain = joint_p_gain_;
             joint_params.weight = joint_weight_;
 
@@ -399,8 +397,7 @@ namespace giskard_ros
             trans3d_params.type = giskard_core::ControlParams::Translation3D;
             trans3d_params.root_link = root_link_;
             trans3d_params.tip_link = left_ee_tip_link_;
-            trans3d_params.threshold_error = enable_thresholding_trans3d_;
-            trans3d_params.threshold = trans3d_threshold_;
+            trans3d_params.max_speed = trans3d_max_speed_;
             trans3d_params.p_gain = trans3d_p_gain_;
             trans3d_params.weight = trans3d_weight_;
 
@@ -408,8 +405,7 @@ namespace giskard_ros
             rot3d_params.type = giskard_core::ControlParams::Rotation3D;
             rot3d_params.root_link = root_link_;
             rot3d_params.tip_link = left_ee_tip_link_;
-            rot3d_params.threshold_error = enable_thresholding_rot3d_;
-            rot3d_params.threshold = rot3d_threshold_;
+            rot3d_params.max_speed = rot3d_max_speed_;
             rot3d_params.p_gain = rot3d_p_gain_;
             rot3d_params.weight = rot3d_weight_;
 
@@ -433,8 +429,7 @@ namespace giskard_ros
             joint_params.type = giskard_core::ControlParams::Joint;
             joint_params.root_link = right_ee_root_link_;
             joint_params.tip_link = right_ee_tip_link_;
-            joint_params.threshold_error = enable_thresholding_joint_;
-            joint_params.threshold = joint_threshold_;
+            joint_params.max_speed = joint_max_speed_;
             joint_params.p_gain = joint_p_gain_;
             joint_params.weight = joint_weight_;
 
@@ -447,8 +442,7 @@ namespace giskard_ros
             trans3d_params.type = giskard_core::ControlParams::Translation3D;
             trans3d_params.root_link = root_link_;
             trans3d_params.tip_link = right_ee_tip_link_;
-            trans3d_params.threshold_error = enable_thresholding_trans3d_;
-            trans3d_params.threshold = trans3d_threshold_;
+            trans3d_params.max_speed = trans3d_max_speed_;
             trans3d_params.p_gain = trans3d_p_gain_;
             trans3d_params.weight = trans3d_weight_;
 
@@ -456,8 +450,7 @@ namespace giskard_ros
             rot3d_params.type = giskard_core::ControlParams::Rotation3D;
             rot3d_params.root_link = root_link_;
             rot3d_params.tip_link = right_ee_tip_link_;
-            rot3d_params.threshold_error = enable_thresholding_rot3d_;
-            rot3d_params.threshold = rot3d_threshold_;
+            rot3d_params.max_speed = rot3d_max_speed_;
             rot3d_params.p_gain = rot3d_p_gain_;
             rot3d_params.weight = rot3d_weight_;
 
@@ -497,18 +490,15 @@ namespace giskard_ros
         nWSR_ = readParam<int>(nh_, "nWSR");
 
         if (!use_new_interface_) {
-          enable_thresholding_trans3d_ = readParam<bool>(nh_, "trans3d_control/enable_thresholding");
-          trans3d_threshold_ = readParam<double>(nh_, "trans3d_control/error_threshold");
+          trans3d_max_speed_ = readParam<double>(nh_, "trans3d_control/max_speed");
           trans3d_p_gain_ = readParam<double>(nh_, "trans3d_control/p_gain");
           trans3d_weight_ = readParam<double>(nh_, "trans3d_control/weight");
 
-          enable_thresholding_rot3d_ = readParam<bool>(nh_, "rot3d_control/enable_thresholding");
-          rot3d_threshold_ = readParam<double>(nh_, "rot3d_control/error_threshold");
+          rot3d_max_speed_ = readParam<double>(nh_, "rot3d_control/max_speed");
           rot3d_p_gain_ = readParam<double>(nh_, "rot3d_control/p_gain");
           rot3d_weight_ = readParam<double>(nh_, "rot3d_control/weight");
 
-          enable_thresholding_joint_ = readParam<bool>(nh_, "joint_control/enable_thresholding");
-          joint_threshold_ = readParam<double>(nh_, "joint_control/error_threshold");
+          joint_max_speed_ = readParam<double>(nh_, "joint_control/max_speed");
           joint_p_gain_ = readParam<double>(nh_, "joint_control/p_gain");
           joint_weight_ = readParam<double>(nh_, "joint_control/weight");
         }

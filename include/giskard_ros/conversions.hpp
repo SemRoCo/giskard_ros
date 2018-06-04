@@ -127,8 +127,7 @@ namespace giskard_ros
 
     result.root_link = controller.root_link;
     result.tip_link = controller.tip_link;
-    result.threshold_error = controller.enable_error_threshold;
-    result.threshold = controller.threshold_value;
+    result.max_speed = controller.max_speed;
     result.p_gain = controller.p_gain;
     result.weight = controller.weight;
 
