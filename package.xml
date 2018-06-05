@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>giskard_ros</name>
-  <version>0.0.4</version>
+  <version>0.1.0</version>
   <description>
     Various ROS nodes that use the giskard library, a framework for
     constraint- and optimization-based robot motion control.
