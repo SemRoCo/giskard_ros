@@ -1,0 +1,19 @@
+<launch>
+  <arg name="sim" default="true" />
+  <arg name="plot" default="false" />
+  <arg name="rviz" default="true" />
+
+  <include file="$(find giskard_ros)/launch/pr2.launch" >
+    <arg name="sim" value="$(arg sim)" />
+  </include>
+
+  <include file="$(find giskard_ros)/launch/pr2_whole_body_controller.launch" >
+    <arg name="sim" value="$(arg sim)" />
+  </include>
+
+  <include file="$(find giskard_ros)/launch/pr2_gui.launch" >
+    <arg name="plot" value="$(arg plot)" />
+    <arg name="rviz" value="$(arg rviz)" />
+  </include>
+  
+</launch>

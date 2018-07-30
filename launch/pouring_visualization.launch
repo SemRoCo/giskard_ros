@@ -1,0 +1,19 @@
+<launch>
+  <arg name="grasp_frame" default="r_gripper_tool_frame" />
+  <arg name="map_frame" default="map" />
+
+  <node pkg="tf" type="static_transform_publisher" name="table_transform_publisher"
+        output="screen" args="0.55 0 0 0 0 0 $(arg map_frame) table_frame 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="maker_transform_publisher"
+        output="screen" args="-0.15 0 0.72 0 0 0 table_frame maker_frame 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="cup_bottom_transform_publisher"
+        output="screen" args="0 0 -0.08 0 0 0 $(arg grasp_frame) cup_bottom_frame 100" />
+
+  <node pkg="tf" type="static_transform_publisher" name="cup_top_transform_publisher"
+        output="screen" args="0 0 0.06 0 0 0 $(arg grasp_frame) cup_top_frame 100" />
+
+  <node pkg="giskard_ros" type="pub_pouring_markers.py" name="marker_publisher" />
+
+</launch>

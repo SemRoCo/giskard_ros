@@ -1,0 +1,12 @@
+controller_filenames:
+  - controller_specs/pr2_pouring_example/pr2_nice_start_config_controller3.yaml
+  - controller_specs/pr2_pouring_example/real/learned_models/on_table/move_above_controller.yaml
+  - controller_specs/pr2_pouring_example/real/learned_models/on_table/tilt_down_controller.yaml
+  - controller_specs/pr2_pouring_example/real/learned_models/on_table/tilt_back_controller.yaml
+  - controller_specs/pr2_pouring_example/pr2_nice_start_config_controller3.yaml
+threshold_filenames:
+  - controller_specs/pr2_pouring_example/pr2_nice_start_config_thresholds.yaml
+  - controller_specs/pr2_pouring_example/real/learned_models/on_table/move_above_thresholds.yaml
+  - controller_specs/pr2_pouring_example/real/learned_models/on_table/tilt_down_thresholds.yaml
+  - controller_specs/pr2_pouring_example/real/learned_models/on_table/tilt_back_thresholds.yaml
+  - controller_specs/pr2_pouring_example/pr2_nice_start_config_thresholds.yaml

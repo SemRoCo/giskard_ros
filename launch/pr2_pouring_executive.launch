@@ -1,0 +1,37 @@
+<launch>
+  <arg name="learned" default="False" />
+  <arg name="hand_tuned" default="False" />
+  <arg name="sim" default="True" />
+
+  <arg name="cup_tight_constraints" default="False" />
+  <arg name="cup_wide_constraints" default="False" />
+  <arg name="left_arm_disabled" default="False" />
+  <arg name="cup_on_table" default="False" />
+
+  <arg name="sim-path" if="$(arg sim)" default="sim" />
+  <arg name="sim-path" unless="$(arg sim)" default="real" />
+
+  <arg name="models_path" if="$(arg learned)"
+       default="controller_specs/pr2_pouring_example/$(arg sim-path)/learned_models" />
+  <arg name="models_path" if="$(arg hand_tuned)"
+       default="controller_specs/pr2_pouring_example/$(arg sim-path)/hand_tuned_models" />
+
+  <arg name="models_name" if="$(arg cup_tight_constraints)"
+       default="executive_cup_tight_constraints.yaml" />
+  <arg name="models_name" if="$(arg cup_wide_constraints)"
+       default="executive_cup_wide_constraints.yaml" />
+  <arg name="models_name" if="$(arg left_arm_disabled)"
+       default="executive_left_arm_disabled.yaml" />
+  <arg name="models_name" if="$(arg cup_on_table)"
+       default="executive_cup_on_table.yaml" />
+
+  <node pkg="giskard_ros" type="yaml_executive" name="yaml_executive" 
+        output="screen" >
+    <rosparam command="load" 
+              file="$(find giskard_ros)/$(arg models_path)/$(arg models_name)" />
+  </node>
+
+  <node pkg="giskard_ros" type="pub_pouring_markers.py" name="marker_publisher" >
+    <param name="cup_on_table" value="$(arg cup_on_table)" />
+  </node>
+</launch>

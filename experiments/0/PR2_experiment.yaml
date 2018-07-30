@@ -1,0 +1,12 @@
+controlled-model: Cup
+controller-specs:
+- {controller-file: motions/moveabovepan.yaml, max-twist-buffer-size: 100, min-angular-vel-threshold: 0.05,
+  min-translational-vel-threshold: 0.01}
+- {controller-file: motions/tiltbottle.yaml, max-twist-buffer-size: 2859, min-angular-vel-threshold: 0.05,
+  min-translational-vel-threshold: 0.01}
+- {controller-file: motions/tiltback.yaml, max-twist-buffer-size: 100, min-angular-vel-threshold: 0.05,
+  min-translational-vel-threshold: 0.01}
+log-delay: 2.0
+move-start-delay: 3.0
+observed-model: PancakeMaker
+sim-start-delay: 2.0

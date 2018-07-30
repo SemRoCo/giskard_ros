@@ -1,0 +1,28 @@
+thresholds:
+  bodypart_moves:
+    left_arm: 0.01
+    right_arm: 0.01
+    torso: 0.002
+  motion_old: 0.5
+body_controllables:
+  right_arm:
+    - r_elbow_flex_joint
+    - r_shoulder_lift_joint
+    - r_shoulder_pan_joint
+    - r_upper_arm_roll_joint
+    - r_wrist_flex_joint
+    - r_wrist_roll_joint
+  left_arm:
+    - l_elbow_flex_joint
+    - l_forearm_roll_joint
+    - l_shoulder_lift_joint
+    - l_shoulder_pan_joint
+    - l_upper_arm_roll_joint
+    - l_wrist_flex_joint
+    - l_wrist_roll_joint
+  torso: torso_lift_joint
+frame_id: base_link
+l_frame_id: l_gripper_tool_frame
+r_frame_id: r_gripper_tool_frame
+update_period: 0.05
+server_timeout: 2.0

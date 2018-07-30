@@ -1,0 +1,6 @@
+<launch>
+<node pkg="giskard_ros" type="joint_state_separator" name="joint_state_separator">
+  <rosparam param="joint_names" file="$(find giskard_ros)/config/pr2_upper_body.yaml" />
+</node>
+
+</launch>
