@@ -41,6 +41,7 @@ add_library(${PROJECT_NAME}
   src/${PROJECT_NAME}/whole_body_controller.cpp)
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES} yaml-cpp)
+add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 
 add_executable(whole_body_controller src/${PROJECT_NAME}/whole_body_controller_node.cpp)
 target_link_libraries(whole_body_controller 
